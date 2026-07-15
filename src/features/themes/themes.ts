@@ -4,7 +4,8 @@ export type ThemeId =
   | 'midnight-purple'
   | 'zen-mode'
   | 'solar-flare'
-  | 'rose-quartz';
+  | 'rose-quartz'
+  | 'mono-ink';
 
 export interface ThemeTokens {
   /** App background */
@@ -76,5 +77,13 @@ export const THEMES: ThemeDefinition[] = [
     description: 'Blush paper and rose accents for a light, friendly, expressive desk.',
     mode: 'light',
     tokens: { bg: '#f6eef0', panel: '#fffafc', accent: '#e0517a', text: '#2e2329' },
+  },
+  {
+    id: 'mono-ink',
+    name: 'Mono Ink',
+    eyebrow: 'Pure black & white',
+    description: 'True black surfaces and paper-white type — zero color, maximum contrast.',
+    mode: 'dark',
+    tokens: { bg: '#000000', panel: '#121212', accent: '#ffffff', text: '#fafafa' },
   },
 ];

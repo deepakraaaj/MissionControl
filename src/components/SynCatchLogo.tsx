@@ -1,30 +1,36 @@
-import { useId, useRef } from 'react';
+import { useRef } from 'react';
 import { SynCatchLogoAnimated, type SynCatchLogoHandle } from './SynCatchLogoAnimated';
 
 interface SynCatchLogoProps {
   className?: string;
   /** Render the mark in currentColor instead of brand colors (for use on accent fills). */
   monochrome?: boolean;
-  /** Adapt the mark to the active theme accent instead of the brand purple/blue. */
+  /** Adapt the mark to the active theme accent instead of the brand palette. */
   themed?: boolean;
   title?: string;
 }
 
-const BRAND_PURPLE = '#6C5CE7';
 const BRAND_BLUE = '#3E8BFF';
+const BRAND_FOG = '#F4F5F8';
 
 /**
- * SynCatch brandmark — an iconic breakout check-loop representing capture and focus.
- * Bold, high-contrast, and extremely readable at all viewport sizes.
+ * SynCatch brandmark — a loop dissolving into dots just before it closes:
+ * always in motion, always almost in sync. The two dots are the "catch"
+ * landing at the loop's open end.
+ *
+ * Geometry: arc r=37 centered at (50,50) sweeping ~255°, with two dots
+ * continuing the circle through the gap.
  */
-export function SynCatchLogo({ className, monochrome = false, themed = false, title = 'SynCatch' }: SynCatchLogoProps) {
-  const gradientId = useId();
+export const SYNCATCH_LOOP = 'M 15.2 62.7 A 37 37 0 1 1 71.3 80.3';
+export const SYNCATCH_STROKE_WIDTH = 16;
+export const SYNCATCH_DOTS = [
+  { cx: 50, cy: 87, r: 7 },
+  { cx: 28.8, cy: 80.3, r: 4.5 },
+] as const;
 
-  // Monochrome paints flat in currentColor; otherwise a diagonal gradient
-  // (brand purple→blue, or the theme accent pair when `themed`).
-  const paint = monochrome ? 'currentColor' : `url(#${gradientId})`;
-  const from = themed ? 'rgb(var(--accent-soft))' : BRAND_PURPLE;
-  const to = themed ? 'rgb(var(--accent))' : BRAND_BLUE;
+export function SynCatchLogo({ className, monochrome = false, themed = false, title = 'SynCatch' }: SynCatchLogoProps) {
+  const loopPaint = monochrome ? 'currentColor' : themed ? 'rgb(var(--accent-soft))' : BRAND_FOG;
+  const dotPaint = monochrome ? 'currentColor' : themed ? 'rgb(var(--accent))' : BRAND_BLUE;
 
   return (
     <svg
@@ -36,31 +42,11 @@ export function SynCatchLogo({ className, monochrome = false, themed = false, ti
       className={className}
     >
       <title>{title}</title>
-      {!monochrome ? (
-        <defs>
-          <linearGradient id={gradientId} x1="22" y1="14" x2="78" y2="86" gradientUnits="userSpaceOnUse">
-            <stop offset="0%" stopColor={from} />
-            <stop offset="100%" stopColor={to} />
-          </linearGradient>
-        </defs>
-      ) : null}
-      
-      {/* Outer crescent ring with breakout gap at top-right */}
-      <path 
-        d="M 50 18 A 32 32 0 1 0 82 50" 
-        stroke={paint} 
-        strokeWidth="8.5" 
-        strokeLinecap="round" 
-      />
-      
-      {/* Bold checkmark breaking out of the gap */}
-      <path 
-        d="M 38 52 L 47 61 L 76 32" 
-        stroke={paint} 
-        strokeWidth="8.5" 
-        strokeLinecap="round" 
-        strokeLinejoin="round" 
-      />
+      <path d={SYNCATCH_LOOP} stroke={loopPaint} strokeWidth={SYNCATCH_STROKE_WIDTH} strokeLinecap="round" />
+      {/* The "catch" — dots landing where the loop closes */}
+      {SYNCATCH_DOTS.map((dot) => (
+        <circle key={dot.cx} cx={dot.cx} cy={dot.cy} r={dot.r} fill={dotPaint} />
+      ))}
     </svg>
   );
 }
@@ -80,7 +66,7 @@ export function SynCatchWordmark({
   logoClassName?: string;
   textClassName?: string;
   themed?: boolean;
-  /** Use the animated stopwatch mark; it sweeps → ticks when the wordmark is hovered. */
+  /** Use the animated mark; it spins into sync when the wordmark is hovered. */
   animated?: boolean;
 }) {
   const logoRef = useRef<SynCatchLogoHandle>(null);

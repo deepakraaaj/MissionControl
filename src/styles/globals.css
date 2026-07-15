@@ -133,6 +133,26 @@
   --accent-contrast: 255 250 252;
 }
 
+[data-theme='mono-ink'] {
+  color-scheme: dark;
+  --bg-base: 0 0 0;
+  --bg-soft: 10 10 10;
+  --surface-1: 18 18 18;
+  --surface-2: 10 10 10;
+  --accent: 255 255 255;
+  --accent-soft: 160 160 160;
+  --border-strong: 92 92 92;
+  --border-subtle: 40 40 40;
+  --text-primary: 250 250 250;
+  --text-secondary: 170 170 170;
+  --text-muted: 118 118 118;
+  --success: 214 214 214;
+  --warning: 168 168 168;
+  --danger: 250 250 250;
+  --shadow-color: 0 0 0;
+  --accent-contrast: 0 0 0;
+}
+
 @layer base {
   * {
     box-sizing: border-box;
