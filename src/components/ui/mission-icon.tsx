@@ -1,7 +1,7 @@
 import {
   Target,
-  Rocket,
-  Zap,
+  Flag,
+  Compass,
   Flame,
   Leaf,
   Building,
@@ -17,8 +17,8 @@ import {
 
 export const MISSION_ICONS = {
   Target,
-  Rocket,
-  Zap,
+  Rocket: Flag,
+  Zap: Compass,
   Flame,
   Leaf,
   Building,

@@ -7,7 +7,7 @@ import {
   useRef,
   useState,
 } from 'react';
-import { Sun, CheckSquare, Target, MoreHorizontal, CheckCircle2, Zap, Rocket, Clock, BarChart3, ClipboardList, Settings, Lightbulb, Link2, AlertCircle, Pin, FileText, ArrowUpRight, RotateCcw, Cloud, Pencil, Trash2, Play, Pause, CheckCircle, Menu, X, Plus, CalendarDays, ChevronDown, CornerDownRight, BookHeart, StickyNote, Wifi, WifiOff, MessageCircle, type LucideIcon } from 'lucide-react';
+import { Sun, CheckSquare, Target, MoreHorizontal, CheckCircle2, Timer, Flag, Clock, BarChart3, ClipboardList, Settings, Lightbulb, Link2, AlertCircle, Pin, FileText, ArrowUpRight, RotateCcw, Cloud, Pencil, Trash2, Play, Pause, CheckCircle, Menu, X, Plus, CalendarDays, ChevronDown, CornerDownRight, BookHeart, StickyNote, Wifi, WifiOff, MessageCircle, type LucideIcon } from 'lucide-react';
 import { MissionIcon } from '../../components/ui/mission-icon';
 import { DatePicker } from '../../components/ui/date-picker';
 import { Badge } from '../../components/ui/badge';
@@ -48,9 +48,11 @@ import { MissionComposer } from '../../features/missions/MissionComposer';
 import { useMissionStore } from '../../features/missions/mission-store';
 import { RoadmapView } from '../../features/roadmap/RoadmapView';
 import { JournalView } from '../../features/journal/JournalView';
+import { useJournalStore } from '../../features/journal/journal-store';
 import { NotesView } from '../../features/notes/NotesView';
 import { AssistantView } from '../../features/assistant/AssistantView';
 import { DashboardView } from '../../features/dashboard/DashboardView';
+import { CalendarView, type CalendarOpenTarget } from '../../features/calendar/CalendarView';
 import { AssistantWidget } from '../../features/assistant/AssistantWidget';
 import { SynCatchWordmark } from '../../components/SynCatchLogo';
 import { TaskCreationComposer } from '../../features/tasks/TaskCreationComposer';
@@ -67,7 +69,7 @@ import { formatRelativeTime } from '../../lib/date';
 import { isTauriApp, showHudWindow, showQuickAddWindow, subscribeAppEvent } from '../../lib/tauri';
 import { useIsMobile } from '../../hooks/use-mobile';
 
-type MainView = 'dashboard' | 'focus' | 'missions' | 'roadmap' | 'today' | 'tasks' | 'history' | 'insights' | 'review' | 'journal' | 'notes' | 'assistant' | 'settings' | 'apps';
+type MainView = 'dashboard' | 'focus' | 'missions' | 'roadmap' | 'today' | 'calendar' | 'tasks' | 'history' | 'insights' | 'review' | 'journal' | 'notes' | 'assistant' | 'settings' | 'apps';
 
 type CaptureState = {
   kind: SessionCaptureKind;
@@ -82,6 +84,7 @@ type TaskBoardColumn = {
 };
 
 type CompletedFilterMode = 'all' | 'today' | '7d' | 'custom';
+type TaskScopeMode = 'pending' | 'today' | 'all';
 
 const launcherViews: Array<{
   id: SidebarPinnedAppId;
@@ -101,14 +104,14 @@ const launcherViews: Array<{
   {
     id: 'focus',
     label: 'What Now',
-    icon: Zap,
+    icon: Timer,
     description: 'Get back into motion',
     gradient: 'from-cyan-500 via-sky-500 to-blue-600',
   },
   {
     id: 'missions',
     label: 'Missions',
-    icon: Rocket,
+    icon: Flag,
     description: 'Track larger goals',
     gradient: 'from-fuchsia-500 via-pink-500 to-rose-500',
   },
@@ -125,6 +128,13 @@ const launcherViews: Array<{
     icon: Sun,
     description: 'See what matters now',
     gradient: 'from-amber-400 via-orange-500 to-rose-500',
+  },
+  {
+    id: 'calendar',
+    label: 'Calendar',
+    icon: CalendarDays,
+    description: 'Remember what happened each day',
+    gradient: 'from-blue-500 via-sky-500 to-cyan-500',
   },
   {
     id: 'tasks',
@@ -557,6 +567,7 @@ function getViewCopy(view: MainView) {
     missions: 'Missions',
     roadmap: 'Roadmap',
     today: 'Today',
+    calendar: 'Calendar',
     tasks: 'Tasks',
     history: 'History',
     insights: 'Insights',
@@ -588,32 +599,36 @@ function NavButton({
   return (
     <button
       className={cn(
-        'w-full flex items-center gap-3 rounded-[16px] border text-left transition-all duration-150',
-        compact ? 'px-3.5 py-3' : 'rounded-[20px] px-4 py-2.5',
+        'group relative flex w-full items-center gap-3 overflow-hidden rounded-[14px] border text-left transition-all duration-200',
+        compact ? 'px-3 py-2.5' : 'px-3 py-2.5',
         active
-          ? 'border-accent/35 bg-accent/12 shadow-[0_4px_16px_rgba(var(--accent),0.08)]'
-          : 'border-transparent bg-panel/38 hover:border-borderSoft/40 hover:bg-panel/56',
+          ? 'border-accent/25 bg-accent/10 shadow-[0_8px_22px_rgba(var(--accent),0.08)]'
+          : 'border-transparent bg-transparent hover:border-borderSoft/30 hover:bg-panel/55',
       )}
       onClick={onClick}
       type="button"
     >
-      <Icon
+      {active ? <span aria-hidden className="absolute inset-y-2 left-0 w-0.5 rounded-r-full bg-accent" /> : null}
+      <span
         className={cn(
-          'shrink-0',
-          compact ? 'h-[18px] w-[18px]' : 'h-4 w-4',
-          active ? 'text-accent' : compact ? 'text-text-secondary' : 'text-text-muted',
+          'flex h-8 w-8 shrink-0 items-center justify-center rounded-[10px] border transition-colors',
+          active
+            ? 'border-accent/20 bg-accent/12 text-accent'
+            : 'border-borderSoft/25 bg-panel/45 text-text-muted group-hover:border-borderSoft/40 group-hover:text-text-secondary',
         )}
-      />
+      >
+        <Icon className="h-4 w-4" />
+      </span>
       <div className="min-w-0">
         <p
           className={cn(
-            'text-[15px] font-semibold tracking-tight',
+            'text-[14px] font-semibold tracking-tight',
             active ? 'text-text-primary' : compact ? 'text-text-primary/85' : 'text-text-secondary',
           )}
         >
           {label}
         </p>
-        {caption ? <p className="mt-0.5 hidden text-[11px] text-text-muted sm:block">{caption}</p> : null}
+        {caption ? <p className="mt-0.5 hidden truncate text-[11px] leading-4 text-text-muted/85 sm:block">{caption}</p> : null}
       </div>
     </button>
   );
@@ -641,55 +656,65 @@ function AppLauncherTile({
   return (
     <div
       className={cn(
-        'group relative flex min-h-[112px] w-full flex-col justify-between rounded-[24px] border p-4 text-left transition-all duration-150',
+        'group relative flex min-h-[148px] w-full flex-col overflow-hidden rounded-[22px] border p-5 text-left transition-all duration-200',
         active
-          ? 'border-accent/35 bg-accent/12 shadow-[0_10px_28px_rgba(var(--accent),0.10)]'
-          : 'border-borderSoft/30 bg-panel/42 hover:-translate-y-0.5 hover:border-borderSoft/45 hover:bg-panel/60',
+          ? 'border-accent/35 bg-accent/10 shadow-[0_14px_34px_rgba(var(--accent),0.12)]'
+          : 'border-borderSoft/28 bg-panel/45 hover:-translate-y-1 hover:border-borderSoft/50 hover:bg-panel/70 hover:shadow-[0_16px_34px_rgba(var(--shadow-color),0.12)]',
       )}
     >
+      <div className={cn('absolute inset-x-0 top-0 h-[3px] bg-gradient-to-r opacity-80', gradient)} />
+      <div className={cn('pointer-events-none absolute -right-10 -top-10 h-32 w-32 rounded-full bg-gradient-to-br opacity-[0.08] blur-2xl transition-opacity group-hover:opacity-[0.16]', gradient)} />
+
       <button
         type="button"
-        className="absolute inset-0 rounded-[24px] text-left"
+        className="absolute inset-0 rounded-[22px] text-left"
         onClick={onClick}
       >
         <span className="sr-only">Open {label}</span>
       </button>
 
-      <button
-        type="button"
-        className={cn(
-          'absolute right-3 top-3 z-10 inline-flex h-8 items-center gap-1 rounded-full border px-2.5 text-[10px] font-semibold uppercase tracking-[0.18em] transition-colors',
-          pinned
-            ? 'border-accent/25 bg-accent/15 text-accent'
-            : 'border-borderSoft/35 bg-panel/70 text-text-muted hover:text-text-primary',
-        )}
-        onClick={(event) => {
-          event.stopPropagation();
-          onTogglePinned();
-        }}
-      >
-        {pinned ? <CheckCircle2 className="h-3.5 w-3.5" /> : <Pin className="h-3.5 w-3.5" />}
-        {pinned ? 'Pinned' : 'Pin'}
-      </button>
-
-      <div className="relative z-[1] flex items-start justify-between gap-3">
+      <div className="pointer-events-none relative z-[1] flex items-start justify-between gap-3">
         <div
           className={cn(
-            'flex h-12 w-12 shrink-0 items-center justify-center rounded-[18px] bg-gradient-to-br shadow-[0_14px_24px_rgba(0,0,0,0.18)] ring-1 ring-white/15',
+            'flex h-11 w-11 shrink-0 items-center justify-center rounded-[14px] bg-gradient-to-br shadow-[0_10px_22px_rgba(0,0,0,0.16)] ring-1 ring-white/20',
             gradient,
           )}
         >
           <Icon className="h-5 w-5 text-white drop-shadow-sm" />
         </div>
-
-        {active ? <span className="mt-1 h-2.5 w-2.5 rounded-full bg-accent" /> : null}
+        <ArrowUpRight className="h-4 w-4 text-text-muted/45 transition-all group-hover:-translate-y-0.5 group-hover:translate-x-0.5 group-hover:text-text-secondary" />
       </div>
 
-      <div className="relative z-[1] min-w-0">
-        <p className={cn('text-sm font-semibold tracking-tight', active ? 'text-text-primary' : 'text-text-secondary')}>
-          {label}
-        </p>
-        <p className="mt-1 text-[11px] text-text-muted">{description}</p>
+      <div className="pointer-events-none relative z-[1] mt-4 min-w-0">
+        <div className="flex items-center gap-2">
+          <p className={cn('text-[15px] font-semibold tracking-tight', active ? 'text-text-primary' : 'text-text-secondary')}>
+            {label}
+          </p>
+          {active ? <span className="rounded-full bg-accent/12 px-2 py-0.5 text-[9px] font-semibold uppercase tracking-wider text-accent">Current</span> : null}
+        </div>
+        <p className="mt-1 text-[12px] leading-5 text-text-muted">{description}</p>
+      </div>
+
+      <div className="pointer-events-none relative z-[2] mt-auto flex items-end justify-end pt-3">
+        <button
+          type="button"
+          title={pinned ? `Remove ${label} from sidebar` : `Pin ${label} to sidebar`}
+          aria-label={pinned ? `Remove ${label} from sidebar` : `Pin ${label} to sidebar`}
+          className={cn(
+            'pointer-events-auto',
+            'inline-flex h-7 items-center gap-1.5 rounded-full border px-2.5 text-[9px] font-semibold uppercase tracking-[0.16em] transition-colors',
+            pinned
+              ? 'border-accent/25 bg-accent/12 text-accent hover:bg-accent/18'
+              : 'border-borderSoft/30 bg-panel/60 text-text-muted hover:border-borderSoft/50 hover:text-text-primary',
+          )}
+          onClick={(event) => {
+            event.stopPropagation();
+            onTogglePinned();
+          }}
+        >
+          {pinned ? <CheckCircle2 className="h-3 w-3" /> : <Pin className="h-3 w-3" />}
+          {pinned ? 'Pinned' : 'Pin'}
+        </button>
       </div>
     </div>
   );
@@ -719,16 +744,19 @@ function SidebarContent({
   const appsButton = (
     <button
       type="button"
-      className="flex w-full items-center gap-3 rounded-[16px] border border-borderSoft/30 bg-panel/40 px-3.5 py-3 text-left transition-all duration-150 hover:border-borderSoft/50 hover:bg-panel/60"
+      className="group flex w-full items-center gap-3 rounded-[14px] border border-borderSoft/30 bg-panel/35 px-3 py-2.5 text-left transition-all duration-200 hover:border-accent/25 hover:bg-accent/8"
       onClick={onOpenApps}
     >
-      <div className="grid h-[18px] w-[18px] shrink-0 grid-cols-2 gap-0.5">
-        <span className="rounded-[2px] bg-cyan-400" />
-        <span className="rounded-[2px] bg-fuchsia-400" />
-        <span className="rounded-[2px] bg-amber-400" />
-        <span className="rounded-[2px] bg-emerald-400" />
+      <div className="grid h-8 w-8 shrink-0 grid-cols-2 gap-[3px] rounded-[10px] border border-borderSoft/25 bg-panel/55 p-[7px] transition-colors group-hover:border-accent/25">
+        <span className="rounded-[2px] bg-cyan-400/90" />
+        <span className="rounded-[2px] bg-fuchsia-400/90" />
+        <span className="rounded-[2px] bg-amber-400/90" />
+        <span className="rounded-[2px] bg-emerald-400/90" />
       </div>
-      <p className="text-[15px] font-semibold tracking-tight text-text-primary/85">Apps</p>
+      <div className="min-w-0">
+        <p className="text-[14px] font-semibold tracking-tight text-text-primary/90">All apps</p>
+        <p className="mt-0.5 text-[11px] text-text-muted/80">Customize your sidebar</p>
+      </div>
     </button>
   );
 
@@ -745,17 +773,12 @@ function SidebarContent({
         </button>
       ) : null}
 
-      <div className={cn('space-y-2', compact ? '' : 'mt-8')}>
+      <div className={cn(compact ? 'space-y-2' : 'mt-7')}>
         {/* Mobile drawer keeps Apps at the top; desktop pins it to the bottom-left corner. */}
         {compact ? appsButton : null}
 
         {visibleIds.length > 0 ? (
-          <div className={cn('pt-1', compact ? 'space-y-1' : 'space-y-2')}>
-            {!compact ? (
-              <p className="px-2 text-[10px] font-semibold uppercase tracking-[0.28em] text-text-muted">
-                
-              </p>
-            ) : null}
+          <div className={cn('pt-1', compact ? 'space-y-1' : 'space-y-1.5')}>
             {launcherViews
               .filter((view) => view.id !== 'settings' && visibleIds.includes(view.id))
               .map((view) => (
@@ -781,7 +804,7 @@ function SidebarContent({
         </div>
       ) : (
         /* Start-button style: Apps anchored to the bottom-left corner of the sidebar. */
-        <div className="mt-auto pt-4">{appsButton}</div>
+        <div className="mt-auto border-t border-borderSoft/20 pt-4">{appsButton}</div>
       )}
     </div>
   );
@@ -800,41 +823,89 @@ function AppsWorkspacePage({
   pinnedAppIds: SidebarPinnedAppId[];
   onTogglePinnedApp: (appId: SidebarPinnedAppId) => void;
 }) {
+  const pinnedViews = launcherViews.filter((view) => pinnedAppIds.includes(view.id));
+  const otherViews = launcherViews.filter((view) => !pinnedAppIds.includes(view.id));
+
+  const renderAppGrid = (views: typeof launcherViews) => (
+    <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4">
+      {views.map((view) => (
+        <AppLauncherTile
+          active={activeView === view.id}
+          description={view.description}
+          gradient={view.gradient}
+          icon={view.icon}
+          key={view.id}
+          label={view.label}
+          pinned={pinnedAppIds.includes(view.id)}
+          onClick={() => onViewSelect(view.id)}
+          onTogglePinned={() => onTogglePinnedApp(view.id)}
+        />
+      ))}
+    </div>
+  );
+
   return (
-    <div className="flex h-full min-h-0 flex-col">
-      <Card className="rounded-[34px] p-4 sm:p-6">
-        <div className="flex items-start justify-between gap-3">
-          <div className="min-w-0">
-            <p className="text-[11px] uppercase tracking-[0.28em] text-text-muted">Workspace</p>
-            <h2 className="mt-2 text-2xl font-semibold text-text-primary sm:text-3xl">Apps</h2>
-            <p className="mt-2 max-w-2xl text-sm text-text-secondary">
-              Open any area as a full page from here. This lives in the workspace, not the sidebar.
-            </p>
+    <div className="min-h-full pb-8">
+      <Card className="relative overflow-hidden rounded-[30px] border-borderSoft/25 p-5 sm:p-7">
+        <div className="pointer-events-none absolute -right-20 -top-24 h-64 w-64 rounded-full bg-accent/10 blur-3xl" />
+        <div className="relative flex items-start justify-between gap-4">
+          <div className="flex min-w-0 items-start gap-4">
+            <div className="hidden h-12 w-12 shrink-0 grid-cols-2 gap-1 rounded-[16px] border border-borderSoft/25 bg-panel2/55 p-3 sm:grid">
+              <span className="rounded-[3px] bg-cyan-400" />
+              <span className="rounded-[3px] bg-fuchsia-400" />
+              <span className="rounded-[3px] bg-amber-400" />
+              <span className="rounded-[3px] bg-emerald-400" />
+            </div>
+            <div className="min-w-0">
+              <p className="text-[10px] font-semibold uppercase tracking-[0.24em] text-text-muted/75">App launcher</p>
+              <h2 className="mt-1 text-2xl font-semibold tracking-tight text-text-primary sm:text-3xl">Your workspace</h2>
+              <p className="mt-1.5 max-w-xl text-[13px] leading-5 text-text-secondary">
+                Open a tool or pin the ones you use most for faster access from the sidebar.
+              </p>
+              <div className="mt-4 flex flex-wrap gap-2">
+                <span className="rounded-full border border-borderSoft/25 bg-panel2/45 px-3 py-1 text-[10px] font-medium text-text-muted">
+                  {launcherViews.length} apps
+                </span>
+                <span className="rounded-full border border-accent/20 bg-accent/8 px-3 py-1 text-[10px] font-medium text-accent">
+                  {pinnedViews.length} pinned
+                </span>
+              </div>
+            </div>
           </div>
 
-          <div className="flex items-center gap-2">
-            <Button onClick={onClose} size="sm" type="button" variant="ghost" className="h-9 w-9 p-0">
+          <div className="flex shrink-0 items-center gap-2">
+            <Button aria-label="Close app launcher" onClick={onClose} size="sm" type="button" variant="ghost" className="h-9 w-9 rounded-full p-0">
               <X className="h-4 w-4" />
             </Button>
           </div>
         </div>
       </Card>
 
-      <div className="mt-4 grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-        {launcherViews.map((view) => (
-          <AppLauncherTile
-            active={activeView === view.id}
-            description={view.description}
-            gradient={view.gradient}
-            icon={view.icon}
-            key={view.id}
-            label={view.label}
-            pinned={pinnedAppIds.includes(view.id)}
-            onClick={() => onViewSelect(view.id)}
-            onTogglePinned={() => onTogglePinnedApp(view.id)}
-          />
-        ))}
-      </div>
+      {pinnedViews.length > 0 ? (
+        <section className="mt-7">
+          <div className="mb-3 flex items-end justify-between gap-3 px-1">
+            <div>
+              <h3 className="text-[15px] font-semibold text-text-primary">Pinned</h3>
+              <p className="mt-0.5 text-[11px] text-text-muted">Shown in your sidebar</p>
+            </div>
+            <span className="text-[11px] tabular-nums text-text-muted/70">{pinnedViews.length}</span>
+          </div>
+          {renderAppGrid(pinnedViews)}
+        </section>
+      ) : null}
+
+      {otherViews.length > 0 ? (
+        <section className="mt-7">
+          <div className="mb-3 flex items-end justify-between gap-3 px-1">
+            <div>
+              <h3 className="text-[15px] font-semibold text-text-primary">All apps</h3>
+              <p className="mt-0.5 text-[11px] text-text-muted">More tools for your workflow</p>
+            </div>
+            <span className="text-[11px] tabular-nums text-text-muted/70">{otherViews.length}</span>
+          </div>
+          {renderAppGrid(otherViews)}
+        </section>
+      ) : null}
     </div>
   );
 }
@@ -1972,13 +2043,16 @@ export function MainApp() {
   const [expandedHistoryId, setExpandedHistoryId] = useState<string | null>(null);
   const [taskComposerOpen, setTaskComposerOpen] = useState(false);
   const [completedArchiveOpen, setCompletedArchiveOpen] = useState(false);
-  const [completedFilterMode, setCompletedFilterMode] = useState<CompletedFilterMode>('today');
+  const [taskScopeMode, setTaskScopeMode] = useState<TaskScopeMode>('pending');
+  const [completedFilterMode, setCompletedFilterMode] = useState<CompletedFilterMode>('all');
   const [completedFilterFromDate, setCompletedFilterFromDate] = useState('');
   const [completedFilterFromTime, setCompletedFilterFromTime] = useState('00:00');
   const [completedFilterToDate, setCompletedFilterToDate] = useState('');
   const [completedFilterToTime, setCompletedFilterToTime] = useState('23:59');
   const [pageDateMenuOpen, setPageDateMenuOpen] = useState(false);
   const [previousViewBeforeApps, setPreviousViewBeforeApps] = useState<MainView>('today');
+  const [calendarNoteTargetId, setCalendarNoteTargetId] = useState<string | null>(null);
+  const [calendarJournalTargetId, setCalendarJournalTargetId] = useState<string | null>(null);
   const [draggedTaskId, setDraggedTaskId] = useState<string | null>(null);
   const [dropLane, setDropLane] = useState<TaskLane | null>(null);
   const [detailTaskId, setDetailTaskId] = useState<string | null>(null);
@@ -2257,7 +2331,7 @@ export function MainApp() {
     const start = new Date(now);
     start.setHours(0, 0, 0, 0);
 
-    setCompletedFilterMode('today');
+    setCompletedFilterMode('all');
     setCompletedFilterFromDate(formatDateInputValue(start));
     setCompletedFilterFromTime('00:00');
     setCompletedFilterToDate(formatDateInputValue(now));
@@ -2305,19 +2379,23 @@ export function MainApp() {
     () => getCompletedDigestItems(completedTasks, subtaskBoard.done),
     [completedTasks, subtaskBoard.done],
   );
-  const visibleTaskBoard = useMemo(
-    () =>
-      taskBoard.map((column) => ({
+  const visibleTaskBoard = useMemo(() => {
+    const today = formatDateInputValue(new Date());
+    const matchesScope = (task: Task) => {
+      if (taskScopeMode === 'all') return true;
+      if (taskScopeMode === 'pending') return task.status !== 'done' && task.lane !== 'done';
+      return task.scheduled_for === today || task.due_date === today || Boolean(task.completed_at?.startsWith(today));
+    };
+    return taskBoard.map((column) => ({
         ...column,
         tasks: column.tasks.filter((task) =>
-          taskMatchesBoardRange(task, completedFilterRange.from, completedFilterRange.to),
+          matchesScope(task) && taskMatchesBoardRange(task, completedFilterRange.from, completedFilterRange.to),
         ),
         subtasks: column.subtasks.filter((task) =>
-          taskMatchesBoardRange(task, completedFilterRange.from, completedFilterRange.to),
+          matchesScope(task) && taskMatchesBoardRange(task, completedFilterRange.from, completedFilterRange.to),
         ),
-      })),
-    [completedFilterRange.from, completedFilterRange.to, taskBoard],
-  );
+      }));
+  }, [completedFilterRange.from, completedFilterRange.to, taskBoard, taskScopeMode]);
   const visibleBlockedTasks = useMemo(
     () =>
       blockedTasks.filter((task) =>
@@ -2437,6 +2515,22 @@ export function MainApp() {
 
   function closeAppsView() {
     setActiveView(previousViewBeforeApps);
+  }
+
+  function openCalendarTarget(target: CalendarOpenTarget) {
+    if (target.destination === 'tasks' && target.entityId) {
+      selectTask(target.entityId);
+      setDetailTaskId(target.entityId);
+    } else if (target.destination === 'missions' && target.entityId) {
+      useMissionStore.getState().selectMission(target.entityId);
+      setDetailMissionId(target.entityId);
+    } else if (target.destination === 'notes' && target.entityId) {
+      setCalendarNoteTargetId(target.entityId);
+    } else if (target.destination === 'journal') {
+      useJournalStore.getState().selectDate(target.date);
+      setCalendarJournalTargetId(target.entityId ?? null);
+    }
+    setActiveView(target.destination);
   }
 
   function handleStartSession(task: Task, nextMinutes = minutes, nextPresetId = presetId) {
@@ -3052,7 +3146,7 @@ export function MainApp() {
         <Button
           aria-controls="task-date-filter-popover"
           aria-expanded={pageDateMenuOpen}
-          aria-label={`Open page date filter. Current range: ${completedFilterSummary}`}
+          aria-label={`Open task activity date filter. Current range: ${completedFilterSummary}`}
           className="h-9 shrink-0 rounded-full px-3 sm:px-4 max-[380px]:w-9 max-[380px]:justify-center max-[380px]:gap-0 max-[380px]:px-0"
           onClick={() => setPageDateMenuOpen((open) => !open)}
           size="sm"
@@ -3096,8 +3190,8 @@ export function MainApp() {
               >
                 <div className="flex items-start justify-between gap-3">
                   <div className="min-w-0">
-                    <p className="text-[10px] font-bold uppercase tracking-[0.28em] text-text-muted">Page date</p>
-                    <h3 className="mt-1 text-base font-bold text-text-primary">Date & time</h3>
+                    <p className="text-[10px] font-bold uppercase tracking-[0.28em] text-text-muted">Activity filter</p>
+                    <h3 className="mt-1 text-base font-bold text-text-primary">Task date & time</h3>
                     <p className="mt-1 text-sm text-text-secondary">{completedFilterSummary}</p>
                   </div>
 
@@ -3190,6 +3284,34 @@ export function MainApp() {
             </div>
           </div>
         ) : null}
+
+        <div className="flex flex-col gap-3 rounded-[22px] border border-borderSoft/25 bg-panel/35 p-3 sm:flex-row sm:items-center sm:justify-between sm:p-4">
+          <div>
+            <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-text-muted/65">Task view</p>
+            <p className="mt-1 text-[12px] text-text-secondary">Start with what needs attention, then widen the view when needed.</p>
+          </div>
+          <div className="grid grid-cols-3 gap-1.5 rounded-[14px] border border-borderSoft/20 bg-panel2/35 p-1.5">
+            {([
+              { id: 'pending' as const, label: 'Pending', count: rootTasksForSettings.filter((task) => task.status !== 'done' && task.lane !== 'done').length, icon: ClipboardList },
+              { id: 'today' as const, label: "Today's tasks", count: rootTasksForSettings.filter((task) => { const today = formatDateInputValue(new Date()); return task.scheduled_for === today || task.due_date === today || Boolean(task.completed_at?.startsWith(today)); }).length, icon: CalendarDays },
+              { id: 'all' as const, label: 'All tasks', count: rootTasksForSettings.length, icon: CheckSquare },
+            ]).map(({ id, label, count, icon: Icon }) => (
+              <button
+                key={id}
+                type="button"
+                onClick={() => setTaskScopeMode(id)}
+                className={cn(
+                  'flex min-w-0 items-center justify-center gap-2 rounded-[10px] px-3 py-2 text-[11px] font-medium transition-all',
+                  taskScopeMode === id ? 'bg-accent/12 text-accent shadow-sm' : 'text-text-muted hover:bg-panel/50 hover:text-text-primary',
+                )}
+              >
+                <Icon className="h-3.5 w-3.5 shrink-0" />
+                <span className="hidden truncate sm:inline">{label}</span>
+                <span className={cn('rounded-full px-1.5 py-0.5 text-[9px] tabular-nums', taskScopeMode === id ? 'bg-accent/12' : 'bg-text-primary/5')}>{count}</span>
+              </button>
+            ))}
+          </div>
+        </div>
 
         <div className="flex gap-4 overflow-x-auto pb-4 2xl:grid 2xl:grid-cols-[repeat(4,minmax(220px,1fr))_minmax(260px,320px)] 2xl:overflow-visible">
           {visibleTaskBoard.map((column) => {
@@ -4235,6 +4357,16 @@ export function MainApp() {
               {activeView === 'dashboard' ? (
                 <DashboardView
                   onNavigate={(view) => setActiveView(view)}
+                  onOpenTask={(taskId) => {
+                    selectTask(taskId);
+                    setDetailTaskId(taskId);
+                    setActiveView('tasks');
+                  }}
+                  onOpenMission={(missionId) => {
+                    useMissionStore.getState().selectMission(missionId);
+                    setDetailMissionId(missionId);
+                    setActiveView('missions');
+                  }}
                   onNewTask={() => { setActiveView('tasks'); setTaskComposerOpen(true); }}
                   onNewMission={() => { setActiveView('missions'); setMissionComposerOpen(true); }}
                 />
@@ -4243,12 +4375,13 @@ export function MainApp() {
               {activeView === 'missions' ? renderMissions() : null}
               {activeView === 'roadmap' ? <RoadmapView missions={missions} allTasks={tasks} onOpenMission={setDetailMissionId} /> : null}
               {activeView === 'today' ? renderToday() : null}
+              {activeView === 'calendar' ? <CalendarView onOpenTarget={openCalendarTarget} /> : null}
               {activeView === 'tasks' ? renderTasks() : null}
               {activeView === 'history' ? renderHistory() : null}
               {activeView === 'insights' ? renderInsights() : null}
               {activeView === 'review' ? renderReview() : null}
-              {activeView === 'journal' ? <JournalView /> : null}
-              {activeView === 'notes' ? <NotesView /> : null}
+              {activeView === 'journal' ? <JournalView focusedEntryId={calendarJournalTargetId} /> : null}
+              {activeView === 'notes' ? <NotesView openNoteId={calendarNoteTargetId} /> : null}
               {activeView === 'assistant' ? <AssistantView /> : null}
               {activeView === 'settings' ? renderSettings() : null}
 
@@ -4290,7 +4423,7 @@ export function MainApp() {
                   type="button"
                 />
 
-                <aside className="absolute inset-y-0 right-0 z-40 w-full max-w-[420px] overflow-hidden border-l border-borderSoft/30 bg-panel shadow-2xl lg:relative lg:inset-auto lg:z-auto lg:h-full lg:min-h-0 lg:w-[380px] lg:max-w-none lg:shrink-0 lg:shadow-none xl:w-[420px]">
+                <aside className="absolute inset-y-0 right-0 z-40 w-full max-w-[520px] overflow-hidden border-l border-borderSoft/30 bg-panel shadow-2xl lg:relative lg:inset-auto lg:z-auto lg:h-full lg:min-h-0 lg:w-[440px] lg:max-w-none lg:shrink-0 lg:shadow-none xl:w-[500px]">
                   <MissionDetailPanel
                     mission={detailMission}
                     allTasks={tasks}
@@ -4309,7 +4442,7 @@ export function MainApp() {
       </div>
 
       {/* Floating AI assistant — available on every screen, hidden while the mobile drawer is open */}
-      {!mobileNavOpen ? <AssistantWidget /> : null}
+      {!mobileNavOpen && !showTaskDetailPanel && !showMissionDetailPanel ? <AssistantWidget /> : null}
 
       {/* Mobile bottom navigation */}
       <nav className="mobile-bottom-nav lg:hidden">

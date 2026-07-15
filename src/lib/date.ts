@@ -30,6 +30,37 @@ export function formatRelativeTime(iso: string) {
   return `${diffDays}d ago`;
 }
 
+export function formatDayDate(iso: string) {
+  const date = new Date(iso);
+  const now = new Date();
+  const startOfDay = (d: Date) => new Date(d.getFullYear(), d.getMonth(), d.getDate()).getTime();
+  const dayDiff = Math.round((startOfDay(now) - startOfDay(date)) / 86400000);
+
+  if (dayDiff === 0) return 'Today';
+  if (dayDiff === 1) return 'Yesterday';
+
+  return date.toLocaleDateString(undefined, {
+    weekday: 'short',
+    day: 'numeric',
+    month: 'short',
+    ...(date.getFullYear() === now.getFullYear() ? {} : { year: 'numeric' }),
+  });
+}
+
+export function formatDayDateWithRelative(iso: string) {
+  const dayDate = formatDayDate(iso);
+
+  if (dayDate === 'Today') {
+    return `Today · ${formatRelativeTime(iso)}`;
+  }
+  if (dayDate === 'Yesterday') {
+    return 'Yesterday';
+  }
+
+  const diffDays = Math.round((Date.now() - new Date(iso).getTime()) / 86400000);
+  return diffDays <= 30 ? `${dayDate} · ${diffDays}d ago` : dayDate;
+}
+
 export function formatMinutes(minutes: number) {
   if (minutes < 60) {
     return `${minutes}m`;

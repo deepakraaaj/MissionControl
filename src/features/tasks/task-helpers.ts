@@ -28,7 +28,8 @@ export function normalizeTaskDraft(draft: TaskDraft): Task {
     id: createTaskId(),
     mission_id: draft.mission_id ?? null,
     parent_task_id: draft.parent_task_id ?? null,
-    title: generated.suggestedTitle,
+    // Keep the user's title verbatim; the generated title is only a fallback for empty input.
+    title: draft.title.trim() || generated.suggestedTitle,
     outcome: generated.outcome,
     next_action: generated.next_action,
     notes: draft.notes?.trim() ?? '',
@@ -87,7 +88,8 @@ export function hydrateTaskRecord(record: TaskRecordInput): Task {
     id: record.id,
     mission_id: record.mission_id ?? null,
     parent_task_id: record.parent_task_id ?? null,
-    title: generated.suggestedTitle,
+    // Never rewrite a stored title on hydrate — that would mangle saved data on every load.
+    title: record.title?.trim() || generated.suggestedTitle,
     outcome: generated.outcome,
     next_action: generated.next_action,
     notes: record.notes?.trim() ?? '',

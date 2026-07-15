@@ -11,6 +11,7 @@ export type SidebarPinnedAppId =
   | 'missions'
   | 'roadmap'
   | 'today'
+  | 'calendar'
   | 'tasks'
   | 'history'
   | 'insights'
@@ -39,5 +40,5 @@ export const DEFAULT_SETTINGS_SNAPSHOT: SettingsSnapshot = {
   focusPromptStyle: 'gentle',
   syncMode: 'local',
   launchAtLogin: false,
-  sidebarPinnedApps: ['dashboard', 'tasks', 'missions', 'journal', 'notes'],
+  sidebarPinnedApps: ['dashboard', 'tasks', 'missions', 'calendar', 'journal', 'notes'],
 };

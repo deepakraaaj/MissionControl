@@ -1,9 +1,19 @@
 import type { Config } from 'tailwindcss';
 
+// Tailwind's default opacity scale only has multiples of 5, but the design
+// system uses finer steps (e.g. borderSoft/24, accent/12). Any step missing
+// from the scale makes the whole class silently fall back to defaults —
+// borders then render in preflight gray-200, which shows up as white hairlines
+// on dark themes. Register every 1% step so slash opacities always resolve.
+const opacityScale = Object.fromEntries(
+  Array.from({ length: 101 }, (_, i) => [String(i), String(i / 100)]),
+);
+
 const config: Config = {
   content: ['./index.html', './hud.html', './quick-add.html', './src/**/*.{ts,tsx}'],
   theme: {
     extend: {
+      opacity: opacityScale,
       colors: {
         bg: 'rgb(var(--bg-base) / <alpha-value>)',
         soft: 'rgb(var(--bg-soft) / <alpha-value>)',

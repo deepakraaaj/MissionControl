@@ -10,6 +10,8 @@ import {
 } from '../preferences/preferences-types';
 import { showErrorToast, showSuccessToast } from '../toasts/toast-store';
 
+const CALENDAR_DEFAULT_PIN_MIGRATION_KEY = 'missioncontrol-calendar-default-pin-v1';
+
 interface SettingsState extends SettingsSnapshot {
   hydrated: boolean;
   launchAtLoginPending: boolean;
@@ -66,10 +68,24 @@ export const useSettingsStore = create<SettingsState>((set, get) => {
           console.error('Unable to read launch at login state', error);
           return snapshot.launchAtLogin;
         });
-        const nextSnapshot = {
+        let nextSnapshot = {
           ...snapshot,
           launchAtLogin,
         };
+
+        // Add Calendar once for existing users. The migration marker means they
+        // can still unpin it normally afterward without it returning on reload.
+        if (!localStorage.getItem(CALENDAR_DEFAULT_PIN_MIGRATION_KEY)) {
+          nextSnapshot = {
+            ...nextSnapshot,
+            sidebarPinnedApps: nextSnapshot.sidebarPinnedApps.includes('calendar')
+              ? nextSnapshot.sidebarPinnedApps
+              : [...nextSnapshot.sidebarPinnedApps, 'calendar'],
+          };
+          localStorage.setItem(CALENDAR_DEFAULT_PIN_MIGRATION_KEY, '1');
+          void persistSettings(nextSnapshot);
+          void emitAppEvent(SETTINGS_CHANGED_EVENT, nextSnapshot);
+        }
 
         set({ ...nextSnapshot, hydrated: true });
         if (launchAtLogin !== snapshot.launchAtLogin) {

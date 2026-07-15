@@ -8,7 +8,7 @@ import { Card } from '../../components/ui/card';
 import { Input } from '../../components/ui/input';
 import { RichTextEditor, RichTextContent, isHtmlContent } from '../../components/ui/rich-text-editor';
 import { cn } from '../../lib/cn';
-import { formatRelativeTime } from '../../lib/date';
+import { formatDayDateWithRelative } from '../../lib/date';
 import { useNoteStore } from './note-store';
 import { useMissionStore } from '../missions/mission-store';
 import {
@@ -67,6 +67,7 @@ function NoteCard({
   note,
   category,
   missionTitle,
+  onView,
   onEdit,
   onDelete,
   onTogglePin,
@@ -74,6 +75,7 @@ function NoteCard({
   note: Note;
   category: NoteCategory;
   missionTitle: string | null;
+  onView: (note: Note) => void;
   onEdit: (note: Note) => void;
   onDelete: (id: string) => void;
   onTogglePin: (id: string) => void;
@@ -90,9 +92,12 @@ function NoteCard({
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, y: -8 }}
       transition={{ duration: 0.2 }}
-      className="mb-4 break-inside-avoid"
+      className="min-w-0"
     >
-      <Card className={cn('group relative overflow-hidden rounded-[20px] border bg-panel/40 p-4 backdrop-blur-sm transition-all hover:border-opacity-100 sm:p-5', style.border)}>
+      <Card
+        onClick={() => onView(note)}
+        className={cn('group relative cursor-pointer overflow-hidden rounded-[20px] border bg-panel/40 p-4 backdrop-blur-sm transition-all hover:border-opacity-100 sm:p-5', style.border)}
+      >
         <div className={cn('absolute inset-x-0 top-0 h-1', style.solid)} />
 
         <div className="mb-3 flex items-start justify-between gap-2">
@@ -103,7 +108,10 @@ function NoteCard({
           <div className="flex shrink-0 items-center gap-1">
             <motion.button
               type="button"
-              onClick={() => onTogglePin(note.id)}
+              onClick={(e) => {
+                e.stopPropagation();
+                onTogglePin(note.id);
+              }}
               title={note.pinned ? 'Unpin note' : 'Pin note'}
               className={cn(
                 'flex h-7 w-7 items-center justify-center rounded-full transition-colors',
@@ -116,7 +124,10 @@ function NoteCard({
             </motion.button>
             <motion.button
               type="button"
-              onClick={() => onEdit(note)}
+              onClick={(e) => {
+                e.stopPropagation();
+                onEdit(note);
+              }}
               title="Edit note"
               className="flex h-7 w-7 items-center justify-center rounded-full text-text-muted/50 opacity-0 transition-colors hover:bg-emerald-500/12 hover:text-emerald-600/70 group-hover:opacity-100"
             >
@@ -125,7 +136,8 @@ function NoteCard({
             <motion.button
               type="button"
               disabled={isDeleting}
-              onClick={async () => {
+              onClick={async (e) => {
+                e.stopPropagation();
                 setIsDeleting(true);
                 try {
                   await onDelete(note.id);
@@ -161,7 +173,10 @@ function NoteCard({
             {note.content.length > 240 && (
               <button
                 type="button"
-                onClick={() => setIsExpanded((value) => !value)}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setIsExpanded((value) => !value);
+                }}
                 className="mt-1 text-[12px] font-medium text-text-secondary/70 transition-colors hover:text-text-secondary"
               >
                 {isExpanded ? 'Show less' : 'Read more'}
@@ -176,7 +191,12 @@ function NoteCard({
               {missionTitle}
             </Badge>
           )}
-          <span className="ml-auto text-[11px] font-medium text-text-muted/60">{formatRelativeTime(note.updated_at)}</span>
+          <span
+            title={new Date(note.updated_at).toLocaleString(undefined, { dateStyle: 'full', timeStyle: 'short' })}
+            className="ml-auto text-[11px] font-medium text-text-muted/60"
+          >
+            {formatDayDateWithRelative(note.updated_at)}
+          </span>
         </div>
       </Card>
     </motion.div>
@@ -267,6 +287,110 @@ function MissionPicker({
         )}
       </AnimatePresence>
     </div>
+  );
+}
+
+function NoteViewerModal({
+  note,
+  category,
+  missionTitle,
+  onClose,
+  onEdit,
+  onTogglePin,
+}: {
+  note: Note;
+  category: NoteCategory;
+  missionTitle: string | null;
+  onClose: () => void;
+  onEdit: (note: Note) => void;
+  onTogglePin: (id: string) => void;
+}) {
+  const style = getNoteColorStyle(category.color);
+  const title = getNoteDisplayTitle(note);
+
+  useEffect(() => {
+    const handleKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') onClose();
+    };
+    window.addEventListener('keydown', handleKey);
+    return () => window.removeEventListener('keydown', handleKey);
+  }, [onClose]);
+
+  return createPortal(
+    <div
+      className="fixed inset-0 z-[80] flex items-end justify-center bg-black/50 p-0 backdrop-blur-[2px] sm:items-center sm:p-4"
+      onClick={onClose}
+    >
+      <div
+        onClick={(e) => e.stopPropagation()}
+        className="flex max-h-[90vh] w-full max-w-xl flex-col overflow-hidden rounded-t-[28px] border border-borderStrong/25 bg-panel2 pb-[env(safe-area-inset-bottom)] shadow-[0_28px_80px_rgba(3,5,7,0.28)] sm:rounded-[28px] sm:pb-0"
+      >
+        <div className={cn('h-1 shrink-0', style.solid)} />
+        <div className="flex shrink-0 items-start justify-between gap-3 border-b border-borderSoft/25 px-6 py-5">
+          <div className="min-w-0">
+            <Badge tone="neutral" className={cn('mb-2 gap-1.5 border text-[10px] font-medium normal-case tracking-normal', style.bg, style.border, style.text)}>
+              <NoteCategoryIcon icon={category.icon} className="h-3 w-3" />
+              {category.label}
+            </Badge>
+            <h2 className="text-lg font-semibold leading-snug tracking-[-0.2px] text-text-primary">{title}</h2>
+          </div>
+          <div className="flex shrink-0 items-center gap-1">
+            <button
+              type="button"
+              onClick={() => onTogglePin(note.id)}
+              title={note.pinned ? 'Unpin note' : 'Pin note'}
+              className={cn(
+                'flex h-9 w-9 items-center justify-center rounded-full transition-colors',
+                note.pinned ? 'text-accent' : 'text-text-muted/70 hover:bg-text-primary/8 hover:text-text-primary',
+              )}
+            >
+              <Pin className={cn('h-4 w-4', note.pinned && 'fill-current')} />
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                onClose();
+                onEdit(note);
+              }}
+              title="Edit note"
+              className="flex h-9 w-9 items-center justify-center rounded-full text-text-muted/70 transition-colors hover:bg-text-primary/8 hover:text-text-primary"
+            >
+              <Edit2 className="h-4 w-4" />
+            </button>
+            <button
+              onClick={onClose}
+              type="button"
+              className="flex h-9 w-9 items-center justify-center rounded-full text-text-muted/70 transition-colors hover:bg-text-primary/8 hover:text-text-primary"
+            >
+              <X className="h-4 w-4" />
+            </button>
+          </div>
+        </div>
+
+        <div className="overflow-y-auto bg-panel/35 px-6 py-5">
+          {note.content.trim() ? (
+            <RichTextContent content={note.content} className="text-[14px] leading-relaxed text-text-secondary" />
+          ) : (
+            <p className="text-sm text-text-muted/60">This note has no content.</p>
+          )}
+        </div>
+
+        <div className="flex shrink-0 flex-wrap items-center gap-2 border-t border-borderSoft/25 px-6 py-4">
+          {missionTitle && (
+            <Badge tone="neutral" className="border-slate-500/20 bg-slate-500/12 text-[10px] font-medium normal-case tracking-normal">
+              {missionTitle}
+            </Badge>
+          )}
+          <span
+            title={new Date(note.updated_at).toLocaleString(undefined, { dateStyle: 'full', timeStyle: 'short' })}
+            className="ml-auto text-[12px] font-medium text-text-muted/60"
+          >
+            {formatDayDateWithRelative(note.updated_at)}
+          </span>
+        </div>
+      </div>
+    </div>,
+    document.body,
   );
 }
 
@@ -627,7 +751,7 @@ function CategoryManagerModal({
   );
 }
 
-export function NotesView() {
+export function NotesView({ openNoteId = null }: { openNoteId?: string | null }) {
   const notes = useNoteStore((state) => state.notes);
   const categories = useNoteStore((state) => state.categories);
   const searchQuery = useNoteStore((state) => state.searchQuery);
@@ -646,9 +770,14 @@ export function NotesView() {
   const refresh = useNoteStore((state) => state.refresh);
 
   const [isCreating, setIsCreating] = useState(false);
+  const [viewingNoteId, setViewingNoteId] = useState<string | null>(null);
   const [editingNote, setEditingNote] = useState<Note | null>(null);
   const [managingCategories, setManagingCategories] = useState(false);
   const [operationError, setOperationError] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (openNoteId && notes.some((note) => note.id === openNoteId)) setViewingNoteId(openNoteId);
+  }, [openNoteId, notes]);
 
   const missions = useMissionStore((state) => state.missions);
 
@@ -689,6 +818,8 @@ export function NotesView() {
   );
 
   const pinnedCount = useMemo(() => notes.filter((note) => note.pinned).length, [notes]);
+
+  const viewingNote = viewingNoteId ? notes.find((note) => note.id === viewingNoteId) ?? null : null;
 
   const categoryCounts = useMemo(() => {
     const counts: Record<string, number> = {};
@@ -860,7 +991,7 @@ export function NotesView() {
             )}
           </div>
         ) : (
-          <div className="columns-1 gap-4 sm:columns-2 lg:columns-3 2xl:columns-4">
+          <div className="grid grid-cols-1 items-start gap-4 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-4">
             <AnimatePresence>
               {filteredNotes.map((note) => (
                 <NoteCard
@@ -868,6 +999,7 @@ export function NotesView() {
                   note={note}
                   category={getCategoryById(note.category_id, categories)}
                   missionTitle={note.mission_id ? missionTitles[note.mission_id] ?? null : null}
+                  onView={(n) => setViewingNoteId(n.id)}
                   onEdit={setEditingNote}
                   onDelete={handleDelete}
                   onTogglePin={handleTogglePin}
@@ -879,6 +1011,16 @@ export function NotesView() {
       </div>
 
       <AnimatePresence>
+        {viewingNote && (
+          <NoteViewerModal
+            note={viewingNote}
+            category={getCategoryById(viewingNote.category_id, categories)}
+            missionTitle={viewingNote.mission_id ? missionTitles[viewingNote.mission_id] ?? null : null}
+            onClose={() => setViewingNoteId(null)}
+            onEdit={setEditingNote}
+            onTogglePin={handleTogglePin}
+          />
+        )}
         {isCreating && (
           <NoteEditorModal
             mode="create"

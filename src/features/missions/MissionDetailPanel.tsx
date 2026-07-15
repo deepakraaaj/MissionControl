@@ -118,6 +118,7 @@ export function MissionDetailPanel({
   const [addingTask, setAddingTask] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [showMetadata, setShowMetadata] = useState(true);
+  const [showTaskOptions, setShowTaskOptions] = useState(false);
 
   // Notes integration hooks and state
   const notes = useNoteStore((s) => s.notes);
@@ -188,16 +189,16 @@ export function MissionDetailPanel({
   return (
     <div className="flex h-full min-h-0 flex-col overflow-hidden bg-panel">
       {/* Header */}
-      <div className="flex items-center justify-between gap-3 border-b border-borderSoft/24 px-5 py-4">
+      <div className="flex items-center justify-between gap-3 border-b border-borderSoft/20 px-5 py-4 sm:px-6">
         <div className="flex min-w-0 flex-1 items-center gap-3">
           <div
-            className={cn('flex h-11 w-11 shrink-0 items-center justify-center rounded-[14px] border text-xl', theme.border, theme.soft)}
+            className={cn('flex h-12 w-12 shrink-0 items-center justify-center rounded-[16px] border text-xl', theme.border, theme.soft, theme.text)}
           >
             <MissionIcon icon={mission.emoji} className="h-5 w-5" />
           </div>
           <div className="min-w-0 flex-1">
-            <p className="text-[10px] uppercase tracking-[0.24em] text-text-muted">Mission Details</p>
-            <h3 className="truncate text-base font-semibold text-text-primary">
+            <p className="text-[9px] font-semibold uppercase tracking-[0.22em] text-text-muted/70">Mission</p>
+            <h3 className="mt-0.5 truncate text-[17px] font-semibold tracking-tight text-text-primary">
               {mission.title}
             </h3>
           </div>
@@ -206,31 +207,29 @@ export function MissionDetailPanel({
           <button
             type="button"
             onClick={onClose}
-            className="flex h-7 w-7 items-center justify-center rounded-full border border-borderSoft/40 text-sm text-text-muted transition-colors hover:text-text-primary"
+            className="flex h-9 w-9 items-center justify-center rounded-full border border-borderSoft/30 bg-panel2/25 text-text-muted transition-colors hover:border-borderSoft/50 hover:text-text-primary"
           >
-            ✕
+            <X className="h-4 w-4" />
           </button>
         </div>
       </div>
 
       {/* Body — scrollable */}
-      <div className="flex-1 min-h-0 space-y-5 overflow-y-auto px-5 py-4">
+      <div className="min-h-0 flex-1 space-y-6 overflow-y-auto bg-panel2/10 px-5 py-5 sm:px-6">
         {/* Mission Stats / Progress */}
-        <div className="space-y-2 rounded-2xl border border-borderSoft/30 bg-panel/30 p-4">
-          <div className="flex items-center justify-between text-xs">
-            <span className="font-medium text-text-secondary">Mission Progress</span>
-            <span className="font-semibold text-text-primary">{stats.done}/{stats.total} Tasks Completed</span>
+        <div className={cn('relative overflow-hidden rounded-[22px] border p-4', theme.border, theme.soft)}>
+          <div className="pointer-events-none absolute -right-8 -top-10 h-28 w-28 rounded-full bg-current opacity-[0.04] blur-2xl" />
+          <div className="relative flex items-end justify-between gap-3">
+            <div><p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-text-muted/70">Progress</p><p className="mt-1 text-2xl font-semibold tabular-nums text-text-primary">{stats.progress}%</p></div>
+            <div className="text-right"><Badge tone={mission.status === 'active' ? 'accent' : mission.status === 'completed' ? 'success' : 'neutral'}>{mission.status === 'on_hold' ? 'On hold' : mission.status.charAt(0).toUpperCase() + mission.status.slice(1)}</Badge><p className="mt-2 text-[10px] text-text-muted">{stats.done} of {stats.total} tasks complete</p></div>
           </div>
-          <div className="h-2 w-full overflow-hidden rounded-full bg-panel2/60">
+          <div className="relative mt-3 h-2 w-full overflow-hidden rounded-full bg-text-primary/8">
             <div
               className={cn('h-full rounded-full transition-all duration-300', theme.fill)}
               style={{ width: `${stats.progress}%` }}
             />
           </div>
-          <div className="flex flex-wrap items-center justify-between gap-2 pt-1 text-[11px] text-text-muted">
-            <Badge tone={mission.status === 'active' ? 'accent' : mission.status === 'completed' ? 'success' : 'neutral'}>
-              {mission.status === 'on_hold' ? 'On hold' : mission.status.charAt(0).toUpperCase() + mission.status.slice(1)}
-            </Badge>
+          <div className="relative mt-3 flex flex-wrap items-center justify-end gap-2 text-[10px] text-text-muted">
             {mission.target_date ? (
               <span className="flex items-center gap-1">
                 <Calendar className="h-3.5 w-3.5" /> Target: {new Date(mission.target_date).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })}
@@ -241,8 +240,8 @@ export function MissionDetailPanel({
 
         {/* Objective & Metadata accordion */}
         <div className="space-y-3">
-          <div className="flex items-center justify-between">
-            <FieldLabel>Clarity & Context</FieldLabel>
+          <div className="flex items-center justify-between gap-3">
+            <div><FieldLabel>Clarity & Context</FieldLabel><p className="mt-1 text-[11px] text-text-muted/70">Why this mission matters</p></div>
             <button
               onClick={() => setShowMetadata(!showMetadata)}
               className="text-xs text-accent hover:underline"
@@ -252,7 +251,7 @@ export function MissionDetailPanel({
           </div>
 
           {showMetadata && (
-            <div className="space-y-4 rounded-2xl border border-borderSoft/30 bg-panel/20 p-4 text-sm">
+            <div className="space-y-4 rounded-[18px] border border-borderSoft/24 bg-panel/45 p-4 text-sm">
               {mission.objective ? (
                 <div className="space-y-1">
                   <p className="text-[9px] uppercase tracking-[0.2em] text-text-muted">Objective</p>
@@ -290,22 +289,23 @@ export function MissionDetailPanel({
 
         {/* Task list section */}
         <div className="space-y-3">
-          <FieldLabel>Tasks in Mission ({stats.total})</FieldLabel>
+          <div className="flex items-end justify-between"><div><FieldLabel>Tasks in Mission</FieldLabel><p className="mt-1 text-[11px] text-text-muted/70">{stats.total} total · {stats.total - stats.done} remaining</p></div></div>
 
           {/* Quick task addition */}
-          <form onSubmit={(e) => void handleAddTask(e)} className="space-y-2">
+          <form onSubmit={(e) => void handleAddTask(e)} className="rounded-[18px] border border-borderSoft/24 bg-panel/45 p-2.5">
             <div className="flex items-center gap-2">
               <Input
                 value={newTaskTitle}
                 onChange={(e) => setNewTaskTitle(e.target.value)}
                 placeholder="Add new task to this mission..."
-                className="h-9 flex-1 text-sm rounded-[14px]"
+                className="h-10 flex-1 border-transparent bg-transparent text-sm shadow-none focus:border-borderSoft/30 rounded-[12px]"
               />
-              <Button size="sm" type="submit" disabled={!newTaskTitle.trim() || addingTask} className="rounded-[14px]">
+              <Button size="sm" type="submit" disabled={!newTaskTitle.trim() || addingTask} className="h-9 w-9 rounded-[12px] p-0">
                 <Plus className="h-4 w-4" />
               </Button>
             </div>
-            <AssigneeSelect value={newTaskAssignees} onChange={setNewTaskAssignees} />
+            <button type="button" onClick={() => setShowTaskOptions((value) => !value)} className="ml-1 mt-1 text-[10px] font-medium text-text-muted transition-colors hover:text-text-secondary">{showTaskOptions ? 'Hide assignment' : '+ Assign this task'}</button>
+            {showTaskOptions ? <div className="mt-2"><AssigneeSelect value={newTaskAssignees} onChange={setNewTaskAssignees} /></div> : null}
           </form>
 
           {/* Grouped tasks */}
@@ -334,7 +334,7 @@ export function MissionDetailPanel({
                       return (
                         <div
                           key={task.id}
-                          className="group flex items-center justify-between gap-3 rounded-[16px] border border-borderSoft/30 bg-panel/30 px-3 py-2.5 hover:bg-panel2/40 transition-colors cursor-pointer"
+                          className="group flex cursor-pointer items-center justify-between gap-3 rounded-[14px] border border-borderSoft/22 bg-panel/45 px-3 py-3 transition-all hover:border-borderSoft/40 hover:bg-panel/70"
                           onClick={() => onOpenTask(task.id)}
                         >
                           <div className="flex min-w-0 flex-1 items-center gap-3">
@@ -374,7 +374,7 @@ export function MissionDetailPanel({
                             <select
                               value={task.lane}
                               onChange={(e) => void moveTaskToLane(task.id, e.target.value as TaskLane)}
-                              className="bg-panel border border-borderSoft/32 text-[10px] font-medium text-text-secondary rounded-lg px-1.5 py-0.5 outline-none hover:border-accent/40"
+                              className="max-w-[82px] rounded-lg border border-borderSoft/25 bg-panel2/30 px-1.5 py-1 text-[10px] font-medium text-text-secondary outline-none hover:border-accent/40"
                             >
                               {LANE_OPTIONS.map((opt) => (
                                 <option key={opt.id} value={opt.id}>
@@ -404,7 +404,7 @@ export function MissionDetailPanel({
             })}
 
             {missionTasks.length === 0 ? (
-              <div className="rounded-2xl border border-dashed border-borderSoft/40 p-6 text-center">
+              <div className="rounded-[18px] border border-dashed border-borderSoft/30 bg-panel/25 p-5 text-center">
                 <Target className="mx-auto h-8 w-8 text-text-muted/65" />
                 <p className="mt-2 text-sm font-semibold text-text-primary">No tasks in this mission yet</p>
                 <p className="mt-1 text-xs text-text-muted">Create a task above to start making progress.</p>
@@ -487,7 +487,7 @@ export function MissionDetailPanel({
             })}
 
             {missionNotes.length === 0 ? (
-              <div className="rounded-2xl border border-dashed border-borderSoft/40 p-6 text-center">
+              <div className="rounded-[18px] border border-dashed border-borderSoft/30 bg-panel/25 p-5 text-center">
                 <FileText className="mx-auto h-7 w-7 text-text-muted/65" />
                 <p className="mt-2 text-xs font-semibold text-text-primary">No notes linked to this mission</p>
                 <p className="mt-1 text-[11px] text-text-muted">Create a note to capture logs, context, or links.</p>
@@ -498,8 +498,8 @@ export function MissionDetailPanel({
       </div>
 
       {/* Footer / Mission Actions */}
-      <div className="flex items-center justify-between border-t border-borderSoft/24 px-5 py-3.5 bg-panel2/10">
-        <div className="flex items-center gap-2">
+      <div className="flex flex-wrap items-center justify-between gap-2 border-t border-borderSoft/20 bg-panel px-5 py-3 sm:px-6">
+        <div className="flex flex-wrap items-center gap-1.5">
           {mission.status === 'active' ? (
             <Button
               size="sm"
@@ -550,7 +550,7 @@ export function MissionDetailPanel({
           </Button>
         </div>
 
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-1">
           <Button
             size="sm"
             variant="ghost"

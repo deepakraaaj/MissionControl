@@ -1,6 +1,6 @@
 import type { JournalEntry, JournalDay, JournalEntryKind, JournalEntryDraft, JournalDayDraft } from './journal-types';
 import type { LucideIcon } from 'lucide-react';
-import { BookHeart, AlertCircle, Sparkles, Heart } from 'lucide-react';
+import { BookHeart, AlertCircle, Telescope, Heart } from 'lucide-react';
 
 export function createJournalEntryId() {
   return `journal-${Date.now()}-${Math.random().toString(36).slice(2, 9)}`;
@@ -128,7 +128,7 @@ export const JOURNAL_KIND_META: Record<JournalEntryKind, JournalKindMeta> = {
     label: 'Manifestations',
     prompt: 'What are you calling in?',
     tone: 'accent',
-    icon: Sparkles,
+    icon: Telescope,
   },
   regret: {
     kind: 'regret',

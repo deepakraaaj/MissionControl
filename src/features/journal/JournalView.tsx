@@ -1,7 +1,7 @@
 import { useMemo, useState, useRef, useEffect, useCallback } from 'react';
 import { createPortal } from 'react-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ChevronLeft, ChevronRight, Trash2, X, Plus, Edit2, Eye } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Trash2, X, Plus, Edit2, Eye, Frown, Annoyed, Meh, Smile, Laugh, BookOpenCheck } from 'lucide-react';
 import { DatePicker } from '../../components/ui/date-picker';
 import { Badge } from '../../components/ui/badge';
 import { Button } from '../../components/ui/button';
@@ -51,6 +51,7 @@ function JournalEntryItem({
   onDelete,
   onTurnIntoLesson,
   onEdit,
+  focused = false,
 }: {
   entry: JournalEntry;
   linkedRegretContent: string | null;
@@ -58,9 +59,17 @@ function JournalEntryItem({
   onDelete: (id: string) => void;
   onTurnIntoLesson: (entry: JournalEntry) => void;
   onEdit: (entry: JournalEntry) => void;
+  focused?: boolean;
 }) {
   const [isDeleting, setIsDeleting] = useState(false);
   const [isExpanded, setIsExpanded] = useState(false);
+  const itemRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!focused) return;
+    setIsExpanded(true);
+    itemRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  }, [focused]);
 
   const meta = getJournalKindMeta(entry.kind);
   const Icon = meta.icon;
@@ -69,11 +78,12 @@ function JournalEntryItem({
 
   return (
     <motion.div
+      ref={itemRef}
       initial={{ opacity: 0, y: 8 }}
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, y: -8 }}
       transition={{ duration: 0.2 }}
-      className={cn('rounded-[20px] border p-4 sm:p-5 group backdrop-blur-sm transition-all hover:border-opacity-100', toneBorder, toneBg)}
+      className={cn('rounded-[20px] border p-4 sm:p-5 group backdrop-blur-sm transition-all hover:border-opacity-100', toneBorder, toneBg, focused && 'ring-2 ring-accent/35 shadow-[0_12px_32px_rgba(var(--accent),0.12)]')}
     >
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0 flex-1">
@@ -147,7 +157,7 @@ function JournalEntryItem({
               title="Turn this into a lesson"
               type="button"
             >
-              ✨
+              <BookOpenCheck className="h-3.5 w-3.5" />
             </motion.button>
           )}
           <motion.button
@@ -301,6 +311,7 @@ function JournalEntrySection({
   onTurnIntoLesson,
   missions,
   entriesById,
+  focusedEntryId,
 }: {
   kind: JournalEntryKind;
   entries: JournalEntry[];
@@ -310,6 +321,7 @@ function JournalEntrySection({
   onTurnIntoLesson: (entry: JournalEntry) => void;
   missions: Record<string, string>;
   entriesById: Map<string, JournalEntry>;
+  focusedEntryId?: string | null;
 }) {
   const [isAdding, setIsAdding] = useState(false);
   const [editingEntry, setEditingEntry] = useState<JournalEntry | null>(null);
@@ -318,25 +330,41 @@ function JournalEntrySection({
   const meta = JOURNAL_KIND_META[kind];
   const Icon = meta.icon;
   const sectionEntries = entries.filter((e) => e.kind === kind && e.entry_date === selectedDate);
+  const toneClasses =
+    meta.tone === 'success'
+      ? 'border-emerald-500/20 bg-emerald-500/10 text-emerald-500'
+      : meta.tone === 'accent'
+        ? 'border-sky-500/20 bg-sky-500/10 text-sky-500'
+        : meta.tone === 'warning'
+          ? 'border-amber-500/20 bg-amber-500/10 text-amber-500'
+          : 'border-violet-500/20 bg-violet-500/10 text-violet-500';
 
   return (
     <div>
-      <Card className="rounded-[28px] border-borderSoft/15 bg-gradient-to-br from-panel/60 via-panel/50 to-panel/60 p-5 sm:p-6 backdrop-blur-sm overflow-hidden">
-        <div className="mb-5 flex items-center justify-between">
+      <Card className="overflow-hidden rounded-[24px] border-borderSoft/20 bg-panel/45 p-4 transition-colors hover:border-borderSoft/35 sm:p-5">
+        <div className={cn('flex items-center justify-between gap-3', sectionEntries.length > 0 && 'mb-4')}>
           <div className="flex items-center gap-3">
-            <div className="flex h-9 w-9 items-center justify-center rounded-[14px] bg-gradient-to-br from-text-secondary/20 to-text-secondary/10">
-              <Icon className="h-4.5 w-4.5 text-text-secondary" />
+            <div className={cn('flex h-9 w-9 items-center justify-center rounded-[12px] border', toneClasses)}>
+              <Icon className="h-4 w-4" />
             </div>
             <div>
-              <h3 className="text-sm font-semibold text-text-primary tracking-[-0.3px]">{meta.label}</h3>
-              <p className="text-[11px] text-text-muted/60 mt-0.5">{meta.prompt}</p>
+              <h3 className="text-sm font-semibold tracking-[-0.2px] text-text-primary">{meta.label}</h3>
+              <p className="mt-0.5 text-[11px] text-text-muted/75">{meta.prompt}</p>
             </div>
           </div>
-          {sectionEntries.length > 0 && (
-            <Badge tone="neutral" className="text-[10px] font-bold bg-text-primary/8 border-text-primary/10">
-              {sectionEntries.length}
-            </Badge>
-          )}
+          <div className="flex items-center gap-2">
+            {sectionEntries.length > 0 ? <Badge tone="neutral" className="text-[10px]">{sectionEntries.length}</Badge> : null}
+            {sectionEntries.length > 0 ? (
+              <button
+                type="button"
+                onClick={() => setIsAdding(true)}
+                className="flex h-8 items-center gap-1.5 rounded-full border border-borderSoft/30 bg-panel2/45 px-3 text-[11px] font-medium text-text-secondary transition-colors hover:border-accent/25 hover:bg-accent/8 hover:text-accent"
+              >
+                <Plus className="h-3.5 w-3.5" />
+                Add
+              </button>
+            ) : null}
+          </div>
         </div>
 
         <div className="space-y-3">
@@ -353,25 +381,25 @@ function JournalEntrySection({
                   onDelete={onDeleteEntry}
                   onTurnIntoLesson={onTurnIntoLesson}
                   onEdit={(e) => setEditingEntry(e)}
+                  focused={entry.id === focusedEntryId}
                 />
               );
             })}
           </AnimatePresence>
 
-          <motion.button
-            className="w-full rounded-[18px] border border-dashed border-borderSoft/30 bg-panel/20 py-4 text-[13px] font-medium text-text-secondary/70 hover:border-text-secondary/40 hover:bg-panel/35 hover:text-text-secondary transition-all duration-200"
-            onClick={() => setIsAdding(true)}
-            type="button"
-          >
-            <Plus className="mr-2 inline h-4 w-4" />
-            Add entry
-          </motion.button>
-
           {sectionEntries.length === 0 && (
-            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="rounded-[18px] border border-borderSoft/20 bg-panel/10 py-6 px-4 text-center">
-              <p className="text-[12px] uppercase tracking-[0.4px] text-text-muted/50 font-medium mb-1">Nothing yet</p>
-              <p className="text-[13px] text-text-secondary/60">{meta.prompt}</p>
-            </motion.div>
+            <motion.button
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              type="button"
+              onClick={() => setIsAdding(true)}
+              className="group mt-4 flex w-full items-center justify-between rounded-[16px] border border-dashed border-borderSoft/25 bg-panel2/20 px-4 py-3.5 text-left transition-all hover:border-accent/25 hover:bg-accent/6"
+            >
+              <span className="text-[12px] text-text-muted/75">Write your first thought</span>
+              <span className="flex h-7 w-7 items-center justify-center rounded-full bg-text-primary/5 text-text-muted transition-colors group-hover:bg-accent/12 group-hover:text-accent">
+                <Plus className="h-3.5 w-3.5" />
+              </span>
+            </motion.button>
           )}
         </div>
 
@@ -404,25 +432,38 @@ function JournalEntrySection({
 }
 
 function MoodSelector({ mood, onChange }: { mood: number; onChange: (m: number) => void }) {
+  const moods = [
+    { value: 1, label: 'Struggling', icon: Frown, selected: 'border-red-500/30 bg-red-500/10 text-red-500' },
+    { value: 2, label: 'Low', icon: Annoyed, selected: 'border-amber-500/30 bg-amber-500/10 text-amber-500' },
+    { value: 3, label: 'Okay', icon: Meh, selected: 'border-slate-500/30 bg-slate-500/10 text-text-secondary' },
+    { value: 4, label: 'Good', icon: Smile, selected: 'border-emerald-500/30 bg-emerald-500/10 text-emerald-500' },
+    { value: 5, label: 'Great', icon: Laugh, selected: 'border-sky-500/30 bg-sky-500/10 text-sky-500' },
+  ];
+
   return (
-    <div className="space-y-3">
-      <div className="flex items-center gap-2">
-        {[1, 2, 3, 4, 5].map((m) => (
+    <div className="flex items-center gap-2">
+      <div className="grid min-w-0 flex-1 grid-cols-5 gap-2">
+        {moods.map(({ value, label, icon: Icon, selected }) => (
           <motion.button
-            key={m}
-            className={cn('h-12 w-12 rounded-full flex items-center justify-center transition-all duration-200 border-2', mood === m ? `border-text-primary/40 bg-gradient-to-br ${getMoodGradient(m)} ring-2 ring-text-primary/20` : 'border-borderSoft/30 bg-panel/30 hover:border-borderSoft/50 hover:bg-panel/50')}
-            onClick={() => onChange(m)}
+            key={value}
+            className={cn(
+              'flex min-w-0 flex-col items-center justify-center gap-1.5 rounded-[14px] border px-1 py-2.5 transition-all duration-200',
+              mood === value ? selected : 'border-borderSoft/25 bg-panel2/25 text-text-muted hover:border-borderSoft/45 hover:bg-panel2/45',
+            )}
+            onClick={() => onChange(value)}
             type="button"
-            title={getMoodLabel(m)}
+            title={getMoodLabel(value)}
           >
-            <span className="text-[10px] font-bold text-text-muted/70 uppercase tracking-wide">{m}</span>
+            <Icon className="h-[18px] w-[18px]" />
+            <span className="hidden truncate text-[9px] font-medium sm:block">{label}</span>
           </motion.button>
         ))}
+      </div>
         {mood > 0 && (
           <motion.button
             initial={{ opacity: 0, scale: 0.8 }}
             animate={{ opacity: 1, scale: 1 }}
-            className="ml-auto h-10 w-10 rounded-full flex items-center justify-center border border-borderSoft/40 hover:border-red-500/40 hover:bg-red-500/10 transition-colors"
+            className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-borderSoft/30 transition-colors hover:border-red-500/30 hover:bg-red-500/10"
             onClick={() => onChange(0)}
             type="button"
             title="Clear mood"
@@ -430,12 +471,6 @@ function MoodSelector({ mood, onChange }: { mood: number; onChange: (m: number) 
             <X className="h-4 w-4 text-text-muted/70" />
           </motion.button>
         )}
-      </div>
-      {mood > 0 && (
-        <motion.p initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="text-[11px] font-medium text-text-secondary/70 tracking-wide uppercase">
-          {getMoodLabel(mood)}
-        </motion.p>
-      )}
     </div>
   );
 }
@@ -453,36 +488,28 @@ function DateStepper({ selectedDate, onDateChange }: { selectedDate: string; onD
     onDateChange(toLocalDateString(d));
   };
 
-  const formatter = new Intl.DateTimeFormat('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
-  const dateLabel = formatter.format(new Date(`${selectedDate}T00:00:00`));
-
   return (
-    <div className="flex items-center justify-between gap-4">
-      <Button onClick={goToPreviousDay} size="sm" type="button" variant="ghost" className="h-10 w-10 p-0 rounded-full hover:bg-text-primary/8">
+    <div className="flex items-center gap-3">
+      <Button aria-label="Previous day" onClick={goToPreviousDay} size="sm" type="button" variant="ghost" className="h-9 w-9 shrink-0 rounded-full p-0 hover:bg-text-primary/8">
         <ChevronLeft className="h-5 w-5 text-text-secondary" />
       </Button>
 
-      <div className="flex-1 flex flex-col items-center gap-3 min-w-0">
-        <div>
-          <p className="text-[12px] uppercase tracking-[0.5px] text-text-muted/60 font-bold mb-1">Your day</p>
-          <p className="text-[15px] font-semibold text-text-primary tracking-[-0.3px]">{dateLabel}</p>
-        </div>
-        <DatePicker onChange={(value) => value && onDateChange(value)} placeholder="Pick a date" value={selectedDate} />
-        {selectedDate !== today && (
-          <motion.button initial={{ opacity: 0 }} animate={{ opacity: 1 }} onClick={() => onDateChange(today)} className="text-[11px] font-medium text-text-secondary/70 hover:text-text-secondary transition-colors" type="button">
-            Back to today
-          </motion.button>
-        )}
+      <div className="min-w-0 flex-1">
+        <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-text-muted/65">Daily reflection</p>
+        <div className="mt-2 max-w-xs"><DatePicker onChange={(value) => value && onDateChange(value)} placeholder="Pick a date" value={selectedDate} /></div>
       </div>
 
-      <Button onClick={goToNextDay} size="sm" type="button" variant="ghost" className="h-10 w-10 p-0 rounded-full hover:bg-text-primary/8">
+      {selectedDate !== today ? (
+        <button onClick={() => onDateChange(today)} className="shrink-0 text-[11px] font-medium text-accent hover:opacity-80" type="button">Today</button>
+      ) : null}
+      <Button aria-label="Next day" onClick={goToNextDay} size="sm" type="button" variant="ghost" className="h-9 w-9 shrink-0 rounded-full p-0 hover:bg-text-primary/8">
         <ChevronRight className="h-5 w-5 text-text-secondary" />
       </Button>
     </div>
   );
 }
 
-export function JournalView() {
+export function JournalView({ focusedEntryId = null }: { focusedEntryId?: string | null }) {
   const entries = useJournalStore((state) => state.entries);
   const days = useJournalStore((state) => state.days);
   const selectedDate = useJournalStore((state) => state.selectedDate);
@@ -616,7 +643,8 @@ export function JournalView() {
         </motion.div>
       )}
 
-      <Card className="rounded-3xl border-borderSoft/20 bg-gradient-to-br from-panel/50 via-panel/40 to-panel/50 p-6 sm:p-8 backdrop-blur-sm shadow-sm">
+      <Card className="relative overflow-hidden rounded-[26px] border-borderSoft/20 bg-panel/45 p-5 sm:p-6">
+        <div aria-hidden className="pointer-events-none absolute -right-16 -top-20 h-48 w-48 rounded-full bg-accent/8 blur-3xl" />
         {loading && (
           <motion.div
             initial={{ opacity: 0 }}
@@ -629,30 +657,37 @@ export function JournalView() {
             </div>
           </motion.div>
         )}
-        <div className="space-y-6">
-          <DateStepper onDateChange={selectDate} selectedDate={selectedDate} />
-
-          <div className="pt-6 border-t border-borderSoft/20">
-            <p className="text-[11px] uppercase tracking-[0.5px] text-text-muted/60 font-bold mb-4">Mood</p>
-            <MoodSelector mood={todayDay?.mood ?? 0} onChange={(m) => handleSaveDay(m, gratitudeInput)} />
+        <div className="relative grid gap-5 lg:grid-cols-[minmax(280px,0.8fr)_minmax(420px,1.2fr)] lg:items-stretch">
+          <div className="rounded-[20px] border border-borderSoft/18 bg-panel2/20 p-4">
+            <DateStepper onDateChange={selectDate} selectedDate={selectedDate} />
           </div>
 
-          <div className="pt-6 border-t border-borderSoft/20">
-            <p className="text-[11px] uppercase tracking-[0.5px] text-text-muted/60 font-bold mb-3">Gratitude</p>
-            <Input
-              className="h-11 rounded-[16px] text-[14px] border-borderSoft/30 bg-panel/30 placeholder:text-text-muted/50 font-[450]"
-              onChange={(e) => {
-                setGratitudeInput(e.target.value);
-                debouncedSaveGratitude(e.target.value);
-              }}
-              placeholder="One moment you're grateful for…"
-              value={gratitudeInput}
-            />
+          <div className="space-y-4 rounded-[20px] border border-borderSoft/18 bg-panel2/20 p-4">
+            <div>
+              <div className="mb-2.5 flex items-center justify-between gap-3">
+                <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-text-muted/65">How are you feeling?</p>
+                {todayDay?.mood ? <span className="text-[10px] font-medium text-text-secondary">{getMoodLabel(todayDay.mood)}</span> : null}
+              </div>
+              <MoodSelector mood={todayDay?.mood ?? 0} onChange={(m) => handleSaveDay(m, gratitudeInput)} />
+            </div>
+
+            <div className="border-t border-borderSoft/18 pt-4">
+              <p className="mb-2 text-[10px] font-semibold uppercase tracking-[0.2em] text-text-muted/65">One thing I’m grateful for</p>
+              <Input
+                className="h-10 rounded-[13px] border-borderSoft/25 bg-panel/35 text-[13px] placeholder:text-text-muted/45"
+                onChange={(e) => {
+                  setGratitudeInput(e.target.value);
+                  debouncedSaveGratitude(e.target.value);
+                }}
+                placeholder="A person, moment, or small win…"
+                value={gratitudeInput}
+              />
+            </div>
           </div>
         </div>
       </Card>
 
-      <div className="grid gap-6 sm:gap-7 grid-cols-1 md:grid-cols-2 lg:grid-cols-2">
+      <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
         {(['best_moment', 'manifestation', 'regret', 'lesson'] as const).map((kind) => (
           <JournalEntrySection
             key={kind}
@@ -664,6 +699,7 @@ export function JournalView() {
             onDeleteEntry={handleDeleteEntry}
             onTurnIntoLesson={handleTurnIntoLesson}
             selectedDate={selectedDate}
+            focusedEntryId={focusedEntryId}
           />
         ))}
       </div>
