@@ -7,3 +7,4 @@ src-tauri/target
 .env.local
 .env.*.local
 .vercel
+.claude/
