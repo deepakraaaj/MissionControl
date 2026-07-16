@@ -11,13 +11,27 @@ export function SignInScreen() {
   const [password, setPassword] = useState('');
   const [displayName, setDisplayName] = useState('');
   const [isSignUp, setIsSignUp] = useState(false);
+  const [isForgotPassword, setIsForgotPassword] = useState(false);
   const isDesktop = isTauriApp();
 
-  const { loading, error, signIn, signUp, clearError, setLocalMode } = useAuthStore();
+  const { loading, error, signIn, signUp, requestPasswordReset, clearError, setLocalMode } = useAuthStore();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     clearError();
+
+    if (isForgotPassword) {
+      if (!email) {
+        return;
+      }
+      try {
+        await requestPasswordReset(email);
+        setIsForgotPassword(false);
+      } catch {
+        // Error is already in store
+      }
+      return;
+    }
 
     if (!email || !password) {
       return;
@@ -44,11 +58,13 @@ export function SignInScreen() {
               Syn<span style={{ color: '#3E8BFF' }}>Catch</span>
             </span>
           </h1>
-          <p className="text-slate-400 text-lg">Capture ideas. Keep them in sync.</p>
+          <p className="text-slate-400 text-lg">
+            {isForgotPassword ? 'Reset your password' : 'Capture ideas. Keep them in sync.'}
+          </p>
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-6">
-          {isSignUp && (
+          {isSignUp && !isForgotPassword && (
             <div>
               <label className="block text-sm font-medium text-slate-300 mb-2">Name</label>
               <Input
@@ -74,17 +90,34 @@ export function SignInScreen() {
             />
           </div>
 
-          <div>
-            <label className="block text-sm font-medium text-slate-300 mb-2">Password</label>
-            <Input
-              type="password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              placeholder="••••••••"
-              disabled={loading}
-              className="w-full"
-            />
-          </div>
+          {!isForgotPassword && (
+            <div>
+              <div className="mb-2 flex items-center justify-between">
+                <label className="block text-sm font-medium text-slate-300">Password</label>
+                {!isSignUp && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setIsForgotPassword(true);
+                      clearError();
+                    }}
+                    disabled={loading}
+                    className="text-xs text-slate-400 hover:text-slate-300 transition-colors"
+                  >
+                    Forgot password?
+                  </button>
+                )}
+              </div>
+              <Input
+                type="password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                placeholder="••••••••"
+                disabled={loading}
+                className="w-full"
+              />
+            </div>
+          )}
 
           {error && (
             <div className="bg-red-500/10 border border-red-500/30 text-red-400 px-4 py-3 rounded-lg text-sm">
@@ -94,28 +127,48 @@ export function SignInScreen() {
 
           <Button
             type="submit"
-            disabled={loading || !email || !password}
+            disabled={loading || !email || (!isForgotPassword && !password)}
             variant="primary"
             className="w-full"
           >
-            {loading ? 'Loading...' : isSignUp ? 'Create Account' : 'Sign In'}
+            {loading
+              ? 'Loading...'
+              : isForgotPassword
+                ? 'Send Reset Link'
+                : isSignUp
+                  ? 'Create Account'
+                  : 'Sign In'}
           </Button>
         </form>
 
         <div className="mt-8 text-center">
-          <button
-            type="button"
-            onClick={() => {
-              setIsSignUp(!isSignUp);
-              clearError();
-            }}
-            disabled={loading}
-            className="text-slate-400 hover:text-slate-300 transition-colors text-sm"
-          >
-            {isSignUp
-              ? 'Already have an account? Sign in'
-              : "Don't have an account? Create one"}
-          </button>
+          {isForgotPassword ? (
+            <button
+              type="button"
+              onClick={() => {
+                setIsForgotPassword(false);
+                clearError();
+              }}
+              disabled={loading}
+              className="text-slate-400 hover:text-slate-300 transition-colors text-sm"
+            >
+              Back to sign in
+            </button>
+          ) : (
+            <button
+              type="button"
+              onClick={() => {
+                setIsSignUp(!isSignUp);
+                clearError();
+              }}
+              disabled={loading}
+              className="text-slate-400 hover:text-slate-300 transition-colors text-sm"
+            >
+              {isSignUp
+                ? 'Already have an account? Sign in'
+                : "Don't have an account? Create one"}
+            </button>
+          )}
         </div>
 
         {isDesktop ? (

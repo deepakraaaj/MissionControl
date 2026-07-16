@@ -17,6 +17,8 @@ interface AuthStore {
   signUp: (email: string, password: string, displayName?: string) => Promise<void>;
   signOut: () => Promise<void>;
   updateProfile: (displayName: string) => Promise<void>;
+  requestPasswordReset: (email: string) => Promise<void>;
+  updatePassword: (newPassword: string) => Promise<void>;
   hydrate: () => Promise<void>;
   clearError: () => void;
   localMode: boolean;
@@ -207,6 +209,53 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
       throw error;
     } finally {
       set({ profileSaving: false });
+    }
+  },
+
+  requestPasswordReset: async (email: string) => {
+    set({ loading: true, error: null });
+    try {
+      const client = getSupabaseClient();
+      const { error } = await client.auth.resetPasswordForEmail(email, {
+        redirectTo: `${window.location.origin}${window.location.pathname}?type=recovery`,
+      });
+
+      if (error) {
+        set({ error: error.message, loading: false });
+        return;
+      }
+
+      set({ loading: false, error: null });
+      showSuccessToast('Reset link sent', `Check ${email} for a link to reset your password.`);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Failed to send reset link';
+      set({ error: message, loading: false });
+      throw error;
+    }
+  },
+
+  updatePassword: async (newPassword: string) => {
+    set({ loading: true, error: null });
+    try {
+      const client = getSupabaseClient();
+      const { data, error } = await client.auth.updateUser({ password: newPassword });
+
+      if (error) {
+        set({ error: error.message, loading: false });
+        return;
+      }
+
+      const currentSession = get().session;
+      set({
+        session: currentSession ? { ...currentSession, user: data.user } : currentSession,
+        loading: false,
+        error: null,
+      });
+      showSuccessToast('Password updated', 'Sign in with your new password.');
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Failed to update password';
+      set({ error: message, loading: false });
+      throw error;
     }
   },
 

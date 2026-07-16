@@ -8,3 +8,5 @@ src-tauri/target
 .env.*.local
 .vercel
 .claude/
+linkedin-post/
+
