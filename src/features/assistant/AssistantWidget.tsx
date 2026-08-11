@@ -11,16 +11,20 @@ export function AssistantWidget() {
 
   return createPortal(
     <>
-      {/* Launcher button — hidden on mobile while open, where the full-width sheet's
-          own header ✕ handles closing and the launcher would overlap the composer. */}
-      <button
-        type="button"
-        onClick={toggle}
-        className={`fixed bottom-[max(1.25rem,env(safe-area-inset-bottom))] right-5 z-[70] h-14 w-14 items-center justify-center rounded-full bg-accent text-accent-contrast shadow-glow lg:bottom-6 ${open ? 'hidden sm:flex' : 'flex'}`}
-        aria-label={open ? 'Close assistant' : 'Open assistant'}
-      >
-        {open ? <X className="h-6 w-6" /> : <MessageCircle className="h-6 w-6" />}
-      </button>
+      {/* Launcher button — hidden whenever the panel is open. The panel's own
+          header ✕ handles closing; leaving this floating on top of the panel
+          would overlap its bottom-right corner and act as a redundant,
+          badly-placed second close button. */}
+      {!open && (
+        <button
+          type="button"
+          onClick={toggle}
+          className="fixed bottom-[max(1.25rem,env(safe-area-inset-bottom))] right-5 z-[70] flex h-14 w-14 items-center justify-center rounded-full bg-accent text-accent-contrast shadow-glow lg:bottom-6"
+          aria-label="Open assistant"
+        >
+          <MessageCircle className="h-6 w-6" />
+        </button>
+      )}
 
       {/* Popover panel */}
       {open && (

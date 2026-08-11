@@ -785,8 +785,35 @@
   }
 }
 
+/* Sequential "typing" dots — each dot pulses on its own turn (staggered via
+   animation-delay on the element) instead of all three fading in lockstep.
+   A scale+opacity pulse reads more cleanly at small sizes than a vertical
+   bounce, which looks jittery once the translate distance nears the dot's
+   own diameter. */
+@keyframes dotBounce {
+
+  0%,
+  80%,
+  100% {
+    opacity: 0.4;
+    transform: scale(0.75);
+  }
+
+  40% {
+    opacity: 1;
+    transform: scale(1.15);
+  }
+}
+
 /* Custom Utilities & Scrollbars */
 @layer utilities {
+  /* backwards: hold the 0% keyframe (dim) during each dot's own
+     animation-delay, so staggered dots start dim instead of flashing in at
+     full brightness before their turn begins. */
+  .loader-dot {
+    animation: dotBounce 1.4s ease-in-out infinite backwards;
+  }
+
   .hide-scrollbar {
     -ms-overflow-style: none;
     scrollbar-width: none;

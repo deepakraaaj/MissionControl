@@ -114,7 +114,9 @@ export const SynCatchLogoAnimated = forwardRef<SynCatchLogoHandle, SynCatchLogoA
     >
       <title>{title}</title>
 
-      {/* The loop spins while syncing, pops when the sync lands */}
+      {/* Only the loop spins while syncing — the two dots sit outside this
+          group so they don't get dragged around with it. They land on their
+          own, one after the other, once the sweep settles (see below). */}
       <g
         style={{
           transformOrigin: '50px 50px',
@@ -127,23 +129,48 @@ export const SynCatchLogoAnimated = forwardRef<SynCatchLogoHandle, SynCatchLogoA
         }}
       >
         <path d={SYNCATCH_LOOP} stroke={loopPaint} strokeWidth={SYNCATCH_STROKE_WIDTH} strokeLinecap="round" />
-        <circle cx={trailDot.cx} cy={trailDot.cy} r={trailDot.r} fill={dotPaint} />
-
-        {/* "Aachu" — the lead dot lands green when the catch is made */}
-        <circle
-          cx={leadDot.cx}
-          cy={leadDot.cy}
-          r={leadDot.r}
-          fill={done ? SUCCESS_GREEN : dotPaint}
-          style={{
-            transformOrigin: `${leadDot.cx}px ${leadDot.cy}px`,
-            transform: done ? 'scale(1.25)' : 'scale(1)',
-            transition: done
-              ? 'transform 350ms cubic-bezier(0.34, 1.56, 0.64, 1) 120ms, fill 200ms ease 120ms'
-              : 'transform 150ms ease, fill 150ms ease',
-          }}
-        />
       </g>
+
+      {/* The "catch" — both dots recede (dim + shrink) while the loop is
+          sweeping, so their pop back to full size reads as an actual
+          landing rather than a size bump on something that sat there the
+          whole time. Trail dot lands first, then the lead dot lands green
+          a beat later — staggered transition-delay is what makes them read
+          as two sequential landings instead of both popping at once. */}
+      <circle
+        cx={trailDot.cx}
+        cy={trailDot.cy}
+        r={trailDot.r}
+        fill={dotPaint}
+        style={{
+          transformOrigin: `${trailDot.cx}px ${trailDot.cy}px`,
+          opacity: sweeping ? 0.15 : 1,
+          transform: done ? 'scale(1.15)' : sweeping ? 'scale(0.45)' : 'scale(1)',
+          transition: done
+            ? 'transform 260ms cubic-bezier(0.34, 1.56, 0.64, 1), opacity 200ms ease'
+            : sweeping
+              ? 'transform 200ms ease, opacity 200ms ease'
+              : 'transform 150ms ease, opacity 150ms ease',
+        }}
+      />
+
+      {/* "Aachu" — the lead dot lands green when the catch is made */}
+      <circle
+        cx={leadDot.cx}
+        cy={leadDot.cy}
+        r={leadDot.r}
+        fill={done ? SUCCESS_GREEN : dotPaint}
+        style={{
+          transformOrigin: `${leadDot.cx}px ${leadDot.cy}px`,
+          opacity: sweeping ? 0.15 : 1,
+          transform: done ? 'scale(1.25)' : sweeping ? 'scale(0.45)' : 'scale(1)',
+          transition: done
+            ? 'transform 350ms cubic-bezier(0.34, 1.56, 0.64, 1) 320ms, fill 200ms ease 320ms, opacity 220ms ease 320ms'
+            : sweeping
+              ? 'transform 200ms ease, opacity 200ms ease'
+              : 'transform 150ms ease, opacity 150ms ease, fill 150ms ease',
+        }}
+      />
     </svg>
   );
   },

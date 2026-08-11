@@ -55,9 +55,9 @@ export function AnimatedLoading({ autoDismiss = false, dismissAfter = 2000 }: An
           {[0, 1, 2].map((i) => (
             <div
               key={i}
-              className="w-1 h-1 rounded-full animate-pulse"
+              className="loader-dot h-1.5 w-1.5 rounded-full"
               style={{
-                backgroundColor: 'rgb(var(--accent) / 0.7)',
+                backgroundColor: 'rgb(var(--accent))',
                 animationDelay: `${i * 0.2}s`,
               }}
             />
