@@ -7,6 +7,8 @@ import { Button } from '../../components/ui/button';
 import { Card } from '../../components/ui/card';
 import { Input } from '../../components/ui/input';
 import { RichTextEditor, RichTextContent, isHtmlContent } from '../../components/ui/rich-text-editor';
+import { SaveStatus } from '../../components/ui/save-status';
+import { useAutoSave } from '../../hooks/use-autosave';
 import { cn } from '../../lib/cn';
 import { formatDayDateWithRelative } from '../../lib/date';
 import { useNoteStore } from './note-store';
@@ -158,7 +160,7 @@ function NoteCard({
         </div>
 
         {showTitleSeparately && (
-          <h3 className="mb-1.5 text-[15px] font-semibold tracking-[-0.2px] text-text-primary">{title}</h3>
+          <h3 className="mb-1.5 line-clamp-2 min-h-[2.5rem] text-[15px] font-semibold tracking-[-0.2px] text-text-primary">{title}</h3>
         )}
 
         {note.content.trim() && (
@@ -167,7 +169,7 @@ function NoteCard({
               content={note.content}
               className={cn(
                 'text-[13px] leading-relaxed text-text-secondary',
-                isExpanded ? '' : 'line-clamp-5',
+                isExpanded ? '' : 'note-card-preview',
               )}
             />
             {note.content.length > 240 && (
@@ -185,10 +187,10 @@ function NoteCard({
           </div>
         )}
 
-        <div className="mt-3 flex flex-wrap items-center gap-2">
+        <div className="mt-3 flex flex-nowrap items-center gap-2">
           {missionTitle && (
-            <Badge tone="neutral" className="border-slate-500/20 bg-slate-500/12 text-[10px] font-medium normal-case tracking-normal">
-              {missionTitle}
+            <Badge tone="neutral" className="min-w-0 border-slate-500/20 bg-slate-500/12 text-[10px] font-medium normal-case tracking-normal">
+              <span className="truncate">{missionTitle}</span>
             </Badge>
           )}
           <span
@@ -433,16 +435,31 @@ export function NoteEditorModal({
     : trimmedContent;
   const canSubmit = plainText.length > 0 && !saving;
 
+  const draft = useMemo<NoteEditorSubmit>(
+    () => ({ title: title.trim(), content: trimmedContent, category_id: categoryId, mission_id: missionId, pinned }),
+    [title, trimmedContent, categoryId, missionId, pinned],
+  );
+
+  const { status: autoSaveStatus, flush } = useAutoSave({
+    data: draft,
+    enabled: mode === 'edit' && plainText.length > 0,
+    onSave: onSubmit,
+  });
+
   const handleSubmit = useCallback(async () => {
     if (!canSubmit) return;
     setSaving(true);
     try {
-      await onSubmit({ title: title.trim(), content: trimmedContent, category_id: categoryId, mission_id: missionId, pinned });
+      if (mode === 'edit') {
+        await flush();
+      } else {
+        await onSubmit(draft);
+      }
       onClose();
     } finally {
       setSaving(false);
     }
-  }, [canSubmit, title, trimmedContent, categoryId, missionId, pinned, onSubmit, onClose]);
+  }, [canSubmit, mode, flush, draft, onSubmit, onClose]);
 
   useEffect(() => {
     const handleKey = (e: KeyboardEvent) => {
@@ -521,7 +538,7 @@ export function NoteEditorModal({
               placeholder="Write it down..."
             />
             <div className="mt-1.5 flex items-center justify-between px-1">
-              <p className="text-[11px] text-text-muted/50">⌘/Ctrl + Enter to save</p>
+              <p className="text-[11px] text-text-muted/50">{mode === 'edit' ? 'Autosaves as you type' : '⌘/Ctrl + Enter to save'}</p>
               <p className={cn('text-[11px] tabular-nums', plainText.length === 0 ? 'text-danger/70' : 'text-text-muted/50')}>{plainText.length} characters</p>
             </div>
           </div>
@@ -539,26 +556,29 @@ export function NoteEditorModal({
           </button>
         </div>
 
-        <div className="flex shrink-0 items-center justify-end gap-2 border-t border-borderSoft/25 px-6 py-4">
-          <Button onClick={onClose} size="sm" type="button" variant="secondary" className="text-[13px] font-medium">
-            Cancel
-          </Button>
-          <Button disabled={!canSubmit} onClick={handleSubmit} size="sm" type="button" className="min-w-[120px] text-[13px] font-medium">
-            {saving ? (
-              <span className="flex items-center justify-center gap-2">
-                <motion.span
-                  animate={{ rotate: 360 }}
-                  transition={{ duration: 1, repeat: Infinity, ease: 'linear' }}
-                  className="h-3.5 w-3.5 rounded-full border-2 border-current/40 border-t-current"
-                />
-                {mode === 'create' ? 'Adding' : 'Saving'}
-              </span>
-            ) : mode === 'create' ? (
-              'Add note'
-            ) : (
-              'Save changes'
-            )}
-          </Button>
+        <div className="flex shrink-0 items-center justify-between gap-2 border-t border-borderSoft/25 px-6 py-4">
+          <SaveStatus status={autoSaveStatus} />
+          <div className="flex items-center gap-2">
+            <Button onClick={onClose} size="sm" type="button" variant="secondary" className="text-[13px] font-medium">
+              Cancel
+            </Button>
+            <Button disabled={!canSubmit} onClick={handleSubmit} size="sm" type="button" className="min-w-[120px] text-[13px] font-medium">
+              {saving ? (
+                <span className="flex items-center justify-center gap-2">
+                  <motion.span
+                    animate={{ rotate: 360 }}
+                    transition={{ duration: 1, repeat: Infinity, ease: 'linear' }}
+                    className="h-3.5 w-3.5 rounded-full border-2 border-current/40 border-t-current"
+                  />
+                  {mode === 'create' ? 'Adding' : 'Saving'}
+                </span>
+              ) : mode === 'create' ? (
+                'Add note'
+              ) : (
+                'Done'
+              )}
+            </Button>
+          </div>
         </div>
       </div>
     </div>,
@@ -844,6 +864,7 @@ export function NotesView({ openNoteId = null }: { openNoteId?: string | null })
       await updateNote({ ...note, ...draft });
     } catch (err) {
       setOperationError(err instanceof Error ? err.message : 'Failed to update note');
+      throw err;
     }
   };
 

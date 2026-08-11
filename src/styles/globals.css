@@ -397,6 +397,21 @@
     margin: 8px 0;
   }
 
+  /* Notes grid cards: every collapsed preview is clipped to one fixed
+     height, whatever is inside it (text, list, image). That's what keeps
+     cards in the same grid row the same height — no gaps under short ones. */
+  .note-card-preview {
+    max-height: 108px;
+    overflow: hidden;
+  }
+
+  .note-card-preview img {
+    height: 108px !important;
+    width: 100% !important;
+    object-fit: cover !important;
+    margin: 0 !important;
+  }
+
   .rte-content b,
   .rte-content strong {
     font-weight: 700;

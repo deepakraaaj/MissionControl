@@ -1312,18 +1312,12 @@ function TaskListItem({
       onDragStart={onDragStart}
     >
       <button className="w-full text-left" onClick={onSelect} type="button">
-        <div className="flex flex-wrap items-center justify-between gap-2">
-          <div className="flex min-w-0 flex-1 flex-wrap items-center gap-1.5">
-            <p className="min-w-0 flex-1 truncate text-[14px] font-bold tracking-tight text-text-primary sm:text-[15px]">{task.title}</p>
-            <div className="flex shrink-0 gap-1">
-              {active ? <Badge tone="accent" className="shrink-0 text-[9px] px-1.5">Live</Badge> : null}
-              {blocked ? <Badge tone="warning" className="shrink-0 text-[9px] px-1.5">Blocked</Badge> : null}
-            </div>
-          </div>
-          <div className="flex shrink-0 items-center gap-1.5">
-            <Badge className="shrink-0 px-1.5 py-0.5 text-[10px]" tone={getTaskTone(task)}>{humanizePriority(task.priority)}</Badge>
-            <Badge className="shrink-0 px-1.5 py-0.5 text-[10px]" tone="neutral">{task.estimated_minutes}m</Badge>
-          </div>
+        <p className="truncate text-[14px] font-bold tracking-tight text-text-primary sm:text-[15px]">{task.title}</p>
+        <div className="mt-1.5 flex flex-wrap items-center gap-1.5">
+          {active ? <Badge tone="accent" className="shrink-0 text-[9px] px-1.5">Live</Badge> : null}
+          {blocked ? <Badge tone="warning" className="shrink-0 text-[9px] px-1.5">Blocked</Badge> : null}
+          <Badge className="shrink-0 px-1.5 py-0.5 text-[10px]" tone={getTaskTone(task)}>{humanizePriority(task.priority)}</Badge>
+          <Badge className="shrink-0 px-1.5 py-0.5 text-[10px]" tone="neutral">{task.estimated_minutes}m</Badge>
         </div>
         {describeTask(task) ? (
           <p className="mt-1.5 text-[14px] leading-snug text-text-secondary">
@@ -1378,19 +1372,17 @@ function SubtaskBoardItem({
       onDragStart={onDragStart}
     >
       <button className="w-full text-left" onClick={onSelect} type="button">
-        <div className="flex flex-wrap items-center justify-between gap-2">
-          <div className="flex min-w-0 flex-1 flex-wrap items-center gap-1.5">
-            <p className="min-w-0 flex-1 truncate text-[13px] font-bold tracking-tight text-text-primary">{task.title}</p>
-            {active ? <Badge tone="accent" className="shrink-0 text-[8px] px-1.2 py-0">Live</Badge> : null}
-          </div>
-          <div className="flex items-center gap-1.5">
+        <div className="flex items-center justify-between gap-2">
+          <p className="min-w-0 flex-1 truncate text-[13px] font-bold tracking-tight text-text-primary">{task.title}</p>
+          <div className="flex shrink-0 items-center gap-1.5">
+            {active ? <Badge tone="accent" className="shrink-0 text-[8px] px-1.5 py-0">Live</Badge> : null}
             <Badge className="px-1.5 py-0.5 text-[9px]" tone={getTaskTone(task)}>{humanizePriority(task.priority)}</Badge>
           </div>
         </div>
       </button>
 
       <div className="h-0 opacity-0 group-hover:h-auto group-hover:opacity-100 group-hover:mt-2.5 transition-all duration-200 overflow-hidden">
-        <div className="flex flex-nowrap gap-2 overflow-x-auto pb-0.5 scrollbar-none">
+        <div className="flex flex-wrap gap-2">
           <button 
             onClick={onFocus} 
             className="rounded-full bg-accent/10 px-2.5 py-1 text-[11px] font-medium text-accent hover:bg-accent/20 transition-colors"
@@ -3467,7 +3459,7 @@ export function MainApp() {
                                 {blocker ? (
                                   <p className="text-sm text-warning">{blocker.blocker}</p>
                                 ) : null}
-                                <div className="flex flex-nowrap gap-2">
+                                <div className="flex flex-wrap gap-2">
                                   <Button onClick={() => handleStartSession(task)} size="sm" type="button">
                                     Focus
                                   </Button>

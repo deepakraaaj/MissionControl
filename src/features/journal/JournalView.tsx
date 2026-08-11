@@ -7,6 +7,8 @@ import { Badge } from '../../components/ui/badge';
 import { Button } from '../../components/ui/button';
 import { Card } from '../../components/ui/card';
 import { Input, Textarea } from '../../components/ui/input';
+import { SaveStatus } from '../../components/ui/save-status';
+import { useAutoSave, type AutoSaveStatus } from '../../hooks/use-autosave';
 import { cn } from '../../lib/cn';
 import { formatRelativeTime } from '../../lib/date';
 import { useJournalStore } from './journal-store';
@@ -205,19 +207,28 @@ function JournalEntryModal({
   const [saving, setSaving] = useState(false);
 
   const trimmed = content.trim();
-  const isUnchanged = trimmed === initialContent.trim();
-  const canSubmit = trimmed.length > 0 && (mode === 'create' || !isUnchanged) && !saving;
+  const canSubmit = trimmed.length > 0 && !saving;
+
+  const { status: autoSaveStatus, flush } = useAutoSave({
+    data: trimmed,
+    enabled: mode === 'edit' && trimmed.length > 0,
+    onSave: onSubmit,
+  });
 
   const handleSubmit = useCallback(async () => {
-    if (trimmed.length === 0 || (mode === 'edit' && isUnchanged) || saving) return;
+    if (trimmed.length === 0 || saving) return;
     setSaving(true);
     try {
-      await onSubmit(trimmed);
+      if (mode === 'edit') {
+        await flush();
+      } else {
+        await onSubmit(trimmed);
+      }
       onClose();
     } finally {
       setSaving(false);
     }
-  }, [trimmed, mode, isUnchanged, saving, onSubmit, onClose]);
+  }, [trimmed, mode, flush, saving, onSubmit, onClose]);
 
   useEffect(() => {
     const handleKey = (e: KeyboardEvent) => {
@@ -270,31 +281,34 @@ function JournalEntryModal({
             className="min-h-[160px] resize-none rounded-[18px] border-borderSoft/30 bg-panel2/40 text-[15px] leading-relaxed placeholder:text-text-muted/50"
           />
           <div className="flex items-center justify-between px-1">
-            <p className="text-[11px] text-text-muted/50">⌘/Ctrl + Enter to save</p>
+            <p className="text-[11px] text-text-muted/50">{mode === 'edit' ? 'Autosaves as you type' : '⌘/Ctrl + Enter to save'}</p>
             <p className={cn('text-[11px] tabular-nums', trimmed.length === 0 ? 'text-danger/70' : 'text-text-muted/50')}>
               {content.length} characters
             </p>
           </div>
         </div>
 
-        <div className="flex shrink-0 items-center justify-end gap-2 border-t border-borderSoft/25 px-6 py-4">
-          <Button onClick={onClose} size="sm" type="button" variant="secondary" className="text-[13px] font-medium">
-            Cancel
-          </Button>
-          <Button disabled={!canSubmit} onClick={handleSubmit} size="sm" type="button" className="min-w-[120px] text-[13px] font-medium">
-            {saving ? (
-              <span className="flex items-center justify-center gap-2">
-                <motion.span
-                  animate={{ rotate: 360 }}
-                  transition={{ duration: 1, repeat: Infinity, ease: 'linear' }}
-                  className="h-3.5 w-3.5 rounded-full border-2 border-current/40 border-t-current"
-                />
-                {mode === 'create' ? 'Adding' : 'Saving'}
-              </span>
-            ) : (
-              mode === 'create' ? 'Add entry' : 'Save changes'
-            )}
-          </Button>
+        <div className="flex shrink-0 items-center justify-between gap-2 border-t border-borderSoft/25 px-6 py-4">
+          <SaveStatus status={autoSaveStatus} />
+          <div className="flex items-center gap-2">
+            <Button onClick={onClose} size="sm" type="button" variant="secondary" className="text-[13px] font-medium">
+              Cancel
+            </Button>
+            <Button disabled={!canSubmit} onClick={handleSubmit} size="sm" type="button" className="min-w-[120px] text-[13px] font-medium">
+              {saving ? (
+                <span className="flex items-center justify-center gap-2">
+                  <motion.span
+                    animate={{ rotate: 360 }}
+                    transition={{ duration: 1, repeat: Infinity, ease: 'linear' }}
+                    className="h-3.5 w-3.5 rounded-full border-2 border-current/40 border-t-current"
+                  />
+                  {mode === 'create' ? 'Adding' : 'Saving'}
+                </span>
+              ) : (
+                mode === 'create' ? 'Add entry' : 'Done'
+              )}
+            </Button>
+          </div>
         </div>
       </div>
     </div>,
@@ -523,6 +537,17 @@ export function JournalView({ focusedEntryId = null }: { focusedEntryId?: string
 
   const [gratitudeInput, setGratitudeInput] = useState('');
   const [operationError, setOperationError] = useState<string | null>(null);
+  const [dayStatus, setDayStatus] = useState<AutoSaveStatus>('idle');
+  const dayStatusResetRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const markDayDirty = useCallback(() => {
+    if (dayStatusResetRef.current) clearTimeout(dayStatusResetRef.current);
+    setDayStatus('dirty');
+  }, []);
+
+  useEffect(() => () => {
+    if (dayStatusResetRef.current) clearTimeout(dayStatusResetRef.current);
+  }, []);
 
   const missions = useMemo(() => {
     const map: Record<string, string> = {};
@@ -600,13 +625,22 @@ export function JournalView({ focusedEntryId = null }: { focusedEntryId?: string
   };
 
   const handleSaveDay = useCallback(async (mood: number, gratitude: string) => {
-    await saveDay({
-      entry_date: selectedDate,
-      mood,
-      gratitude,
-      created_at: todayDay?.created_at ?? new Date().toISOString(),
-      updated_at: new Date().toISOString(),
-    });
+    if (dayStatusResetRef.current) clearTimeout(dayStatusResetRef.current);
+    setDayStatus('saving');
+    try {
+      await saveDay({
+        entry_date: selectedDate,
+        mood,
+        gratitude,
+        created_at: todayDay?.created_at ?? new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+      });
+      setDayStatus('saved');
+      dayStatusResetRef.current = setTimeout(() => setDayStatus('idle'), 2500);
+    } catch (error) {
+      setDayStatus('error');
+      setOperationError(error instanceof Error ? error.message : 'Failed to save reflection');
+    }
   }, [selectedDate, todayDay?.created_at, saveDay]);
 
   const debouncedSaveGratitude = useDebouncedCallback(
@@ -666,7 +700,10 @@ export function JournalView({ focusedEntryId = null }: { focusedEntryId?: string
             <div>
               <div className="mb-2.5 flex items-center justify-between gap-3">
                 <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-text-muted/65">How are you feeling?</p>
-                {todayDay?.mood ? <span className="text-[10px] font-medium text-text-secondary">{getMoodLabel(todayDay.mood)}</span> : null}
+                <div className="flex items-center gap-2.5">
+                  <SaveStatus status={dayStatus} />
+                  {todayDay?.mood ? <span className="text-[10px] font-medium text-text-secondary">{getMoodLabel(todayDay.mood)}</span> : null}
+                </div>
               </div>
               <MoodSelector mood={todayDay?.mood ?? 0} onChange={(m) => handleSaveDay(m, gratitudeInput)} />
             </div>
@@ -677,6 +714,7 @@ export function JournalView({ focusedEntryId = null }: { focusedEntryId?: string
                 className="h-10 rounded-[13px] border-borderSoft/25 bg-panel/35 text-[13px] placeholder:text-text-muted/45"
                 onChange={(e) => {
                   setGratitudeInput(e.target.value);
+                  markDayDirty();
                   debouncedSaveGratitude(e.target.value);
                 }}
                 placeholder="A person, moment, or small win…"
