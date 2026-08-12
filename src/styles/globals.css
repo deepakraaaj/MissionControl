@@ -153,6 +153,27 @@
   --accent-contrast: 0 0 0;
 }
 
+/* Dark calendar surfaces need more separation than translucent light ones.
+   Keep this scoped so the brighter contrast does not change other views. */
+html:not([data-theme]) .calendar-shell,
+[data-theme='dark-focus'] .calendar-shell,
+[data-theme='midnight-purple'] .calendar-shell,
+[data-theme='solar-flare'] .calendar-shell,
+[data-theme='mono-ink'] .calendar-shell {
+  background-color: rgb(var(--surface-1) / 0.38);
+  border-color: rgb(var(--border-strong) / 0.34);
+}
+
+html:not([data-theme]) .calendar-panel,
+[data-theme='dark-focus'] .calendar-panel,
+[data-theme='midnight-purple'] .calendar-panel,
+[data-theme='solar-flare'] .calendar-panel,
+[data-theme='mono-ink'] .calendar-panel {
+  background-color: rgb(var(--surface-1) / 0.9);
+  border-color: rgb(var(--border-strong) / 0.4);
+  box-shadow: inset 0 1px 0 rgb(var(--text-primary) / 0.025);
+}
+
 @layer base {
   * {
     box-sizing: border-box;
@@ -835,4 +856,3 @@
 }
 
 /* End of file */
-

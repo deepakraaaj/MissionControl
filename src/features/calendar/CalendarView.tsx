@@ -147,12 +147,12 @@ export function CalendarView({ onOpenTarget }: { onOpenTarget: (target: Calendar
   };
 
   return (
-    <div className="grid min-h-full items-start gap-4 min-[850px]:grid-cols-[minmax(430px,1.08fr)_minmax(340px,0.92fr)]">
-      <Card className="h-fit rounded-[24px] border-borderSoft/25 bg-panel/55 p-4 sm:p-5">
+    <div className="calendar-shell grid min-h-full content-start items-start gap-4 rounded-[26px] border border-borderSoft/35 bg-panel2/30 p-3 min-[850px]:grid-cols-[minmax(430px,1.08fr)_minmax(340px,0.92fr)] sm:p-4">
+      <Card className="calendar-panel h-fit rounded-[24px] border-borderSoft/45 bg-panel/80 p-4 sm:p-5">
         <div className="flex items-center justify-between gap-4">
           <div>
             <h2 className="text-xl font-semibold tracking-tight text-text-primary">{monthLabel}</h2>
-            <p className="mt-1 text-[11px] text-text-muted">{activeDays} active {activeDays === 1 ? 'day' : 'days'} · {monthEvents.length} moments</p>
+            <p className="mt-1 text-xs text-text-secondary">{activeDays} active {activeDays === 1 ? 'day' : 'days'} · {monthEvents.length} moments</p>
           </div>
           <div className="flex items-center gap-2">
             <Button aria-label="Previous month" onClick={() => changeMonth(-1)} size="sm" type="button" variant="ghost" className="h-8 w-8 rounded-[10px] p-0"><ChevronLeft className="h-4 w-4" /></Button>
@@ -162,7 +162,7 @@ export function CalendarView({ onOpenTarget }: { onOpenTarget: (target: Calendar
         </div>
 
         <div className="mt-5 grid grid-cols-7 gap-1.5 text-center">
-          {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map((day) => <div key={day} className="pb-1.5 text-[9px] font-semibold uppercase tracking-wider text-text-muted/55">{day.slice(0, 1)}</div>)}
+          {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map((day) => <div key={day} className="pb-2 text-[11px] font-semibold uppercase tracking-wider text-text-secondary">{day.slice(0, 1)}</div>)}
           {calendarDays.map((day, index) => {
             if (!day) return <div key={`empty-${index}`} />;
             const key = dateKey(new Date(month.getFullYear(), month.getMonth(), day));
@@ -180,11 +180,11 @@ export function CalendarView({ onOpenTarget }: { onOpenTarget: (target: Calendar
                   selected
                     ? 'border-accent/55 bg-accent/14 shadow-[inset_0_0_0_1px_rgba(var(--accent),0.10),0_7px_18px_rgba(var(--accent),0.10)]'
                     : dayEvents.length > 0
-                      ? 'border-borderSoft/38 bg-panel2/48 hover:border-borderSoft/60 hover:bg-panel2/65'
-                      : 'border-borderSoft/24 bg-panel2/28 hover:border-borderSoft/45 hover:bg-panel2/45',
+                      ? 'border-borderSoft/55 bg-panel2/70 hover:border-borderStrong/50 hover:bg-panel2/90'
+                      : 'border-borderSoft/40 bg-panel2/55 hover:border-borderStrong/45 hover:bg-panel2/75',
                 )}
               >
-                <span className={cn('flex h-6 min-w-6 items-center justify-center rounded-[8px] px-1 text-[11px] font-semibold', isToday ? 'bg-accent text-[rgb(var(--accent-contrast))] shadow-sm' : selected ? 'bg-accent/14 text-accent' : 'text-text-primary/85')}>{day}</span>
+                <span className={cn('flex h-7 min-w-7 items-center justify-center rounded-[8px] px-1 text-[13px] font-semibold', isToday ? 'bg-accent text-[rgb(var(--accent-contrast))] shadow-sm' : selected ? 'bg-accent/14 text-accent' : 'text-text-primary')}>{day}</span>
                 <div className="flex h-3 w-full items-end gap-0.5">
                   {dayEvents.slice(0, 4).map((event) => <span key={event.id} className={cn('h-1 flex-1 rounded-full', event.type === 'task' ? 'bg-emerald-400' : event.type === 'focus' ? 'bg-sky-400' : event.type === 'note' ? 'bg-amber-400' : 'bg-violet-400')} />)}
                   {dayEvents.length > 4 ? <span className="ml-0.5 text-[8px] leading-none text-text-muted">+{dayEvents.length - 4}</span> : null}
@@ -193,7 +193,7 @@ export function CalendarView({ onOpenTarget }: { onOpenTarget: (target: Calendar
             );
           })}
         </div>
-        <div className="mt-4 flex flex-wrap items-center gap-3 border-t border-borderSoft/18 pt-3 text-[9px] text-text-muted/75">
+        <div className="mt-4 flex flex-wrap items-center gap-4 border-t border-borderSoft/30 pt-3 text-[11px] text-text-secondary">
           <span className="flex items-center gap-1.5"><i className="h-1.5 w-1.5 rounded-full bg-emerald-400" />Tasks</span>
           <span className="flex items-center gap-1.5"><i className="h-1.5 w-1.5 rounded-full bg-sky-400" />Focus</span>
           <span className="flex items-center gap-1.5"><i className="h-1.5 w-1.5 rounded-full bg-amber-400" />Notes</span>
@@ -202,20 +202,20 @@ export function CalendarView({ onOpenTarget }: { onOpenTarget: (target: Calendar
       </Card>
 
       <div className="min-w-0 space-y-4">
-        <Card className="rounded-[24px] border-borderSoft/25 bg-panel/55 p-4 sm:p-5">
+        <Card className="calendar-panel rounded-[24px] border-borderSoft/45 bg-panel/80 p-4 sm:p-5">
           <div className="flex items-start justify-between gap-3">
-            <div><p className="text-[9px] font-semibold uppercase tracking-[0.2em] text-text-muted/65">Day story</p><h3 className="mt-1 text-base font-semibold tracking-tight text-text-primary">{selectedLabel}</h3></div>
+            <div><p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-text-secondary">Day story</p><h3 className="mt-1 text-base font-semibold tracking-tight text-text-primary">{selectedLabel}</h3></div>
             <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-[11px] border border-accent/20 bg-accent/10 text-accent"><CalendarDays className="h-4 w-4" /></div>
           </div>
           <div className="mt-5 grid grid-cols-3 gap-2">
-            <div className="rounded-[14px] bg-panel2/35 p-3"><p className="text-lg font-semibold text-text-primary">{completedCount}</p><p className="text-[10px] text-text-muted">tasks done</p></div>
-            <div className="rounded-[14px] bg-panel2/35 p-3"><p className="text-lg font-semibold text-text-primary">{focusMinutes}m</p><p className="text-[10px] text-text-muted">deep focus</p></div>
-            <div className="rounded-[14px] bg-panel2/35 p-3"><p className="text-lg font-semibold text-text-primary">{selectedDay?.mood || '—'}</p><p className="text-[10px] text-text-muted">mood / 5</p></div>
+            <div className="rounded-[14px] border border-borderSoft/30 bg-panel2/60 p-3"><p className="text-lg font-semibold text-text-primary">{completedCount}</p><p className="text-[11px] text-text-secondary">tasks done</p></div>
+            <div className="rounded-[14px] border border-borderSoft/30 bg-panel2/60 p-3"><p className="text-lg font-semibold text-text-primary">{focusMinutes}m</p><p className="text-[11px] text-text-secondary">deep focus</p></div>
+            <div className="rounded-[14px] border border-borderSoft/30 bg-panel2/60 p-3"><p className="text-lg font-semibold text-text-primary">{selectedDay?.mood || '—'}</p><p className="text-[11px] text-text-secondary">mood / 5</p></div>
           </div>
           {selectedDay?.gratitude ? <div className="mt-3 rounded-[14px] border border-rose-500/15 bg-rose-500/6 px-4 py-3"><p className="text-[9px] font-semibold uppercase tracking-wider text-rose-500/80">Grateful for</p><p className="mt-1 text-[12px] leading-5 text-text-secondary">{selectedDay.gratitude}</p></div> : null}
         </Card>
 
-        <Card className="relative overflow-hidden rounded-[24px] border-borderSoft/25 bg-panel/55 p-3 sm:p-4">
+        <Card className="calendar-panel relative overflow-hidden rounded-[24px] border-borderSoft/45 bg-panel/80 p-3 sm:p-4">
           {selectedEvents.length > 0 ? (
             <div className="space-y-2">
               {eventGroups.map((group) => {
@@ -256,13 +256,13 @@ export function CalendarView({ onOpenTarget }: { onOpenTarget: (target: Calendar
             <div className="px-2 py-3">
               <div className="flex items-start gap-3">
                 <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-[13px] border border-borderSoft/25 bg-panel2/30 text-text-muted"><Flag className="h-4 w-4" /></div>
-                <div><p className="text-sm font-semibold text-text-primary">Nothing recorded yet</p><p className="mt-1 text-[11px] leading-5 text-text-muted">Make this day memorable, or jump to a day that already has a story.</p></div>
+                <div><p className="text-sm font-semibold text-text-primary">Nothing recorded yet</p><p className="mt-1 text-xs leading-5 text-text-secondary">Make this day memorable, or jump to a day that already has a story.</p></div>
               </div>
 
               <div className="mt-4 grid grid-cols-3 gap-2">
-                <button type="button" onClick={() => onOpenTarget({ destination: 'tasks', date: selectedDate })} className="flex flex-col items-center gap-1.5 rounded-[13px] border border-borderSoft/22 bg-panel2/25 px-2 py-3 text-[10px] text-text-secondary transition-colors hover:border-accent/25 hover:bg-accent/8 hover:text-accent"><Plus className="h-4 w-4" />Add task</button>
-                <button type="button" onClick={() => onOpenTarget({ destination: 'journal', date: selectedDate })} className="flex flex-col items-center gap-1.5 rounded-[13px] border border-borderSoft/22 bg-panel2/25 px-2 py-3 text-[10px] text-text-secondary transition-colors hover:border-accent/25 hover:bg-accent/8 hover:text-accent"><PenLine className="h-4 w-4" />Reflect</button>
-                <button type="button" onClick={() => onOpenTarget({ destination: 'notes', date: selectedDate })} className="flex flex-col items-center gap-1.5 rounded-[13px] border border-borderSoft/22 bg-panel2/25 px-2 py-3 text-[10px] text-text-secondary transition-colors hover:border-accent/25 hover:bg-accent/8 hover:text-accent"><FileText className="h-4 w-4" />Add note</button>
+                <button type="button" onClick={() => onOpenTarget({ destination: 'tasks', date: selectedDate })} className="flex flex-col items-center gap-1.5 rounded-[13px] border border-borderSoft/40 bg-panel2/55 px-2 py-3 text-xs font-medium text-text-secondary transition-colors hover:border-accent/35 hover:bg-accent/8 hover:text-accent"><Plus className="h-4 w-4" />Add task</button>
+                <button type="button" onClick={() => onOpenTarget({ destination: 'journal', date: selectedDate })} className="flex flex-col items-center gap-1.5 rounded-[13px] border border-borderSoft/40 bg-panel2/55 px-2 py-3 text-xs font-medium text-text-secondary transition-colors hover:border-accent/35 hover:bg-accent/8 hover:text-accent"><PenLine className="h-4 w-4" />Reflect</button>
+                <button type="button" onClick={() => onOpenTarget({ destination: 'notes', date: selectedDate })} className="flex flex-col items-center gap-1.5 rounded-[13px] border border-borderSoft/40 bg-panel2/55 px-2 py-3 text-xs font-medium text-text-secondary transition-colors hover:border-accent/35 hover:bg-accent/8 hover:text-accent"><FileText className="h-4 w-4" />Add note</button>
               </div>
 
               {nearbyActiveDates.length > 0 ? (
@@ -282,10 +282,10 @@ export function CalendarView({ onOpenTarget }: { onOpenTarget: (target: Calendar
         </Card>
       </div>
 
-      <Card className="rounded-[24px] border-borderSoft/25 bg-panel/45 p-4 min-[850px]:col-span-2 sm:p-5">
+      <Card className="calendar-panel rounded-[24px] border-borderSoft/45 bg-panel/75 p-4 min-[850px]:col-span-2 sm:p-5">
         <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
           <div>
-            <p className="text-[9px] font-semibold uppercase tracking-[0.2em] text-text-muted/65">Month at a glance</p>
+            <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-text-secondary">Month at a glance</p>
             <p className="mt-1 text-sm font-semibold text-text-primary">Your {monthLabel} footprint</p>
           </div>
           <div className="grid grid-cols-5 gap-2 sm:min-w-[560px]">
@@ -296,10 +296,10 @@ export function CalendarView({ onOpenTarget }: { onOpenTarget: (target: Calendar
               { label: 'Notes', value: monthCounts.notes, color: 'text-amber-500', icon: FileText },
               { label: 'Milestones', value: monthCounts.missions, color: 'text-violet-500', icon: Target },
             ].map(({ label, value, color, icon: Icon }) => (
-              <div key={label} className="rounded-[13px] border border-borderSoft/18 bg-panel2/25 p-2.5 text-center">
+              <div key={label} className="rounded-[13px] border border-borderSoft/35 bg-panel2/55 p-2.5 text-center">
                 <Icon className={cn('mx-auto h-3.5 w-3.5', color)} />
                 <p className="mt-1.5 text-base font-semibold tabular-nums text-text-primary">{value}</p>
-                <p className="truncate text-[8px] text-text-muted">{label}</p>
+                <p className="truncate text-[10px] text-text-secondary">{label}</p>
               </div>
             ))}
           </div>
