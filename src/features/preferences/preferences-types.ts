@@ -12,6 +12,7 @@ export type SidebarPinnedAppId =
   | 'roadmap'
   | 'today'
   | 'calendar'
+  | 'challenges'
   | 'tasks'
   | 'history'
   | 'insights'

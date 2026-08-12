@@ -7,7 +7,7 @@ import {
   useRef,
   useState,
 } from 'react';
-import { Sun, CheckSquare, Target, MoreHorizontal, CheckCircle2, Timer, Flag, Clock, BarChart3, ClipboardList, Settings, Lightbulb, Link2, AlertCircle, Pin, FileText, ArrowUpRight, RotateCcw, Cloud, Pencil, Trash2, Play, Pause, CheckCircle, Menu, X, Plus, CalendarDays, ChevronDown, CornerDownRight, BookHeart, StickyNote, Wifi, WifiOff, MessageCircle, type LucideIcon } from 'lucide-react';
+import { Sun, CheckSquare, Target, MoreHorizontal, CheckCircle2, Timer, Flag, Clock, BarChart3, ClipboardList, Settings, Lightbulb, Link2, AlertCircle, Pin, FileText, ArrowUpRight, RotateCcw, Cloud, Pencil, Trash2, Play, Pause, CheckCircle, Menu, X, Plus, CalendarDays, ChevronDown, CornerDownRight, BookHeart, StickyNote, Wifi, WifiOff, MessageCircle, Trophy, type LucideIcon } from 'lucide-react';
 import { MissionIcon } from '../../components/ui/mission-icon';
 import { DatePicker } from '../../components/ui/date-picker';
 import { Badge } from '../../components/ui/badge';
@@ -69,8 +69,9 @@ import { cn } from '../../lib/cn';
 import { formatRelativeTime } from '../../lib/date';
 import { isTauriApp, showHudWindow, showQuickAddWindow, subscribeAppEvent } from '../../lib/tauri';
 import { useIsMobile } from '../../hooks/use-mobile';
+import { ChallengesView } from '../../features/challenges/ChallengesView';
 
-type MainView = 'dashboard' | 'focus' | 'missions' | 'roadmap' | 'today' | 'calendar' | 'tasks' | 'history' | 'insights' | 'review' | 'journal' | 'notes' | 'assistant' | 'settings' | 'apps';
+type MainView = 'dashboard' | 'focus' | 'missions' | 'roadmap' | 'today' | 'calendar' | 'challenges' | 'tasks' | 'history' | 'insights' | 'review' | 'journal' | 'notes' | 'assistant' | 'settings' | 'apps';
 
 type CaptureState = {
   kind: SessionCaptureKind;
@@ -136,6 +137,13 @@ const launcherViews: Array<{
     icon: CalendarDays,
     description: 'Remember what happened each day',
     gradient: 'from-blue-500 via-sky-500 to-cyan-500',
+  },
+  {
+    id: 'challenges',
+    label: 'Challenges',
+    icon: Trophy,
+    description: 'Build daily streaks',
+    gradient: 'from-orange-500 via-amber-500 to-yellow-500',
   },
   {
     id: 'tasks',
@@ -204,6 +212,7 @@ const mobileDrawerCoreApps: SidebarPinnedAppId[] = [
   'tasks',
   'missions',
   'roadmap',
+  'challenges',
   'journal',
   'notes',
   'assistant',
@@ -569,6 +578,7 @@ function getViewCopy(view: MainView) {
     roadmap: 'Roadmap',
     today: 'Today',
     calendar: 'Calendar',
+    challenges: 'Challenges',
     tasks: 'Tasks',
     history: 'History',
     insights: 'Insights',
@@ -4338,6 +4348,7 @@ export function MainApp() {
               {activeView === 'roadmap' ? <RoadmapView missions={missions} allTasks={tasks} onOpenMission={setDetailMissionId} /> : null}
               {activeView === 'today' ? renderToday() : null}
               {activeView === 'calendar' ? <CalendarView onOpenTarget={openCalendarTarget} /> : null}
+              {activeView === 'challenges' ? <ChallengesView /> : null}
               {activeView === 'tasks' ? renderTasks() : null}
               {activeView === 'history' ? renderHistory() : null}
               {activeView === 'insights' ? renderInsights() : null}

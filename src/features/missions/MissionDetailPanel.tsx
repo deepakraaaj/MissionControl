@@ -10,7 +10,7 @@ import type { Mission, MissionColor } from './mission-types';
 import type { Task, TaskLane, TaskPriority } from '../tasks/task-types';
 import { 
   Trash2, Plus, Pencil, Pause, Play, CheckCircle, RotateCcw, X, 
-  CheckSquare, Square, ChevronRight, Clock, Target, Calendar, Pin, FileText
+  CheckSquare, Square, ChevronRight, Clock, Target, Calendar, Pin, FileText, Flame, Trophy
 } from 'lucide-react';
 import { useNoteStore } from '../notes/note-store';
 import { getCategoryById, NoteCategoryIcon, getNoteColorStyle, getNoteDisplayTitle } from '../notes/note-helpers';
@@ -18,6 +18,7 @@ import { NoteEditorModal } from '../notes/NotesView';
 import { RichTextContent } from '../../components/ui/rich-text-editor';
 import type { Note } from '../notes/note-types';
 import { AssigneeSelect } from '../collaborators/AssigneeSelect';
+import { getChallengeStreak, useChallengeStore } from '../challenges/challenge-store';
 
 interface MissionDetailPanelProps {
   mission: Mission;
@@ -129,6 +130,8 @@ export function MissionDetailPanel({
   const deleteNote = useNoteStore((s) => s.deleteNote);
   const togglePin = useNoteStore((s) => s.togglePin);
   const missions = useMissionStore((s) => s.missions);
+  const challenges = useChallengeStore((s) => s.challenges);
+  const toggleChallengeToday = useChallengeStore((s) => s.toggleToday);
 
   const [noteEditorState, setNoteEditorState] = useState<{ mode: 'create' | 'edit'; note?: Note } | null>(null);
 
@@ -144,6 +147,7 @@ export function MissionDetailPanel({
   const missionTasks = useMemo(() => {
     return allTasks.filter((t: Task) => t.mission_id === mission.id && t.parent_task_id === null);
   }, [allTasks, mission.id]);
+  const missionChallenges = useMemo(() => challenges.filter((challenge) => challenge.missionId === mission.id), [challenges, mission.id]);
 
   const stats = useMemo(() => {
     const total = missionTasks.length;
@@ -412,6 +416,26 @@ export function MissionDetailPanel({
             ) : null}
           </div>
         </div>
+
+        {/* Daily challenges supporting this mission */}
+        {missionChallenges.length > 0 ? (
+          <div className="space-y-3 pt-2">
+            <FieldLabel>Daily Challenges ({missionChallenges.length})</FieldLabel>
+            <div className="space-y-2">
+              {missionChallenges.map((challenge) => {
+                const today = new Date().toLocaleDateString('en-CA');
+                const completed = challenge.checkIns.includes(today);
+                return (
+                  <div key={challenge.id} className="flex items-center gap-3 rounded-[16px] border border-borderSoft/30 bg-panel/45 p-3">
+                    <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-panel2/60 text-lg">{challenge.emoji}</span>
+                    <div className="min-w-0 flex-1"><p className="truncate text-sm font-medium text-text-primary">{challenge.title}</p><p className="mt-0.5 flex items-center gap-1 text-[11px] text-text-secondary"><Flame className="h-3 w-3 text-warning" />{getChallengeStreak(challenge.checkIns)} day streak</p></div>
+                    <button onClick={() => toggleChallengeToday(challenge.id)} className={cn('flex h-9 w-9 items-center justify-center rounded-full border transition-colors', completed ? 'border-success/40 bg-success/18 text-success' : 'border-borderSoft/40 text-text-muted hover:border-accent/45 hover:text-accent')} aria-label={completed ? 'Undo today check-in' : 'Check in today'}>{completed ? <CheckSquare className="h-4 w-4" /> : <Trophy className="h-4 w-4" />}</button>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        ) : null}
 
         {/* Associated Notes Section */}
         <div className="space-y-3 pt-2">
