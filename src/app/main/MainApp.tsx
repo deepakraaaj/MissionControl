@@ -16,6 +16,7 @@ import { Card } from '../../components/ui/card';
 import { Input, Textarea } from '../../components/ui/input';
 import { AnimatedLoading } from '../../components/animated-loading';
 import { ProfileSettingsCard } from '../../features/auth/ProfileSettingsCard';
+import { AiProviderCard } from '../../features/settings/AiProviderCard';
 import { useAuthStore } from '../../features/auth/auth-store';
 import { useSyncStore } from '../../features/sync/sync-store';
 import { useFocusStore } from '../../features/focus/focus-store';
@@ -1273,10 +1274,12 @@ function TimeWheelSelector({
 
 function TaskListItem({
   task,
+  mission,
   selected,
   blocked,
   active,
   footer,
+  showDescription = true,
   className,
   dragging,
   draggable,
@@ -1285,10 +1288,12 @@ function TaskListItem({
   onSelect,
 }: {
   task: Task;
+  mission?: Mission;
   selected?: boolean;
   blocked?: boolean;
   active?: boolean;
   footer?: ReactNode;
+  showDescription?: boolean;
   className?: string;
   dragging?: boolean;
   draggable?: boolean;
@@ -1299,10 +1304,10 @@ function TaskListItem({
   return (
     <div
       className={cn(
-        'group main-list-item rounded-[20px] border p-3 transition-[transform,opacity,border-color,background-color,box-shadow] duration-150 ease-out',
+        'group main-list-item rounded-2xl border p-4 transition-[transform,opacity,border-color,background-color,box-shadow] duration-150 ease-out',
         selected
-          ? 'is-selected border-accent/40 bg-accent/10 shadow-[0_4px_20px_rgba(var(--accent),0.08)]'
-          : 'border-borderSoft/50 bg-panel/42 hover:border-accent/30 hover:bg-panel/56',
+          ? 'is-selected border-accent/45 bg-accent/10 shadow-[0_6px_24px_rgba(var(--accent),0.1)]'
+          : 'border-white/[0.08] bg-white/[0.025] hover:border-white/[0.16] hover:bg-white/[0.045]',
         draggable ? 'cursor-grab active:cursor-grabbing' : null,
         dragging ? 'scale-[0.985] border-accent/26 bg-accent/8 opacity-45 shadow-none' : null,
         className,
@@ -1312,15 +1317,21 @@ function TaskListItem({
       onDragStart={onDragStart}
     >
       <button className="w-full text-left" onClick={onSelect} type="button">
-        <p className="truncate text-[14px] font-bold tracking-tight text-text-primary sm:text-[15px]">{task.title}</p>
-        <div className="mt-1.5 flex flex-wrap items-center gap-1.5">
+        <p className="break-words text-[15px] font-semibold leading-[1.4] tracking-[-0.01em] text-text-primary sm:text-base">{task.title}</p>
+        {mission ? (
+          <div className="mt-2 flex min-w-0 items-center gap-1.5 text-[11px] font-medium text-text-secondary">
+            <MissionIcon icon={mission.emoji} className="h-3.5 w-3.5 shrink-0" />
+            <span className="truncate">{mission.title}</span>
+          </div>
+        ) : null}
+        <div className="mt-2.5 flex flex-wrap items-center gap-1.5">
           {active ? <Badge tone="accent" className="shrink-0 text-[9px] px-1.5">Live</Badge> : null}
           {blocked ? <Badge tone="warning" className="shrink-0 text-[9px] px-1.5">Blocked</Badge> : null}
           <Badge className="shrink-0 px-1.5 py-0.5 text-[10px]" tone={getTaskTone(task)}>{humanizePriority(task.priority)}</Badge>
           <Badge className="shrink-0 px-1.5 py-0.5 text-[10px]" tone="neutral">{task.estimated_minutes}m</Badge>
         </div>
-        {describeTask(task) ? (
-          <p className="mt-1.5 text-[14px] leading-snug text-text-secondary">
+        {showDescription && describeTask(task) ? (
+          <p className="mt-2.5 line-clamp-2 text-[13px] leading-[1.5] text-text-secondary/90">
             {describeTask(task)}
           </p>
         ) : null}
@@ -1339,25 +1350,21 @@ function TaskListItem({
 
 function SubtaskBoardItem({
   task,
+  mission,
   active,
   dragging,
   draggable,
   onDragEnd,
   onDragStart,
-  onFocus,
-  onDone,
-  onDetail,
   onSelect,
 }: {
   task: Task;
+  mission?: Mission;
   active?: boolean;
   dragging?: boolean;
   draggable?: boolean;
   onDragEnd?: (event: ReactDragEvent<HTMLDivElement>) => void;
   onDragStart?: (event: ReactDragEvent<HTMLDivElement>) => void;
-  onFocus: () => void;
-  onDone: () => void;
-  onDetail: () => void;
   onSelect: () => void;
 }) {
   return (
@@ -1373,36 +1380,20 @@ function SubtaskBoardItem({
     >
       <button className="w-full text-left" onClick={onSelect} type="button">
         <div className="flex items-center justify-between gap-2">
-          <p className="min-w-0 flex-1 truncate text-[13px] font-bold tracking-tight text-text-primary">{task.title}</p>
+          <p className="min-w-0 flex-1 break-words text-[13px] font-semibold leading-[1.4] tracking-tight text-text-primary">{task.title}</p>
           <div className="flex shrink-0 items-center gap-1.5">
             {active ? <Badge tone="accent" className="shrink-0 text-[8px] px-1.5 py-0">Live</Badge> : null}
             <Badge className="px-1.5 py-0.5 text-[9px]" tone={getTaskTone(task)}>{humanizePriority(task.priority)}</Badge>
           </div>
         </div>
+        {mission ? (
+          <div className="mt-2 flex min-w-0 items-center gap-1.5 text-[10px] font-medium text-text-secondary">
+            <MissionIcon icon={mission.emoji} className="h-3 w-3 shrink-0" />
+            <span className="truncate">{mission.title}</span>
+          </div>
+        ) : null}
       </button>
 
-      <div className="h-0 opacity-0 group-hover:h-auto group-hover:opacity-100 group-hover:mt-2.5 transition-all duration-200 overflow-hidden">
-        <div className="flex flex-wrap gap-2">
-          <button 
-            onClick={onFocus} 
-            className="rounded-full bg-accent/10 px-2.5 py-1 text-[11px] font-medium text-accent hover:bg-accent/20 transition-colors"
-          >
-            Focus
-          </button>
-          <button 
-            onClick={onDone} 
-            className="rounded-full bg-borderSoft/20 px-2.5 py-1 text-[11px] font-medium text-text-secondary hover:bg-borderSoft/30 transition-colors"
-          >
-            Done
-          </button>
-          <button 
-            onClick={onDetail} 
-            className="rounded-full bg-borderSoft/20 px-2.5 py-1 text-[11px] font-medium text-text-secondary hover:bg-borderSoft/30 transition-colors"
-          >
-            Detail
-          </button>
-        </div>
-      </div>
     </div>
   );
 }
@@ -3231,6 +3222,33 @@ export function MainApp() {
     );
   }
 
+  function renderTaskScopeControl() {
+    return (
+      <div className="grid grid-cols-3 gap-1 rounded-xl border border-borderSoft/20 bg-panel2/35 p-1">
+        {([
+          { id: 'pending' as const, label: 'Pending', count: rootTasksForSettings.filter((task) => task.status !== 'done' && task.lane !== 'done').length, icon: ClipboardList },
+          { id: 'today' as const, label: "Today's tasks", count: rootTasksForSettings.filter((task) => { const today = formatDateInputValue(new Date()); return task.scheduled_for === today || task.due_date === today || Boolean(task.completed_at?.startsWith(today)); }).length, icon: CalendarDays },
+          { id: 'all' as const, label: 'All tasks', count: rootTasksForSettings.length, icon: CheckSquare },
+        ]).map(({ id, label, count, icon: Icon }) => (
+          <button
+            key={id}
+            type="button"
+            onClick={() => setTaskScopeMode(id)}
+            title={label}
+            className={cn(
+              'flex min-w-0 items-center justify-center gap-2 rounded-lg px-2.5 py-2 text-xs font-medium transition-all xl:px-3',
+              taskScopeMode === id ? 'bg-white/[0.1] text-text-primary shadow-sm' : 'text-text-secondary hover:bg-panel/50 hover:text-text-primary',
+            )}
+          >
+            <Icon className="h-3.5 w-3.5 shrink-0" />
+            <span className="hidden whitespace-nowrap xl:inline">{label}</span>
+            <span className={cn('rounded-full px-1.5 py-0.5 text-[9px] tabular-nums', taskScopeMode === id ? 'bg-accent/12' : 'bg-text-primary/5')}>{count}</span>
+          </button>
+        ))}
+      </div>
+    );
+  }
+
   function renderTasks() {
     return (
       <div className="space-y-6">
@@ -3277,35 +3295,9 @@ export function MainApp() {
           </div>
         ) : null}
 
-        <div className="flex flex-col gap-3 rounded-[22px] border border-borderSoft/25 bg-panel/35 p-3 sm:flex-row sm:items-center sm:justify-between sm:p-4">
-          <div>
-            <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-text-muted/65">Task view</p>
-            <p className="mt-1 text-[12px] text-text-secondary">Start with what needs attention, then widen the view when needed.</p>
-          </div>
-          <div className="grid grid-cols-3 gap-1.5 rounded-[14px] border border-borderSoft/20 bg-panel2/35 p-1.5">
-            {([
-              { id: 'pending' as const, label: 'Pending', count: rootTasksForSettings.filter((task) => task.status !== 'done' && task.lane !== 'done').length, icon: ClipboardList },
-              { id: 'today' as const, label: "Today's tasks", count: rootTasksForSettings.filter((task) => { const today = formatDateInputValue(new Date()); return task.scheduled_for === today || task.due_date === today || Boolean(task.completed_at?.startsWith(today)); }).length, icon: CalendarDays },
-              { id: 'all' as const, label: 'All tasks', count: rootTasksForSettings.length, icon: CheckSquare },
-            ]).map(({ id, label, count, icon: Icon }) => (
-              <button
-                key={id}
-                type="button"
-                onClick={() => setTaskScopeMode(id)}
-                className={cn(
-                  'flex min-w-0 items-center justify-center gap-2 rounded-[10px] px-3 py-2 text-[11px] font-medium transition-all',
-                  taskScopeMode === id ? 'bg-accent/12 text-accent shadow-sm' : 'text-text-muted hover:bg-panel/50 hover:text-text-primary',
-                )}
-              >
-                <Icon className="h-3.5 w-3.5 shrink-0" />
-                <span className="hidden truncate sm:inline">{label}</span>
-                <span className={cn('rounded-full px-1.5 py-0.5 text-[9px] tabular-nums', taskScopeMode === id ? 'bg-accent/12' : 'bg-text-primary/5')}>{count}</span>
-              </button>
-            ))}
-          </div>
-        </div>
+        <div className="md:hidden">{renderTaskScopeControl()}</div>
 
-        <div className="flex gap-4 overflow-x-auto pb-4 2xl:grid 2xl:grid-cols-[repeat(4,minmax(220px,1fr))_minmax(260px,320px)] 2xl:overflow-visible">
+        <div className="flex gap-5 overflow-x-auto pb-4 2xl:grid 2xl:grid-cols-[repeat(4,minmax(240px,1fr))_minmax(280px,340px)] 2xl:overflow-visible">
           {visibleTaskBoard.map((column) => {
             const groupedSubtasks = groupSubtasksByParent(column.subtasks, tasksById);
             const isCompletedColumn = column.lane === 'done';
@@ -3319,8 +3311,8 @@ export function MainApp() {
             return (
               <Card
                 className={cn(
-                  'kanban-column flex min-h-[420px] w-[280px] shrink-0 flex-col rounded-[34px] p-5 2xl:w-auto',
-                  'sm:w-[320px]',
+                  'kanban-column flex min-h-[420px] w-[300px] shrink-0 flex-col rounded-[28px] border-white/[0.075] bg-white/[0.018] p-5 2xl:w-auto',
+                  'sm:w-[340px]',
                   dropLane === column.lane ? 'border-accent/30 bg-accent/8 shadow-[0_18px_44px_rgb(var(--accent)/0.12)]' : null,
                 )}
                 key={column.lane}
@@ -3451,42 +3443,15 @@ export function MainApp() {
                           className="kanban-card"
                           draggable
                           dragging={draggedTaskId === task.id}
-                          footer={
-                            isComplete ? (
-                              <p className="text-xs text-text-muted">Completed {formatRelativeTime(task.updated_at)}</p>
-                            ) : (
-                              <div className="space-y-3">
-                                {blocker ? (
-                                  <p className="text-sm text-warning">{blocker.blocker}</p>
-                                ) : null}
-                                <div className="flex flex-wrap gap-2">
-                                  <Button onClick={() => handleStartSession(task)} size="sm" type="button">
-                                    Focus
-                                  </Button>
-                                  <Button
-                                    onClick={() => void markDone(task.id, 'main')}
-                                    size="sm"
-                                    type="button"
-                                    variant="ghost"
-                                  >
-                                    Done
-                                  </Button>
-                                  <Button
-                                    onClick={() => setDetailTaskId(task.id)}
-                                    size="sm"
-                                    type="button"
-                                    variant="ghost"
-                                  >
-                                    Detail
-                                  </Button>
-                                </div>
-                              </div>
-                            )
-                          }
                           key={task.id}
+                          mission={missions.find((mission) => mission.id === task.mission_id)}
                           onDragEnd={handleTaskDragEnd}
                           onDragStart={(event) => handleTaskDragStart(event, task.id)}
-                          onSelect={() => selectTask(task.id)}
+                          onSelect={() => {
+                            selectTask(task.id);
+                            setDetailTaskId(task.id);
+                          }}
+                          showDescription={false}
                           task={task}
                         />
                       );
@@ -3527,12 +3492,13 @@ export function MainApp() {
                                   draggable
                                   dragging={draggedTaskId === task.id}
                                   key={task.id}
-                                  onDetail={() => setDetailTaskId(task.id)}
-                                  onDone={() => void markDone(task.id, 'main')}
+                                  mission={missions.find((mission) => mission.id === task.mission_id)}
                                   onDragEnd={handleTaskDragEnd}
                                   onDragStart={(event) => handleTaskDragStart(event, task.id)}
-                                  onFocus={() => handleStartSession(task)}
-                                  onSelect={() => selectTask(task.id)}
+                                  onSelect={() => {
+                                    selectTask(task.id);
+                                    setDetailTaskId(task.id);
+                                  }}
                                   task={task}
                                 />
                               ))}
@@ -3930,6 +3896,8 @@ export function MainApp() {
           syncModeLabel={syncMode === 'cloud' ? 'Cloud sync' : 'Local only'}
         />
 
+        <AiProviderCard />
+
         <DownloadsCard />
 
         <Card className="rounded-[34px] p-6">
@@ -4285,6 +4253,8 @@ export function MainApp() {
             </div>
 
             <div className="flex shrink-0 items-center gap-2 sm:gap-3">
+              {activeView === 'tasks' ? <div className="hidden md:block">{renderTaskScopeControl()}</div> : null}
+
               {activeView === 'tasks' ? (
                 <Button
                   aria-label="Create task"
@@ -4397,7 +4367,7 @@ export function MainApp() {
                   type="button"
                 />
 
-                <aside className="absolute inset-y-0 right-0 z-40 w-full max-w-[420px] overflow-hidden border-l border-borderSoft/30 bg-panel shadow-2xl lg:relative lg:inset-auto lg:z-auto lg:h-full lg:min-h-0 lg:w-[380px] lg:max-w-none lg:shrink-0 lg:shadow-none xl:w-[420px]">
+                <aside className="absolute inset-y-0 right-0 z-40 w-full max-w-[480px] overflow-hidden border-l border-white/[0.06] bg-panel shadow-2xl lg:relative lg:inset-auto lg:z-auto lg:my-3 lg:mr-3 lg:h-[calc(100%-1.5rem)] lg:min-h-0 lg:w-[420px] lg:max-w-none lg:shrink-0 lg:rounded-[24px] lg:border lg:shadow-[0_24px_80px_rgba(0,0,0,0.42)] xl:w-[480px]">
                   <TaskDetailPanel
                     allTasks={tasks}
                     onClose={() => setDetailTaskId(null)}

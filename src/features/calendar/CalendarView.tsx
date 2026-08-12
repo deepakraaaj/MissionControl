@@ -184,7 +184,7 @@ export function CalendarView({ onOpenTarget }: { onOpenTarget: (target: Calendar
                       : 'border-borderSoft/24 bg-panel2/28 hover:border-borderSoft/45 hover:bg-panel2/45',
                 )}
               >
-                <span className={cn('flex h-6 min-w-6 items-center justify-center rounded-[8px] px-1 text-[11px] font-semibold', isToday ? 'bg-accent text-white shadow-sm' : selected ? 'bg-accent/14 text-accent' : 'text-text-primary/85')}>{day}</span>
+                <span className={cn('flex h-6 min-w-6 items-center justify-center rounded-[8px] px-1 text-[11px] font-semibold', isToday ? 'bg-accent text-[rgb(var(--accent-contrast))] shadow-sm' : selected ? 'bg-accent/14 text-accent' : 'text-text-primary/85')}>{day}</span>
                 <div className="flex h-3 w-full items-end gap-0.5">
                   {dayEvents.slice(0, 4).map((event) => <span key={event.id} className={cn('h-1 flex-1 rounded-full', event.type === 'task' ? 'bg-emerald-400' : event.type === 'focus' ? 'bg-sky-400' : event.type === 'note' ? 'bg-amber-400' : 'bg-violet-400')} />)}
                   {dayEvents.length > 4 ? <span className="ml-0.5 text-[8px] leading-none text-text-muted">+{dayEvents.length - 4}</span> : null}
@@ -232,16 +232,16 @@ export function CalendarView({ onOpenTarget }: { onOpenTarget: (target: Calendar
                     </button>
 
                     {isOpen ? (
-                      <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} className="border-t border-borderSoft/18 px-2 py-2">
+                      <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} className="border-t border-borderSoft/18 px-3 py-3">
                         {group.events.map((event) => {
                           const destination = event.type === 'focus' ? 'History' : event.type === 'task' ? 'Tasks' : event.type === 'mission' ? 'Missions' : event.type === 'journal' ? 'Journal' : 'Notes';
                           return (
-                            <button type="button" onClick={() => openEvent(event)} key={event.id} className="group flex w-full items-start gap-3 rounded-[12px] px-3 py-2.5 text-left transition-colors hover:bg-panel/55">
-                              <span className="mt-1 h-1.5 w-1.5 shrink-0 rounded-full bg-accent/70" />
+                            <button type="button" onClick={() => openEvent(event)} key={event.id} className="group flex w-full items-start gap-3 rounded-[14px] px-3 py-3 text-left transition-colors hover:bg-white/[0.035]">
+                              <span className="mt-2 h-1.5 w-1.5 shrink-0 rounded-full bg-accent" />
                               <span className="min-w-0 flex-1">
-                                <span className="flex items-center gap-2"><span className="truncate text-[12px] font-semibold capitalize text-text-primary">{event.title}</span>{event.time ? <span className="ml-auto shrink-0 text-[9px] text-text-muted/65">{event.time}</span> : null}</span>
-                                <span className="mt-0.5 line-clamp-2 block text-[11px] leading-4 text-text-muted">{event.detail}</span>
-                                <span className="mt-1 flex items-center justify-end gap-1 text-[9px] font-medium text-text-muted transition-colors group-hover:text-accent">Open in {destination}<ArrowUpRight className="h-3 w-3" /></span>
+                                <span className="flex items-start gap-3"><span className="min-w-0 flex-1 break-words text-sm font-semibold capitalize leading-5 text-text-primary">{event.title}</span>{event.time ? <span className="ml-auto shrink-0 pt-0.5 text-[10px] text-text-secondary">{event.time}</span> : null}</span>
+                                <span className="mt-1.5 block max-h-[60px] overflow-hidden text-[13px] leading-5 text-text-secondary">{event.detail}</span>
+                                <span className="mt-2 flex items-center justify-end gap-1 text-[11px] font-medium text-accent/85 transition-colors group-hover:text-accent">Open in {destination}<ArrowUpRight className="h-3.5 w-3.5" /></span>
                               </span>
                             </button>
                           );
