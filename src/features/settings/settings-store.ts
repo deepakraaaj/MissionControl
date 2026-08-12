@@ -11,8 +11,11 @@ import {
 import { showErrorToast, showSuccessToast } from '../toasts/toast-store';
 
 const CALENDAR_DEFAULT_PIN_MIGRATION_KEY = 'missioncontrol-calendar-default-pin-v1';
+const AI_PROVIDER_STORAGE_KEY = 'missioncontrol-ai-provider';
 
 interface SettingsState extends SettingsSnapshot {
+  aiProvider: string;
+  aiModel: string;
   hydrated: boolean;
   launchAtLoginPending: boolean;
   hydrate: () => Promise<void>;
@@ -34,6 +37,25 @@ async function persistSettings(snapshot: SettingsSnapshot) {
   }
 }
 
+function loadLocalAiPreference(): { aiProvider: string; aiModel: string } {
+  try {
+    const parsed = JSON.parse(localStorage.getItem(AI_PROVIDER_STORAGE_KEY) ?? '{}') as {
+      provider?: unknown;
+      model?: unknown;
+    };
+    return {
+      aiProvider: typeof parsed.provider === 'string' ? parsed.provider : '',
+      aiModel: typeof parsed.model === 'string' ? parsed.model : '',
+    };
+  } catch {
+    return { aiProvider: '', aiModel: '' };
+  }
+}
+
+function persistLocalAiPreference(aiProvider: string, aiModel: string) {
+  localStorage.setItem(AI_PROVIDER_STORAGE_KEY, JSON.stringify({ provider: aiProvider, model: aiModel }));
+}
+
 export const useSettingsStore = create<SettingsState>((set, get) => {
   function getSettingsSnapshot(): SettingsSnapshot {
     return {
@@ -43,8 +65,6 @@ export const useSettingsStore = create<SettingsState>((set, get) => {
       syncMode: get().syncMode,
       launchAtLogin: get().launchAtLogin,
       sidebarPinnedApps: get().sidebarPinnedApps,
-      aiProvider: get().aiProvider,
-      aiModel: get().aiModel,
     };
   }
 
@@ -57,6 +77,7 @@ export const useSettingsStore = create<SettingsState>((set, get) => {
 
   return {
     ...DEFAULT_SETTINGS_SNAPSHOT,
+    ...loadLocalAiPreference(),
     hydrated: false,
     launchAtLoginPending: false,
     hydrate: async () => {
@@ -90,7 +111,7 @@ export const useSettingsStore = create<SettingsState>((set, get) => {
           void emitAppEvent(SETTINGS_CHANGED_EVENT, nextSnapshot);
         }
 
-        set({ ...nextSnapshot, hydrated: true });
+        set({ ...nextSnapshot, ...loadLocalAiPreference(), hydrated: true });
         if (launchAtLogin !== snapshot.launchAtLogin) {
           void persistSettings(nextSnapshot);
           void emitAppEvent(SETTINGS_CHANGED_EVENT, nextSnapshot);
@@ -153,10 +174,10 @@ export const useSettingsStore = create<SettingsState>((set, get) => {
     },
     setAiProvider: (aiProvider, aiModel) => {
       set({ aiProvider, aiModel });
-      commitSettingsUpdate();
+      persistLocalAiPreference(aiProvider, aiModel);
     },
     syncFromExternal: (state) => {
-      set({ ...state, hydrated: true, launchAtLoginPending: false });
+      set({ ...state, ...loadLocalAiPreference(), hydrated: true, launchAtLoginPending: false });
     },
   };
 });
