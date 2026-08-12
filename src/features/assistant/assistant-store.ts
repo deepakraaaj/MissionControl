@@ -1,7 +1,8 @@
 import { create } from 'zustand';
-import { cerebrasChat, isCerebrasConfigured, type ChatMessage } from '../../lib/cerebras';
+import { chatWithProvider, getConfiguredProviders, getProviderDefinition, resolveActiveProvider, type ChatMessage } from '../../lib/ai/client';
 import { ASSISTANT_TOOL_DEFINITIONS, executeTool } from './assistant-tools';
 import { toLocalDateString } from '../journal/journal-helpers';
+import { useSettingsStore } from '../settings/settings-store';
 
 // What we show in the UI (a cleaned-up view of the conversation).
 export interface UiMessage {
@@ -62,6 +63,17 @@ function describeAction(name: string, result: unknown): string {
 let idCounter = 0;
 const nextId = () => `msg-${Date.now()}-${idCounter++}`;
 
+// Read-only helper for UI chrome (e.g. "Powered by Groq · llama-3.3-70b")
+// that wants the resolved provider without subscribing to the whole store.
+export function getActiveProviderLabel(): { providerLabel: string; model: string } | null {
+  if (getConfiguredProviders().length === 0) return null;
+  const { providerId, model } = resolveActiveProvider(
+    useSettingsStore.getState().aiProvider,
+    useSettingsStore.getState().aiModel,
+  );
+  return { providerLabel: getProviderDefinition(providerId).label, model };
+}
+
 export const useAssistantStore = create<AssistantStore>((set, get) => ({
   open: false,
   messages: [],
@@ -77,10 +89,18 @@ export const useAssistantStore = create<AssistantStore>((set, get) => ({
     const trimmed = text.trim();
     if (!trimmed || get().sending) return;
 
-    if (!isCerebrasConfigured()) {
-      set({ error: 'AI is not configured. Add VITE_CEREBRAS_API_KEY to .env.local and restart.' });
+    if (getConfiguredProviders().length === 0) {
+      set({
+        error:
+          'No AI provider is configured. Add an API key (e.g. VITE_CEREBRAS_API_KEY) to .env.local and restart, or pick a running local provider in Settings.',
+      });
       return;
     }
+
+    const { providerId, model } = resolveActiveProvider(
+      useSettingsStore.getState().aiProvider,
+      useSettingsStore.getState().aiModel,
+    );
 
     const userMsg: UiMessage = { id: nextId(), role: 'user', content: trimmed };
     // seed the wire history with a system prompt on first turn
@@ -105,7 +125,7 @@ export const useAssistantStore = create<AssistantStore>((set, get) => ({
 
       while (rounds < MAX_TOOL_ROUNDS) {
         rounds += 1;
-        const result = await cerebrasChat(history, ASSISTANT_TOOL_DEFINITIONS);
+        const result = await chatWithProvider(providerId, model, history, ASSISTANT_TOOL_DEFINITIONS);
 
         // record the assistant turn (with any tool calls) in wire history
         history.push({

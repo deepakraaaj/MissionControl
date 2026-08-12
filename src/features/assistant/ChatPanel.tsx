@@ -2,7 +2,8 @@ import { useEffect, useRef, useState } from 'react';
 import { Send, MessageCircle, Trash2, CheckCircle2 } from 'lucide-react';
 import { cn } from '../../lib/cn';
 import { Button } from '../../components/ui/button';
-import { useAssistantStore } from './assistant-store';
+import { useAssistantStore, getActiveProviderLabel } from './assistant-store';
+import { useSettingsStore } from '../settings/settings-store';
 
 const SUGGESTIONS = [
   'What did I do today?',
@@ -20,6 +21,12 @@ export function ChatPanel({ compact = false }: { compact?: boolean }) {
 
   const [input, setInput] = useState('');
   const scrollRef = useRef<HTMLDivElement>(null);
+
+  // Subscribed just to force a re-render when the provider changes in Settings —
+  // the actual resolved value (with its env/default fallback) comes from the helper.
+  useSettingsStore((s) => s.aiProvider);
+  useSettingsStore((s) => s.aiModel);
+  const activeProvider = getActiveProviderLabel();
 
   useEffect(() => {
     scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: 'smooth' });
@@ -135,15 +142,24 @@ export function ChatPanel({ compact = false }: { compact?: boolean }) {
             <Send className="h-4 w-4" />
           </Button>
         </div>
-        {messages.length > 0 && !compact && (
-          <button
-            type="button"
-            onClick={clear}
-            className="mt-2 flex items-center gap-1.5 text-[11px] font-medium text-text-muted/60 transition-colors hover:text-danger"
-          >
-            <Trash2 className="h-3 w-3" /> Clear conversation
-          </button>
-        )}
+        <div className="mt-2 flex items-center justify-between gap-2">
+          {activeProvider ? (
+            <p className="truncate text-[11px] text-text-muted/60">
+              Powered by {activeProvider.providerLabel} · {activeProvider.model}
+            </p>
+          ) : (
+            <p className="truncate text-[11px] text-warning/80">No AI provider configured — see Settings</p>
+          )}
+          {messages.length > 0 && !compact && (
+            <button
+              type="button"
+              onClick={clear}
+              className="flex shrink-0 items-center gap-1.5 text-[11px] font-medium text-text-muted/60 transition-colors hover:text-danger"
+            >
+              <Trash2 className="h-3 w-3" /> Clear conversation
+            </button>
+          )}
+        </div>
       </div>
     </div>
   );

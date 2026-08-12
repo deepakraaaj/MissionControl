@@ -21,6 +21,7 @@ interface SettingsState extends SettingsSnapshot {
   setSyncMode: (mode: SyncMode) => void;
   setLaunchAtLogin: (launchAtLogin: boolean) => Promise<void>;
   toggleSidebarPinnedApp: (appId: SidebarPinnedAppId) => void;
+  setAiProvider: (provider: string, model: string) => void;
   syncFromExternal: (state: SettingsSnapshot) => void;
 }
 
@@ -42,6 +43,8 @@ export const useSettingsStore = create<SettingsState>((set, get) => {
       syncMode: get().syncMode,
       launchAtLogin: get().launchAtLogin,
       sidebarPinnedApps: get().sidebarPinnedApps,
+      aiProvider: get().aiProvider,
+      aiModel: get().aiModel,
     };
   }
 
@@ -146,6 +149,10 @@ export const useSettingsStore = create<SettingsState>((set, get) => {
         : [...current, appId];
 
       set({ sidebarPinnedApps: nextPinnedApps });
+      commitSettingsUpdate();
+    },
+    setAiProvider: (aiProvider, aiModel) => {
+      set({ aiProvider, aiModel });
       commitSettingsUpdate();
     },
     syncFromExternal: (state) => {

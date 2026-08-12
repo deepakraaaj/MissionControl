@@ -21,6 +21,11 @@ export type SidebarPinnedAppId =
   | 'assistant'
   | 'settings';
 
+// Kept as a plain string (not the ProviderId union from lib/ai/providers) so
+// preferences stays free of a dependency on the AI layer; the settings store
+// validates it against the live provider registry when read.
+export type AiProviderPreference = string;
+
 export interface SettingsSnapshot {
   reduceMotion: boolean;
   quickAddShortcut: string;
@@ -28,6 +33,8 @@ export interface SettingsSnapshot {
   syncMode: SyncMode;
   launchAtLogin: boolean;
   sidebarPinnedApps: SidebarPinnedAppId[];
+  aiProvider: AiProviderPreference;
+  aiModel: string;
 }
 
 export const DEFAULT_THEME_SNAPSHOT: ThemeSnapshot = {
@@ -41,4 +48,6 @@ export const DEFAULT_SETTINGS_SNAPSHOT: SettingsSnapshot = {
   syncMode: 'local',
   launchAtLogin: false,
   sidebarPinnedApps: ['dashboard', 'tasks', 'missions', 'calendar', 'journal', 'notes'],
+  aiProvider: '',
+  aiModel: '',
 };

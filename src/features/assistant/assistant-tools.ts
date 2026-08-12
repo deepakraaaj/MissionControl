@@ -3,7 +3,7 @@
 // (run when the model calls it). Executors return a short JSON-serializable
 // result that is fed back to the model.
 
-import type { ToolDefinition } from '../../lib/cerebras';
+import type { ToolDefinition } from '../../lib/ai/client';
 import { useTaskStore } from '../tasks/task-store';
 import { useMissionStore } from '../missions/mission-store';
 import { useJournalStore } from '../journal/journal-store';
