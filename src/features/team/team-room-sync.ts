@@ -49,11 +49,14 @@ export async function connectTeamRoomSync(roomId: string, roomName?: string): Pr
   const client = getSupabaseClient();
   const { data, error } = await client.from('team_room_state').select('data').eq('room_id', roomId).maybeSingle();
   if (error) throw error;
-  if (data?.data && Object.keys(data.data as object).length > 0) applySharedState(data.data);
-  else {
-    applySharedState(roomName?.toLowerCase().includes('kumbakonam') ? { ...EMPTY_ROOM_STATE, teamMissions: [KUMBAKONAM_PROJECT], selectedTeamMissionId: KUMBAKONAM_PROJECT.id } : EMPTY_ROOM_STATE);
-    await save(roomId);
-  }
+  const existing = data?.data && Object.keys(data.data as object).length > 0 ? data.data as SharedTeamState : EMPTY_ROOM_STATE;
+  const isKumbakonam = roomName?.toLowerCase().includes('kumbakonam');
+  const hasTurfProject = existing.teamMissions.some((project) => project.id === KUMBAKONAM_PROJECT.id);
+  const merged = isKumbakonam && !hasTurfProject
+    ? { ...existing, teamMissions: [KUMBAKONAM_PROJECT, ...existing.teamMissions], selectedTeamMissionId: existing.selectedTeamMissionId ?? KUMBAKONAM_PROJECT.id }
+    : existing;
+  applySharedState(merged);
+  if (merged !== existing) await save(roomId);
 
   unsubscribeStore = useTeamStore.subscribe(() => {
     if (applyingRemoteState || !currentRoomId) return;
