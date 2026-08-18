@@ -4345,7 +4345,7 @@ export function MainApp() {
         </aside>
 
         <div className="relative z-10 flex min-w-0 flex-1 flex-col">
-          <header className="flex items-center justify-between gap-3 border-b border-borderSoft/24 px-3 py-3 sm:gap-4 sm:px-6 sm:py-5">
+          <header className="flex items-center justify-between gap-3 border-b border-borderSoft/24 px-3 py-3 sm:gap-4 sm:px-6 sm:py-3">
             <div className="flex min-w-0 items-center gap-2 sm:gap-3">
               <Button
                 onClick={() => setMobileNavOpen(true)}

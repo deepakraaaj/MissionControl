@@ -86,7 +86,7 @@ export function UnifiedMissionHub({ mission, onBack }: UnifiedMissionHubProps) {
   return (
     <div className="flex min-w-0 flex-1 flex-col overflow-y-auto text-text-primary">
       {/* Top Mission Banner & Live Demo Launcher */}
-      <div className="relative space-y-4 border-b border-borderSoft/30 bg-panel/35 p-5 sm:p-6">
+      <div className="relative space-y-3 border-b border-borderSoft/30 bg-panel/35 p-3 sm:p-4">
         {/* Breadcrumb / Back */}
         <div className="flex items-center justify-between gap-3">
           <button
