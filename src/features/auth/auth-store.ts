@@ -147,11 +147,18 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
       const { error } = await client.auth.signOut();
 
       if (error) {
-        set({ error: error.message, loading: false });
-        return;
+        // A stale/wrong-project JWT can make the remote sign-out itself return
+        // 401. Always clear it locally so the user can recover by signing in.
+        await client.auth.signOut({ scope: 'local' });
       }
 
       set({ session: null, loading: false, error: null });
+      const [{ useTeamRoomStore }, { disconnectTeamRoomSync }, { useTeamStore }] = await Promise.all([
+        import('../team/team-room-store'), import('../team/team-room-sync'), import('../team/team-store'),
+      ]);
+      disconnectTeamRoomSync();
+      useTeamRoomStore.getState().reset();
+      useTeamStore.getState().lockTeam();
       showInfoToast('Signed out', 'Your workspace is locked until you sign back in.');
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Sign out failed';

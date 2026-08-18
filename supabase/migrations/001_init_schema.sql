@@ -23,8 +23,8 @@ CREATE TABLE IF NOT EXISTS tasks (
   updated_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT now()
 );
 
-CREATE INDEX idx_tasks_user_id ON tasks(user_id);
-CREATE INDEX idx_tasks_updated_at ON tasks(updated_at DESC);
+CREATE INDEX IF NOT EXISTS idx_tasks_user_id ON tasks(user_id);
+CREATE INDEX IF NOT EXISTS idx_tasks_updated_at ON tasks(updated_at DESC);
 
 -- Create focus_state table (one row per user)
 CREATE TABLE IF NOT EXISTS focus_state (
@@ -56,7 +56,7 @@ CREATE TABLE IF NOT EXISTS app_preferences (
   PRIMARY KEY (user_id, key)
 );
 
-CREATE INDEX idx_app_preferences_user_id ON app_preferences(user_id);
+CREATE INDEX IF NOT EXISTS idx_app_preferences_user_id ON app_preferences(user_id);
 
 -- Create work_sessions table
 -- Mirrors WorkSession type from session-types.ts
@@ -78,9 +78,9 @@ CREATE TABLE IF NOT EXISTS work_sessions (
   updated_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT now()
 );
 
-CREATE INDEX idx_work_sessions_user_id ON work_sessions(user_id);
-CREATE INDEX idx_work_sessions_task_id ON work_sessions(task_id);
-CREATE INDEX idx_work_sessions_started_at ON work_sessions(started_at DESC);
+CREATE INDEX IF NOT EXISTS idx_work_sessions_user_id ON work_sessions(user_id);
+CREATE INDEX IF NOT EXISTS idx_work_sessions_task_id ON work_sessions(task_id);
+CREATE INDEX IF NOT EXISTS idx_work_sessions_started_at ON work_sessions(started_at DESC);
 
 -- Create activity_log table
 CREATE TABLE IF NOT EXISTS activity_log (
@@ -102,8 +102,8 @@ CREATE TABLE IF NOT EXISTS activity_log (
   created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT now()
 );
 
-CREATE INDEX idx_activity_log_user_id ON activity_log(user_id);
-CREATE INDEX idx_activity_log_created_at ON activity_log(created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_activity_log_user_id ON activity_log(user_id);
+CREATE INDEX IF NOT EXISTS idx_activity_log_created_at ON activity_log(created_at DESC);
 
 -- ──────────────────────────────────────────
 -- Row Level Security
@@ -114,18 +114,23 @@ ALTER TABLE app_preferences ENABLE ROW LEVEL SECURITY;
 ALTER TABLE work_sessions ENABLE ROW LEVEL SECURITY;
 ALTER TABLE activity_log ENABLE ROW LEVEL SECURITY;
 
+DROP POLICY IF EXISTS "tasks_private" ON tasks;
 CREATE POLICY "tasks_private" ON tasks
   FOR ALL USING (auth.uid() = user_id) WITH CHECK (auth.uid() = user_id);
 
+DROP POLICY IF EXISTS "focus_state_private" ON focus_state;
 CREATE POLICY "focus_state_private" ON focus_state
   FOR ALL USING (auth.uid() = user_id) WITH CHECK (auth.uid() = user_id);
 
+DROP POLICY IF EXISTS "app_preferences_private" ON app_preferences;
 CREATE POLICY "app_preferences_private" ON app_preferences
   FOR ALL USING (auth.uid() = user_id) WITH CHECK (auth.uid() = user_id);
 
+DROP POLICY IF EXISTS "work_sessions_private" ON work_sessions;
 CREATE POLICY "work_sessions_private" ON work_sessions
   FOR ALL USING (auth.uid() = user_id) WITH CHECK (auth.uid() = user_id);
 
+DROP POLICY IF EXISTS "activity_log_private" ON activity_log;
 CREATE POLICY "activity_log_private" ON activity_log
   FOR ALL USING (auth.uid() = user_id) WITH CHECK (auth.uid() = user_id);
 
@@ -140,18 +145,22 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
+DROP TRIGGER IF EXISTS trg_tasks_updated_at ON tasks;
 CREATE TRIGGER trg_tasks_updated_at
   BEFORE UPDATE ON tasks
   FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 
+DROP TRIGGER IF EXISTS trg_focus_state_updated_at ON focus_state;
 CREATE TRIGGER trg_focus_state_updated_at
   BEFORE UPDATE ON focus_state
   FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 
+DROP TRIGGER IF EXISTS trg_app_preferences_updated_at ON app_preferences;
 CREATE TRIGGER trg_app_preferences_updated_at
   BEFORE UPDATE ON app_preferences
   FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 
+DROP TRIGGER IF EXISTS trg_work_sessions_updated_at ON work_sessions;
 CREATE TRIGGER trg_work_sessions_updated_at
   BEFORE UPDATE ON work_sessions
   FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();

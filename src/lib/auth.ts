@@ -23,18 +23,17 @@ export async function initSupabaseAuth(): Promise<SupabaseClient> {
       throw new Error('Supabase environment variables not configured. Check VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY.');
     }
 
-    const client = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-
-    // Try to restore session from localStorage (works for both desktop and browser)
-    const storedSession = localStorage.getItem(STORAGE_KEY);
-    if (storedSession) {
-      try {
-        const session = JSON.parse(storedSession) as Session;
-        await client.auth.setSession(session);
-      } catch {
-        localStorage.removeItem(STORAGE_KEY);
-      }
-    }
+    // Let supabase-js own restoration and refresh under the same key the app
+    // historically used. Manually calling setSession during client startup can
+    // leave a stale cross-project JWT looking authenticated in the UI.
+    const client = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
+      auth: {
+        storageKey: STORAGE_KEY,
+        persistSession: true,
+        autoRefreshToken: true,
+        detectSessionInUrl: true,
+      },
+    });
 
     supabaseClient = client;
     return client;

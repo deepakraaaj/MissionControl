@@ -45,7 +45,7 @@ function systemPrompt(): string {
 
 function describeAction(name: string, result: unknown): string {
   const r = (result ?? {}) as Record<string, any>;
-  if (r.error) return `⚠️ ${name}: ${r.error}`;
+  if (r.error) return `Error in ${name}: ${r.error}`;
   switch (name) {
     case 'create_task': return `Created task “${r.title}”`;
     case 'complete_task': return `Completed “${r.title}”`;

@@ -20,7 +20,9 @@ export type SidebarPinnedAppId =
   | 'journal'
   | 'notes'
   | 'assistant'
-  | 'settings';
+  | 'settings'
+  | 'crm'
+  | 'problems';
 
 export interface SettingsSnapshot {
   reduceMotion: boolean;

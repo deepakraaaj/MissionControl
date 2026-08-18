@@ -23,20 +23,30 @@ ALTER TABLE tasks ADD COLUMN IF NOT EXISTS tags JSONB NOT NULL DEFAULT '[]'::jso
 -- completion timestamp (drives velocity and streak stats)
 ALTER TABLE tasks ADD COLUMN IF NOT EXISTS completed_at TIMESTAMP WITH TIME ZONE;
 
--- Migrate existing data into new consolidated columns
-UPDATE tasks SET
-  outcome = CASE
-    WHEN definition_of_done IS NOT NULL AND definition_of_done != '' THEN definition_of_done
-    WHEN goal IS NOT NULL AND goal != '' THEN goal
-    ELSE ''
-  END,
-  notes = CASE
-    WHEN (description IS NOT NULL AND description != '') AND (workspace_notes IS NOT NULL AND workspace_notes != '')
-      THEN description || E'\n\n' || workspace_notes
-    WHEN description IS NOT NULL AND description != '' THEN description
-    WHEN workspace_notes IS NOT NULL AND workspace_notes != '' THEN workspace_notes
-    ELSE ''
-  END,
-  completed_at = CASE WHEN status = 'done' THEN updated_at ELSE NULL END;
+-- Migrate legacy columns when upgrading an old schema. Some installations were
+-- created directly with the redesigned task shape and do not contain them.
+DO $$ BEGIN
+  IF EXISTS (
+    SELECT 1 FROM information_schema.columns
+    WHERE table_schema = 'public' AND table_name = 'tasks' AND column_name = 'definition_of_done'
+  ) THEN
+    EXECUTE $migration$
+      UPDATE tasks SET
+        outcome = CASE
+          WHEN definition_of_done IS NOT NULL AND definition_of_done != '' THEN definition_of_done
+          WHEN goal IS NOT NULL AND goal != '' THEN goal
+          ELSE ''
+        END,
+        notes = CASE
+          WHEN (description IS NOT NULL AND description != '') AND (workspace_notes IS NOT NULL AND workspace_notes != '')
+            THEN description || E'\n\n' || workspace_notes
+          WHEN description IS NOT NULL AND description != '' THEN description
+          WHEN workspace_notes IS NOT NULL AND workspace_notes != '' THEN workspace_notes
+          ELSE ''
+        END,
+        completed_at = CASE WHEN status = 'done' THEN updated_at ELSE NULL END
+    $migration$;
+  END IF;
+END $$;
 
 CREATE INDEX IF NOT EXISTS idx_tasks_parent_task_id ON tasks(parent_task_id);

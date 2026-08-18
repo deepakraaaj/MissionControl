@@ -37,26 +37,28 @@ CREATE TABLE IF NOT EXISTS missions (
   updated_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT now()
 );
 
-CREATE INDEX idx_missions_user_id ON missions(user_id);
-CREATE INDEX idx_missions_status ON missions(user_id, status);
-CREATE INDEX idx_missions_updated_at ON missions(updated_at DESC);
+CREATE INDEX IF NOT EXISTS idx_missions_user_id ON missions(user_id);
+CREATE INDEX IF NOT EXISTS idx_missions_status ON missions(user_id, status);
+CREATE INDEX IF NOT EXISTS idx_missions_updated_at ON missions(updated_at DESC);
 
 -- Add mission_id to tasks
 ALTER TABLE tasks ADD COLUMN IF NOT EXISTS mission_id TEXT REFERENCES missions(id) ON DELETE SET NULL;
 
-CREATE INDEX idx_tasks_mission_id ON tasks(mission_id);
+CREATE INDEX IF NOT EXISTS idx_tasks_mission_id ON tasks(mission_id);
 
 -- ──────────────────────────────────────────
 -- Row Level Security
 -- ──────────────────────────────────────────
 ALTER TABLE missions ENABLE ROW LEVEL SECURITY;
 
+DROP POLICY IF EXISTS "missions_private" ON missions;
 CREATE POLICY "missions_private" ON missions
   FOR ALL USING (auth.uid() = user_id) WITH CHECK (auth.uid() = user_id);
 
 -- ──────────────────────────────────────────
 -- Auto-update updated_at on every write
 -- ──────────────────────────────────────────
+DROP TRIGGER IF EXISTS trg_missions_updated_at ON missions;
 CREATE TRIGGER trg_missions_updated_at
   BEFORE UPDATE ON missions
   FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();

@@ -1,3 +1,13 @@
+import { TeamHeaderSwitcher } from "../../features/team/TeamHeaderSwitcher";
+import { PocketDropFAB } from "../../features/team/PocketDropModal";
+import { UnifiedMissionHub } from "../../features/team/UnifiedMissionHub";
+import { TeamHubView } from "../../features/team/TeamHubView";
+import { TeamCalendarView } from "../../features/team/TeamCalendarView";
+import { TeamTasksView } from "../../features/team/TeamTasksView";
+import { LeadsCRMView } from "../../features/team/LeadsCRMView";
+import { ProblemBankView } from "../../features/team/ProblemBankView";
+import { TeamNotesView } from "../../features/team/TeamNotesView";
+import { useTeamStore } from "../../features/team/team-store";
 import {
   type DragEvent as ReactDragEvent,
   type ReactNode,
@@ -7,7 +17,7 @@ import {
   useRef,
   useState,
 } from 'react';
-import { Sun, CheckSquare, Target, MoreHorizontal, CheckCircle2, Timer, Flag, Clock, BarChart3, ClipboardList, Settings, Lightbulb, Link2, AlertCircle, Pin, FileText, ArrowUpRight, RotateCcw, Cloud, Pencil, Trash2, Play, Pause, CheckCircle, Menu, X, Plus, CalendarDays, ChevronDown, CornerDownRight, BookHeart, StickyNote, Wifi, WifiOff, MessageCircle, Trophy, type LucideIcon } from 'lucide-react';
+import { Sun, CheckSquare, Target, MoreHorizontal, CheckCircle2, Timer, Flag, Clock, BarChart3, ClipboardList, Settings, Lightbulb, Link2, AlertCircle, Pin, FileText, ArrowUpRight, RotateCcw, Cloud, Pencil, Trash2, Play, Pause, CheckCircle, Menu, X, Plus, CalendarDays, ChevronDown, CornerDownRight, BookHeart, StickyNote, Wifi, WifiOff, MessageCircle, Trophy, Users, AlertOctagon, type LucideIcon } from 'lucide-react';
 import { MissionIcon } from '../../components/ui/mission-icon';
 import { DatePicker } from '../../components/ui/date-picker';
 import { Badge } from '../../components/ui/badge';
@@ -71,7 +81,7 @@ import { isTauriApp, showHudWindow, showQuickAddWindow, subscribeAppEvent } from
 import { useIsMobile } from '../../hooks/use-mobile';
 import { ChallengesView } from '../../features/challenges/ChallengesView';
 
-type MainView = 'dashboard' | 'focus' | 'missions' | 'roadmap' | 'today' | 'calendar' | 'challenges' | 'tasks' | 'history' | 'insights' | 'review' | 'journal' | 'notes' | 'assistant' | 'settings' | 'apps';
+type MainView = 'dashboard' | 'focus' | 'missions' | 'roadmap' | 'today' | 'calendar' | 'challenges' | 'tasks' | 'history' | 'insights' | 'review' | 'journal' | 'notes' | 'assistant' | 'settings' | 'apps' | 'crm' | 'problems';
 
 type CaptureState = {
   kind: SessionCaptureKind;
@@ -195,11 +205,76 @@ const launcherViews: Array<{
     gradient: 'from-blue-500 via-indigo-500 to-violet-500',
   },
   {
+    id: 'crm',
+    label: 'CRM',
+    icon: Users,
+    description: 'Track venue leads & pilots',
+    gradient: 'from-emerald-500 via-teal-500 to-cyan-500',
+  },
+  {
+    id: 'problems',
+    label: 'Problems HUB',
+    icon: AlertOctagon,
+    description: 'MDM objections & friction bank',
+    gradient: 'from-rose-500 via-pink-500 to-amber-500',
+  },
+  {
     id: 'settings',
     label: 'Settings',
     icon: Settings,
     description: 'Tune the workspace',
     gradient: 'from-slate-500 via-zinc-500 to-stone-600',
+  },
+];
+
+const teamLauncherViews: Array<{
+  id: MainView;
+  label: string;
+  icon: LucideIcon;
+  description: string;
+  gradient: string;
+}> = [
+  {
+    id: 'missions',
+    label: 'Projects',
+    icon: Target,
+    description: 'Shared client projects',
+    gradient: 'from-amber-500 via-orange-500 to-rose-500',
+  },
+  {
+    id: 'calendar',
+    label: 'Calendar',
+    icon: CalendarDays,
+    description: 'Deadlines & CRM follow-ups',
+    gradient: 'from-blue-500 via-sky-500 to-cyan-500',
+  },
+  {
+    id: 'tasks',
+    label: 'Tasks',
+    icon: CheckSquare,
+    description: 'Assign and track work',
+    gradient: 'from-violet-500 via-purple-500 to-indigo-500',
+  },
+  {
+    id: 'crm',
+    label: 'CRM',
+    icon: Users,
+    description: 'Clients and sales leads',
+    gradient: 'from-emerald-500 via-teal-500 to-green-600',
+  },
+  {
+    id: 'problems',
+    label: 'Issues',
+    icon: AlertOctagon,
+    description: 'Issues, feedback, and ideas',
+    gradient: 'from-rose-500 via-pink-500 to-amber-500',
+  },
+  {
+    id: 'notes',
+    label: 'Notes',
+    icon: StickyNote,
+    description: 'Shared team notes',
+    gradient: 'from-teal-500 via-cyan-500 to-blue-500',
   },
 ];
 
@@ -588,6 +663,8 @@ function getViewCopy(view: MainView) {
     assistant: 'Assistant',
     settings: 'Settings',
     apps: 'Apps',
+    crm: 'CRM',
+    problems: 'Problems HUB',
   };
   return labels[view] ?? 'Today';
 }
@@ -771,14 +848,18 @@ function SidebarContent({
     </button>
   );
 
+  const workspaceMode = useTeamStore((s) => s.workspaceMode);
+  const teamUnlocked = useTeamStore((s) => s.teamUnlocked);
+  const isTeam = workspaceMode === 'team' && teamUnlocked;
+
   return (
     <div className="flex h-full flex-col">
       {!compact ? (
         <button
           type="button"
-          onClick={() => onViewSelect('dashboard')}
+          onClick={() => onViewSelect(isTeam ? 'missions' : 'dashboard')}
           aria-label="Go to dashboard"
-          className="-mx-1 flex items-center rounded-2xl px-1 py-1 transition-opacity hover:opacity-80"
+          className="-mx-1 flex items-center rounded-2xl px-1 py-1 transition-opacity hover:opacity-80 cursor-pointer"
         >
           <SynCatchWordmark themed animated logoClassName="h-12 w-12" textClassName="text-2xl font-bold tracking-tight" />
         </button>
@@ -788,7 +869,21 @@ function SidebarContent({
         {/* Mobile drawer keeps Apps at the top; desktop pins it to the bottom-left corner. */}
         {compact ? appsButton : null}
 
-        {visibleIds.length > 0 ? (
+        {isTeam ? (
+          <div className={cn('pt-1', compact ? 'space-y-1' : 'space-y-1.5')}>
+            {teamLauncherViews.map((view) => (
+              <NavButton
+                active={activeView === view.id}
+                caption={view.description}
+                compact={compact}
+                icon={view.icon}
+                key={view.id}
+                label={view.label}
+                onClick={() => onViewSelect(view.id)}
+              />
+            ))}
+          </div>
+        ) : visibleIds.length > 0 ? (
           <div className={cn('pt-1', compact ? 'space-y-1' : 'space-y-1.5')}>
             {launcherViews
               .filter((view) => view.id !== 'settings' && visibleIds.includes(view.id))
@@ -2467,6 +2562,9 @@ export function MainApp() {
   }, []);
 
   const isMobile = useIsMobile();
+  const workspaceMode = useTeamStore((s) => s.workspaceMode);
+  const teamUnlocked = useTeamStore((s) => s.teamUnlocked);
+
 
   useEffect(() => {
     function handleEscape(event: KeyboardEvent) {
@@ -4259,7 +4357,9 @@ export function MainApp() {
               >
                 <Menu className="h-5 w-5" />
               </Button>
-              <h2 className="truncate text-lg font-semibold text-text-primary sm:text-2xl">{viewCopy}</h2>
+              <h2 className="truncate text-lg font-semibold text-text-primary sm:text-2xl">
+                {workspaceMode === 'team' ? 'Team Workspace' : viewCopy}
+              </h2>
             </div>
 
             <div className="flex shrink-0 items-center gap-2 sm:gap-3">
@@ -4277,7 +4377,7 @@ export function MainApp() {
                   <span className="hidden sm:inline max-[380px]:hidden">Create task</span>
                   <span className="sm:hidden max-[380px]:hidden">Add</span>
                 </Button>
-              ) : activeView === 'missions' ? (
+              ) : activeView === 'missions' && workspaceMode !== 'team' ? (
                 <Button onClick={() => setMissionComposerOpen(true)} size="sm" type="button" className="px-3 sm:px-4">
                   <Plus className="h-4 w-4 sm:mr-2" />
                   <span className="hidden sm:inline">New mission</span>
@@ -4302,6 +4402,7 @@ export function MainApp() {
                 ) : null}
               </div>
 
+              <TeamHeaderSwitcher onSwitchMode={(mode) => setActiveView(mode === 'team' ? 'missions' : 'dashboard')} />
               <Button
                 onClick={() => setActiveView('settings')}
                 aria-label="Settings"
@@ -4316,47 +4417,75 @@ export function MainApp() {
           </header>
 
           <div className="relative min-h-0 flex-1 overflow-hidden lg:flex">
-            <main className="main-scroll-region absolute inset-0 overflow-y-scroll px-3 py-4 pb-32 sm:px-6 sm:py-6 lg:relative lg:inset-auto lg:h-full lg:min-w-0 lg:flex-1 lg:pb-6" style={{ WebkitOverflowScrolling: 'touch' }}>
-              {activeView === 'apps' ? (
-                <AppsWorkspacePage
-                  activeView={previousViewBeforeApps}
-                  onClose={closeAppsView}
-                  onTogglePinnedApp={toggleSidebarPinnedApp}
-                  onViewSelect={(view) => setActiveView(view)}
-                  pinnedAppIds={sidebarPinnedApps}
-                />
-              ) : null}
-              {activeView === 'dashboard' ? (
-                <DashboardView
-                  onNavigate={(view) => setActiveView(view)}
-                  onOpenTask={(taskId) => {
-                    selectTask(taskId);
-                    setDetailTaskId(taskId);
-                    setActiveView('tasks');
-                  }}
-                  onOpenMission={(missionId) => {
-                    useMissionStore.getState().selectMission(missionId);
-                    setDetailMissionId(missionId);
-                    setActiveView('missions');
-                  }}
-                  onNewTask={() => { setActiveView('tasks'); setTaskComposerOpen(true); }}
-                  onNewMission={() => { setActiveView('missions'); setMissionComposerOpen(true); }}
-                />
-              ) : null}
-              {activeView === 'focus' ? renderFocus() : null}
-              {activeView === 'missions' ? renderMissions() : null}
-              {activeView === 'roadmap' ? <RoadmapView missions={missions} allTasks={tasks} onOpenMission={setDetailMissionId} /> : null}
-              {activeView === 'today' ? renderToday() : null}
-              {activeView === 'calendar' ? <CalendarView onOpenTarget={openCalendarTarget} /> : null}
-              {activeView === 'challenges' ? <ChallengesView /> : null}
-              {activeView === 'tasks' ? renderTasks() : null}
-              {activeView === 'history' ? renderHistory() : null}
-              {activeView === 'insights' ? renderInsights() : null}
-              {activeView === 'review' ? renderReview() : null}
-              {activeView === 'journal' ? <JournalView focusedEntryId={calendarJournalTargetId} /> : null}
-              {activeView === 'notes' ? <NotesView openNoteId={calendarNoteTargetId} /> : null}
-              {activeView === 'assistant' ? <AssistantView /> : null}
-              {activeView === 'settings' ? renderSettings() : null}
+            <main
+              className={cn(
+                'main-scroll-region absolute inset-0 overflow-y-scroll px-3 py-4 pb-32 sm:px-6 sm:py-6 lg:relative lg:inset-auto lg:h-full lg:min-w-0 lg:flex-1 lg:pb-6',
+                workspaceMode === 'team' && teamUnlocked ? 'team-workspace' : null,
+              )}
+              style={{ WebkitOverflowScrolling: 'touch' }}
+            >
+              {workspaceMode === 'team' && teamUnlocked ? (
+                <>
+                  {activeView === 'calendar' ? (
+                    <TeamCalendarView />
+                  ) : activeView === 'tasks' ? (
+                    <TeamTasksView />
+                  ) : activeView === 'crm' ? (
+                    <LeadsCRMView />
+                  ) : activeView === 'problems' ? (
+                    <ProblemBankView />
+                  ) : activeView === 'notes' ? (
+                    <TeamNotesView />
+                  ) : activeView === 'settings' ? (
+                    renderSettings()
+                  ) : (
+                    <TeamHubView />
+                  )}
+                </>
+              ) : (
+                <>
+                  {activeView === 'apps' ? (
+                    <AppsWorkspacePage
+                      activeView={previousViewBeforeApps}
+                      onClose={closeAppsView}
+                      onTogglePinnedApp={toggleSidebarPinnedApp}
+                      onViewSelect={(view) => setActiveView(view)}
+                      pinnedAppIds={sidebarPinnedApps}
+                    />
+                  ) : null}
+                  {activeView === 'dashboard' ? (
+                    <DashboardView
+                      onNavigate={(view) => setActiveView(view)}
+                      onOpenTask={(taskId) => {
+                        selectTask(taskId);
+                        setDetailTaskId(taskId);
+                        setActiveView('tasks');
+                      }}
+                      onOpenMission={(missionId) => {
+                        useMissionStore.getState().selectMission(missionId);
+                        setDetailMissionId(missionId);
+                        setActiveView('missions');
+                      }}
+                      onNewTask={() => { setActiveView('tasks'); setTaskComposerOpen(true); }}
+                      onNewMission={() => { setActiveView('missions'); setMissionComposerOpen(true); }}
+                    />
+                  ) : null}
+                  {activeView === 'focus' ? renderFocus() : null}
+                  {activeView === 'missions' ? renderMissions() : null}
+                  {activeView === 'roadmap' ? <RoadmapView missions={missions} allTasks={tasks} onOpenMission={setDetailMissionId} /> : null}
+                  {activeView === 'today' ? renderToday() : null}
+                  {activeView === 'calendar' ? <CalendarView onOpenTarget={openCalendarTarget} /> : null}
+                  {activeView === 'challenges' ? <ChallengesView /> : null}
+                  {activeView === 'tasks' ? renderTasks() : null}
+                  {activeView === 'history' ? renderHistory() : null}
+                  {activeView === 'insights' ? renderInsights() : null}
+                  {activeView === 'review' ? renderReview() : null}
+                  {activeView === 'journal' ? <JournalView focusedEntryId={calendarJournalTargetId} /> : null}
+                  {activeView === 'notes' ? <NotesView openNoteId={calendarNoteTargetId} /> : null}
+                  {activeView === 'assistant' ? <AssistantView /> : null}
+                  {activeView === 'settings' ? renderSettings() : null}
+                </>
+              )}
 
               <CapturePopup
                 loading={captureSaving}
@@ -4388,27 +4517,36 @@ export function MainApp() {
                 </aside>
               </>
             ) : showMissionDetailPanel && detailMission ? (
-              <>
-                <button
-                  aria-label="Close mission details"
-                  className="absolute inset-0 z-30 bg-black/24 lg:hidden"
-                  onClick={() => setDetailMissionId(null)}
-                  type="button"
-                />
-
-                <aside className="absolute inset-y-0 right-0 z-40 w-full max-w-[520px] overflow-hidden border-l border-borderSoft/30 bg-panel shadow-2xl lg:relative lg:inset-auto lg:z-auto lg:h-full lg:min-h-0 lg:w-[440px] lg:max-w-none lg:shrink-0 lg:shadow-none xl:w-[500px]">
-                  <MissionDetailPanel
+              workspaceMode === "team" ? (
+                <div className="fixed inset-0 z-50 bg-slate-950/95 backdrop-blur-md flex flex-col animate-in fade-in">
+                  <UnifiedMissionHub
                     mission={detailMission}
-                    allTasks={tasks}
-                    onClose={() => setDetailMissionId(null)}
-                    onOpenTask={setDetailTaskId}
-                    onEditMission={(m) => {
-                      setEditingMission(m);
-                      setMissionComposerOpen(true);
-                    }}
+                    onBack={() => setDetailMissionId(null)}
                   />
-                </aside>
-              </>
+                </div>
+              ) : (
+                <>
+                  <button
+                    aria-label="Close mission details"
+                    className="absolute inset-0 z-30 bg-black/24 lg:hidden"
+                    onClick={() => setDetailMissionId(null)}
+                    type="button"
+                  />
+
+                  <aside className="absolute inset-y-0 right-0 z-40 w-full max-w-[520px] overflow-hidden border-l border-borderSoft/30 bg-panel shadow-2xl lg:relative lg:inset-auto lg:z-auto lg:h-full lg:min-h-0 lg:w-[440px] lg:max-w-none lg:shrink-0 lg:shadow-none xl:w-[500px]">
+                    <MissionDetailPanel
+                      mission={detailMission}
+                      allTasks={tasks}
+                      onClose={() => setDetailMissionId(null)}
+                      onOpenTask={setDetailTaskId}
+                      onEditMission={(m) => {
+                        setEditingMission(m);
+                        setMissionComposerOpen(true);
+                      }}
+                    />
+                  </aside>
+                </>
+              )
             ) : null}
           </div>
         </div>
@@ -4416,19 +4554,32 @@ export function MainApp() {
 
       {/* Floating AI assistant — available on every screen, hidden while the mobile drawer is open */}
       {!mobileNavOpen && !showTaskDetailPanel && !showMissionDetailPanel ? <AssistantWidget /> : null}
+      <PocketDropFAB />
 
       {/* Mobile bottom navigation */}
       <nav className="mobile-bottom-nav lg:hidden">
-        {([
-          { id: 'today' as MainView, label: 'Today', Icon: Sun },
-          { id: 'tasks' as MainView, label: 'Tasks', Icon: CheckSquare },
-          { id: 'notes' as MainView, label: 'Notes', Icon: StickyNote },
-          { id: 'missions' as MainView, label: 'Missions', Icon: Target },
-          { id: 'roadmap' as MainView, label: 'More', Icon: MoreHorizontal },
-        ] as const).map((tab) => {
+        {(workspaceMode === 'team' && teamUnlocked
+          ? [
+              { id: 'missions' as MainView, label: 'Projects', Icon: Target },
+              { id: 'calendar' as MainView, label: 'Calendar', Icon: CalendarDays },
+              { id: 'tasks' as MainView, label: 'Tasks', Icon: CheckSquare },
+              { id: 'crm' as MainView, label: 'CRM', Icon: Users },
+              { id: 'roadmap' as MainView, label: 'More', Icon: MoreHorizontal },
+            ]
+          : [
+              { id: 'today' as MainView, label: 'Today', Icon: Sun },
+              { id: 'tasks' as MainView, label: 'Tasks', Icon: CheckSquare },
+              { id: 'notes' as MainView, label: 'Notes', Icon: StickyNote },
+              { id: 'missions' as MainView, label: 'Missions', Icon: Target },
+              { id: 'roadmap' as MainView, label: 'More', Icon: MoreHorizontal },
+            ]
+        ).map((tab) => {
           const isMore = tab.label === 'More';
+          const isTeam = workspaceMode === 'team' && teamUnlocked;
           const isActive = isMore
-            ? !['today', 'tasks', 'notes', 'missions'].includes(activeView)
+            ? isTeam
+              ? !['missions', 'calendar', 'tasks', 'crm'].includes(activeView)
+              : !['today', 'tasks', 'notes', 'missions'].includes(activeView)
             : activeView === tab.id;
           return (
             <button

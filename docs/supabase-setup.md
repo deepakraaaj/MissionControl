@@ -26,6 +26,8 @@ supabase/migrations/001_init_schema.sql
 ```
 This creates the multi-user `tasks`, focus-state, preferences (key-value), and activity-log tables, enables **Row Level Security** on all of them, and adds `updated_at` triggers.
 
+Run every migration in numeric order, including `009_add_team_rooms.sql`. Migration 009 adds Team Hub rooms, approval-only memberships, secure room RPCs, RLS policies, and realtime shared room state.
+
 ## 2. Configure environment variables
 
 Add to `.env.local` in the project root:

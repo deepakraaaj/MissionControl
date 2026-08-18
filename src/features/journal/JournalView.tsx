@@ -663,7 +663,7 @@ export function JournalView({ focusedEntryId = null }: { focusedEntryId?: string
             <p className="text-sm font-medium text-red-700 dark:text-red-200">{error || operationError}</p>
             {error?.includes('journal_entries') && (
               <p className="text-xs text-red-600 dark:text-red-300 mt-2">
-                💡 Tip: Make sure your Supabase migrations are applied. Run <code className="bg-red-500/20 px-2 py-1 rounded text-xs">supabase migration up --remote</code>
+                Tip: Make sure your Supabase migrations are applied. Run <code className="bg-red-500/20 px-2 py-1 rounded text-xs">supabase migration up --remote</code>
               </p>
             )}
           </div>

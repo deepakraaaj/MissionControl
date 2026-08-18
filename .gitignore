@@ -9,4 +9,4 @@ src-tauri/target
 .vercel
 .claude/
 linkedin-post/
-
+supabase/.temp/

@@ -12,13 +12,26 @@ import {
   Users,
   Palette,
   Microscope,
-  HelpCircle
+  HelpCircle,
+  Activity,
+  Dumbbell,
+  Tag,
+  Layers,
+  Calendar,
+  CheckSquare,
+  Globe,
+  Folder,
+  FileText,
+  Sparkles,
+  Smartphone,
+  Zap,
+  type LucideIcon
 } from 'lucide-react';
 
 export const MISSION_ICONS = {
   Target,
   Rocket: Flag,
-  Zap: Compass,
+  Zap,
   Flame,
   Leaf,
   Building,
@@ -29,11 +42,47 @@ export const MISSION_ICONS = {
   Users,
   Palette,
   Microscope,
+  Activity,
+  Dumbbell,
+  Tag,
+  Layers,
+  Calendar,
+  CheckSquare,
+  Globe,
+  Folder,
+  FileText,
+  Sparkles,
+  Smartphone,
+  HelpCircle,
 } as const;
 
 export type MissionIconName = keyof typeof MISSION_ICONS;
 
 export const ICON_PRESETS = Object.keys(MISSION_ICONS) as MissionIconName[];
+
+const EMOJI_TO_ICON: Record<string, LucideIcon> = {
+  '⚽': Activity,
+  '🏋️': Dumbbell,
+  '🏋': Dumbbell,
+  '🏷️': Tag,
+  '🏷': Tag,
+  '🎪': Compass,
+  '🎯': Target,
+  '🚀': Flag,
+  '⚡': Zap,
+  '🔥': Flame,
+  '💡': Lightbulb,
+  '📱': Smartphone,
+  '📋': CheckSquare,
+  '🗺️': Compass,
+  '🎨': Palette,
+  '🔗': Globe,
+  '🧠': Puzzle,
+  '🏢': Building,
+  '💬': FileText,
+  '🛡️': Shield,
+  '🛡': Shield,
+};
 
 export function MissionIcon({ icon, className }: { icon: string; className?: string }) {
   const IconComponent = MISSION_ICONS[icon as MissionIconName];
@@ -42,6 +91,12 @@ export function MissionIcon({ icon, className }: { icon: string; className?: str
     return <IconComponent className={className} />;
   }
 
-  // Fallback for legacy emojis
-  return <span className={className}>{icon}</span>;
+  // If it's a legacy emoji, map it directly to a clean SVG icon
+  const MappedIcon = EMOJI_TO_ICON[icon];
+  if (MappedIcon) {
+    return <MappedIcon className={className} />;
+  }
+
+  // Default clean fallback
+  return <Target className={className} />;
 }

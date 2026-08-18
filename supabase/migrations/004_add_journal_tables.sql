@@ -1,5 +1,5 @@
 -- Create journal_entries table
-CREATE TABLE journal_entries (
+CREATE TABLE IF NOT EXISTS journal_entries (
   id TEXT PRIMARY KEY NOT NULL,
   user_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
   kind TEXT NOT NULL CHECK (kind IN ('regret', 'manifestation', 'best_moment', 'lesson')),
@@ -15,12 +15,12 @@ CREATE TABLE journal_entries (
 );
 
 -- Create indexes for journal_entries
-CREATE INDEX idx_journal_entries_user_id ON journal_entries(user_id);
-CREATE INDEX idx_journal_entries_entry_date ON journal_entries(entry_date DESC);
-CREATE INDEX idx_journal_entries_updated_at ON journal_entries(updated_at_timestamp DESC);
+CREATE INDEX IF NOT EXISTS idx_journal_entries_user_id ON journal_entries(user_id);
+CREATE INDEX IF NOT EXISTS idx_journal_entries_entry_date ON journal_entries(entry_date DESC);
+CREATE INDEX IF NOT EXISTS idx_journal_entries_updated_at ON journal_entries(updated_at_timestamp DESC);
 
 -- Create journal_days table
-CREATE TABLE journal_days (
+CREATE TABLE IF NOT EXISTS journal_days (
   entry_date TEXT PRIMARY KEY NOT NULL,
   user_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
   mood INTEGER NOT NULL DEFAULT 0 CHECK (mood >= 0 AND mood <= 5),
@@ -33,26 +33,30 @@ CREATE TABLE journal_days (
 );
 
 -- Create indexes for journal_days
-CREATE INDEX idx_journal_days_user_id ON journal_days(user_id);
-CREATE INDEX idx_journal_days_updated_at ON journal_days(updated_at_timestamp DESC);
+CREATE INDEX IF NOT EXISTS idx_journal_days_user_id ON journal_days(user_id);
+CREATE INDEX IF NOT EXISTS idx_journal_days_updated_at ON journal_days(updated_at_timestamp DESC);
 
 -- Enable RLS on journal_entries
 ALTER TABLE journal_entries ENABLE ROW LEVEL SECURITY;
 
 -- RLS policies for journal_entries
+DROP POLICY IF EXISTS "Users can view their own journal entries" ON journal_entries;
 CREATE POLICY "Users can view their own journal entries"
   ON journal_entries FOR SELECT
   USING (auth.uid() = user_id);
 
+DROP POLICY IF EXISTS "Users can create their own journal entries" ON journal_entries;
 CREATE POLICY "Users can create their own journal entries"
   ON journal_entries FOR INSERT
   WITH CHECK (auth.uid() = user_id);
 
+DROP POLICY IF EXISTS "Users can update their own journal entries" ON journal_entries;
 CREATE POLICY "Users can update their own journal entries"
   ON journal_entries FOR UPDATE
   USING (auth.uid() = user_id)
   WITH CHECK (auth.uid() = user_id);
 
+DROP POLICY IF EXISTS "Users can delete their own journal entries" ON journal_entries;
 CREATE POLICY "Users can delete their own journal entries"
   ON journal_entries FOR DELETE
   USING (auth.uid() = user_id);
@@ -61,19 +65,23 @@ CREATE POLICY "Users can delete their own journal entries"
 ALTER TABLE journal_days ENABLE ROW LEVEL SECURITY;
 
 -- RLS policies for journal_days
+DROP POLICY IF EXISTS "Users can view their own journal days" ON journal_days;
 CREATE POLICY "Users can view their own journal days"
   ON journal_days FOR SELECT
   USING (auth.uid() = user_id);
 
+DROP POLICY IF EXISTS "Users can create their own journal days" ON journal_days;
 CREATE POLICY "Users can create their own journal days"
   ON journal_days FOR INSERT
   WITH CHECK (auth.uid() = user_id);
 
+DROP POLICY IF EXISTS "Users can update their own journal days" ON journal_days;
 CREATE POLICY "Users can update their own journal days"
   ON journal_days FOR UPDATE
   USING (auth.uid() = user_id)
   WITH CHECK (auth.uid() = user_id);
 
+DROP POLICY IF EXISTS "Users can delete their own journal days" ON journal_days;
 CREATE POLICY "Users can delete their own journal days"
   ON journal_days FOR DELETE
   USING (auth.uid() = user_id);
