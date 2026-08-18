@@ -98,9 +98,9 @@ export function UnifiedMissionHub({ mission, onBack }: UnifiedMissionHubProps) {
           </button>
 
           <div className="flex items-center gap-2">
-            <button type="button" onClick={() => setActiveTab('canvas')} className="flex items-center gap-2 rounded-xl border border-accent/35 bg-accent/10 px-3.5 py-1.5 text-xs font-bold text-accent transition-colors hover:bg-accent/18">
-              <Network className="h-3.5 w-3.5" /> Open diagram
-            </button>
+            {activeTab !== 'canvas' && <button type="button" onClick={() => setActiveTab('canvas')} className="flex items-center gap-2 rounded-xl border border-accent/35 bg-accent/10 px-3.5 py-1.5 text-xs font-bold text-accent transition-colors hover:bg-accent/18">
+              <Network className="h-3.5 w-3.5" /> View diagram
+            </button>}
             {demoLink && (
               <a href={demoLink.url} target="_blank" rel="noreferrer" className="flex items-center gap-2 rounded-xl bg-emerald-500 px-3.5 py-1.5 text-xs font-bold text-slate-950 shadow-lg shadow-emerald-500/20 transition-all hover:bg-emerald-400 hover:scale-105">
                 <Play className="h-3.5 w-3.5 fill-slate-950" /><span>Launch Live Mobile Demo</span>
@@ -170,7 +170,7 @@ export function UnifiedMissionHub({ mission, onBack }: UnifiedMissionHubProps) {
         </div>
 
         {/* Unified Navigation Tabs */}
-        <div className={`flex items-center gap-1 overflow-x-auto border-t border-borderSoft/25 pt-3 scrollbar-none ${activeTab === 'canvas' ? 'hidden' : ''}`}>
+        <div className="flex items-center gap-1 overflow-x-auto border-t border-borderSoft/25 pt-3 scrollbar-none">
           <button
             type="button"
             onClick={() => setActiveTab('tasks')}
