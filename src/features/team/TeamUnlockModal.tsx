@@ -35,7 +35,8 @@ export function TeamUnlockModal({ isOpen, onClose, onSuccess }: TeamUnlockModalP
 
   const enterRoom = async (roomId: string) => {
     roomState.selectRoom(roomId);
-    await connectTeamRoomSync(roomId);
+    const room = rooms.find((item) => item.roomId === roomId);
+    await connectTeamRoomSync(roomId, room?.name);
     grantApprovedTeamAccess();
     onSuccess?.();
     closeModal();

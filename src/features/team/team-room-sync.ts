@@ -12,6 +12,9 @@ const EMPTY_ROOM_STATE: SharedTeamState = {
   teamMissions: [], selectedTeamMissionId: null, leads: [], workflows: [], workLinks: [],
   problems: [], diagrams: [], teamNotes: [], teamTasks: [],
 };
+const KUMBAKONAM_PROJECT: SharedTeamState['teamMissions'][number] = {
+  id: 'm-turf-booking-app', title: 'Turf booking app', description: 'Shared turf booking, team roster, and live scorebook for Kumbakonam.', iconName: 'Activity', color: 'emerald', objective: 'Let the team discover open turf slots, book together, and track every match score.', why_it_matters: 'Remove WhatsApp back-and-forth and make every booking visible to the whole team.', definition_of_success: 'Every turf slot, booking, and match score is recorded in one shared room workspace.', status: 'active', is_pinned: true, target_date: '2026-09-30', tags: ['Turf', 'Booking', 'Team scorebook'],
+};
 let unsubscribeStore: (() => void) | null = null;
 let realtimeChannel: RealtimeChannel | null = null;
 let saveTimer: number | null = null;
@@ -40,7 +43,7 @@ const save = async (roomId: string) => {
   if (error) console.error('Team room sync failed:', error.message);
 };
 
-export async function connectTeamRoomSync(roomId: string): Promise<void> {
+export async function connectTeamRoomSync(roomId: string, roomName?: string): Promise<void> {
   disconnectTeamRoomSync();
   currentRoomId = roomId;
   const client = getSupabaseClient();
@@ -48,7 +51,7 @@ export async function connectTeamRoomSync(roomId: string): Promise<void> {
   if (error) throw error;
   if (data?.data && Object.keys(data.data as object).length > 0) applySharedState(data.data);
   else {
-    applySharedState(EMPTY_ROOM_STATE);
+    applySharedState(roomName?.toLowerCase().includes('kumbakonam') ? { ...EMPTY_ROOM_STATE, teamMissions: [KUMBAKONAM_PROJECT], selectedTeamMissionId: KUMBAKONAM_PROJECT.id } : EMPTY_ROOM_STATE);
     await save(roomId);
   }
 
