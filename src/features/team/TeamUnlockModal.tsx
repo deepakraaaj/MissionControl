@@ -6,6 +6,8 @@ import { connectTeamRoomSync } from './team-room-sync';
 
 interface TeamUnlockModalProps { isOpen: boolean; onClose: () => void; onSuccess?: () => void; }
 
+const getInviteCodeFromUrl = () => new URLSearchParams(window.location.search).get('teamInvite')?.trim().toUpperCase() || '';
+
 export function TeamUnlockModal({ isOpen, onClose, onSuccess }: TeamUnlockModalProps) {
   const roomState = useTeamRoomStore();
   const { rooms, activeRoomId, members, loading, membersLoading, error } = roomState;
@@ -13,9 +15,9 @@ export function TeamUnlockModal({ isOpen, onClose, onSuccess }: TeamUnlockModalP
   const loadMembers = roomState.loadMembers;
   const activeRoom = getActiveTeamRoom(roomState);
   const grantApprovedTeamAccess = useTeamStore((state) => state.grantApprovedTeamAccess);
-  const [mode, setMode] = useState<'rooms' | 'create' | 'join' | 'members'>('rooms');
+  const [mode, setMode] = useState<'rooms' | 'create' | 'join' | 'members'>(() => getInviteCodeFromUrl() ? 'join' : 'rooms');
   const [roomName, setRoomName] = useState('');
-  const [inviteCode, setInviteCode] = useState('');
+  const [inviteCode, setInviteCode] = useState(() => getInviteCodeFromUrl());
   const [copied, setCopied] = useState(false);
   const approvedRooms = useMemo(() => rooms.filter((room) => room.status === 'approved'), [rooms]);
   const pendingRooms = useMemo(() => rooms.filter((room) => room.status === 'pending'), [rooms]);
@@ -59,13 +61,15 @@ export function TeamUnlockModal({ isOpen, onClose, onSuccess }: TeamUnlockModalP
   };
   const copyInvite = async () => {
     if (!activeRoom?.inviteCode) return;
-    await navigator.clipboard.writeText(activeRoom.inviteCode);
+    const inviteUrl = new URL(window.location.href);
+    inviteUrl.searchParams.set('teamInvite', activeRoom.inviteCode);
+    await navigator.clipboard.writeText(inviteUrl.toString());
     setCopied(true);
     window.setTimeout(() => setCopied(false), 1500);
   };
 
   return (
-    <div className="team-workspace fixed inset-0 z-50 flex items-center justify-center bg-black/75 p-4 backdrop-blur-md">
+    <div className="team-room-modal fixed inset-0 z-50 flex items-center justify-center bg-black/75 p-4 backdrop-blur-md">
       <div className="relative max-h-[90vh] w-full max-w-2xl overflow-y-auto rounded-3xl border border-slate-700/80 bg-slate-900 p-5 text-slate-100 shadow-2xl sm:p-6">
         <button type="button" onClick={closeModal} className="absolute right-4 top-4 rounded-xl p-2 text-slate-400 hover:bg-slate-800 hover:text-white" aria-label="Close"><X className="h-5 w-5" /></button>
         <div className="mb-5 flex items-center gap-3 pr-10">
@@ -90,7 +94,7 @@ export function TeamUnlockModal({ isOpen, onClose, onSuccess }: TeamUnlockModalP
         {mode === 'join' && <form onSubmit={requestAccess} className="space-y-4"><div><label className="mb-1.5 block text-xs font-semibold">Room invite code</label><input autoFocus required value={inviteCode} onChange={(event) => setInviteCode(event.target.value.toUpperCase())} placeholder="AB12-CD34" className="w-full rounded-xl border border-slate-700 bg-slate-950 px-4 py-3 text-center font-mono text-lg font-bold uppercase tracking-[0.2em] text-amber-300 outline-none focus:border-amber-500" /></div><p className="rounded-xl bg-slate-800/60 p-3 text-xs leading-relaxed text-slate-400">The code sends an access request. It does not unlock the room until an admin approves your account.</p><div className="flex justify-end gap-2"><button type="button" onClick={() => setMode('rooms')} className="px-3 py-2 text-xs text-slate-400">Back</button><button disabled={loading} className="rounded-xl bg-amber-500 px-4 py-2 text-xs font-bold text-slate-950">{loading ? 'Sending…' : 'Request access'}</button></div></form>}
 
         {mode === 'members' && activeRoom && isAdmin && <div className="space-y-4">
-          <div className="rounded-2xl border border-amber-500/25 bg-amber-500/5 p-4"><div className="flex flex-wrap items-center justify-between gap-3"><div><div className="text-sm font-bold">{activeRoom.name}</div><div className="mt-1 font-mono text-lg font-bold tracking-widest text-amber-300">{activeRoom.inviteCode}</div></div><div className="flex gap-2"><button type="button" onClick={copyInvite} className="flex items-center gap-1.5 rounded-lg border border-slate-700 px-3 py-2 text-xs"><Copy className="h-3.5 w-3.5" />{copied ? 'Copied' : 'Copy code'}</button><button type="button" onClick={() => void roomState.regenerateCode(activeRoom.roomId)} className="rounded-lg border border-slate-700 p-2" title="Generate a new invite code"><RefreshCw className="h-3.5 w-3.5" /></button></div></div></div>
+          <div className="rounded-2xl border border-amber-500/25 bg-amber-500/5 p-4"><div className="flex flex-wrap items-center justify-between gap-3"><div><div className="text-sm font-bold">{activeRoom.name}</div><div className="mt-1 font-mono text-lg font-bold tracking-widest text-amber-300">{activeRoom.inviteCode}</div><p className="mt-2 text-[11px] text-slate-400">Share the link. Your friend signs in, requests access, and you approve them here.</p></div><div className="flex gap-2"><button type="button" onClick={copyInvite} className="flex items-center gap-1.5 rounded-lg border border-slate-700 px-3 py-2 text-xs"><Copy className="h-3.5 w-3.5" />{copied ? 'Copied' : 'Copy invite link'}</button><button type="button" onClick={() => void roomState.regenerateCode(activeRoom.roomId)} className="rounded-lg border border-slate-700 p-2" title="Generate a new invite code"><RefreshCw className="h-3.5 w-3.5" /></button></div></div></div>
           <div className="space-y-2"><div className="flex items-center justify-between"><p className="text-[10px] font-bold uppercase tracking-wider text-slate-500">Members and requests</p><button type="button" onClick={() => void roomState.loadMembers(activeRoom.roomId)} className="text-xs text-blue-400">Refresh</button></div>{membersLoading ? <div className="py-6 text-center text-xs text-slate-400">Loading members…</div> : members.map((member) => <div key={member.membershipId} className="flex items-center justify-between gap-3 rounded-xl border border-slate-800 bg-slate-950/45 p-3"><div className="min-w-0"><div className="truncate text-sm font-semibold">{member.displayName || member.email}</div><div className="truncate text-[11px] text-slate-500">{member.email} · <span className="capitalize">{member.role}</span> · <span className="capitalize">{member.status}</span></div></div>{member.role !== 'owner' && <div className="flex gap-1.5">{member.status === 'pending' && <><button type="button" onClick={() => void roomState.reviewMember(member.membershipId, 'approved')} className="flex items-center gap-1 rounded-lg bg-emerald-500/15 px-2.5 py-1.5 text-xs font-semibold text-emerald-400"><UserCheck className="h-3.5 w-3.5" />Approve</button><button type="button" onClick={() => void roomState.reviewMember(member.membershipId, 'rejected')} className="rounded-lg bg-rose-500/10 p-1.5 text-rose-400" title="Reject"><UserX className="h-4 w-4" /></button></>}{member.status === 'approved' && <button type="button" onClick={() => void roomState.reviewMember(member.membershipId, 'revoked')} className="rounded-lg border border-rose-500/25 px-2.5 py-1.5 text-xs text-rose-400">Revoke</button>}{member.status === 'rejected' && <button type="button" onClick={() => void roomState.reviewMember(member.membershipId, 'approved')} className="flex items-center gap-1 rounded-lg px-2.5 py-1.5 text-xs text-emerald-400"><Check className="h-3.5 w-3.5" />Approve</button>}</div>}</div>)}</div>
           <button type="button" onClick={() => setMode('rooms')} className="text-xs text-slate-400 hover:text-white">← Back to rooms</button>
         </div>}

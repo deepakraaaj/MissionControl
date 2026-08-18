@@ -72,6 +72,9 @@ interface TeamState {
   deleteProblem: (id: string) => void;
 
   // Visual Diagrams Actions
+  addDiagram: (diagram: Omit<VisualDiagram, 'id' | 'updatedAt'>) => VisualDiagram;
+  updateDiagram: (id: string, updates: Partial<Omit<VisualDiagram, 'id' | 'missionId'>>) => void;
+  deleteDiagram: (id: string) => void;
   updateDiagramNodes: (diagramId: string, nodes: DiagramNode[]) => void;
 
   // Team Notes Actions
@@ -263,6 +266,28 @@ export const useTeamStore = create<TeamState>()(
       },
 
       // Visual Diagrams
+      addDiagram: (diagramData) => {
+        const diagram: VisualDiagram = {
+          ...diagramData,
+          id: `diagram-${Date.now()}`,
+          updatedAt: new Date().toISOString(),
+        };
+        set((state) => ({ diagrams: [diagram, ...state.diagrams] }));
+        return diagram;
+      },
+
+      updateDiagram: (id, updates) => {
+        set((state) => ({
+          diagrams: state.diagrams.map((diagram) =>
+            diagram.id === id ? { ...diagram, ...updates, updatedAt: new Date().toISOString() } : diagram
+          ),
+        }));
+      },
+
+      deleteDiagram: (id) => {
+        set((state) => ({ diagrams: state.diagrams.filter((diagram) => diagram.id !== id) }));
+      },
+
       updateDiagramNodes: (diagramId, nodes) => {
         set((state) => ({
           diagrams: state.diagrams.map((d) =>

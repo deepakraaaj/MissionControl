@@ -177,8 +177,8 @@ export function UnifiedMissionHub({ mission, onBack }: UnifiedMissionHubProps) {
             onClick={() => setActiveTab('tasks')}
             className={`flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-semibold whitespace-nowrap transition-all cursor-pointer ${
               activeTab === 'tasks'
-                ? 'bg-amber-500/20 text-amber-300 border border-amber-500/40 shadow-sm'
-                : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/60'
+                ? 'border border-accent/45 bg-accent/12 text-accent shadow-sm'
+                : 'border border-transparent text-text-secondary hover:bg-panel2/65 hover:text-text-primary'
             }`}
           >
             <CheckSquare className="w-3.5 h-3.5" />
@@ -190,8 +190,8 @@ export function UnifiedMissionHub({ mission, onBack }: UnifiedMissionHubProps) {
             onClick={() => setActiveTab('leads')}
             className={`flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-semibold whitespace-nowrap transition-all cursor-pointer ${
               activeTab === 'leads'
-                ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/40 shadow-sm'
-                : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/60'
+                ? 'border border-accent/45 bg-accent/12 text-accent shadow-sm'
+                : 'border border-transparent text-text-secondary hover:bg-panel2/65 hover:text-text-primary'
             }`}
           >
             <Users className="w-3.5 h-3.5" />
@@ -203,8 +203,8 @@ export function UnifiedMissionHub({ mission, onBack }: UnifiedMissionHubProps) {
             onClick={() => setActiveTab('workflows')}
             className={`flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-semibold whitespace-nowrap transition-all cursor-pointer ${
               activeTab === 'workflows'
-                ? 'bg-blue-500/20 text-blue-400 border border-blue-500/40 shadow-sm'
-                : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/60'
+                ? 'border border-accent/45 bg-accent/12 text-accent shadow-sm'
+                : 'border border-transparent text-text-secondary hover:bg-panel2/65 hover:text-text-primary'
             }`}
           >
             <ShieldCheck className="w-3.5 h-3.5" />
@@ -216,8 +216,8 @@ export function UnifiedMissionHub({ mission, onBack }: UnifiedMissionHubProps) {
             onClick={() => setActiveTab('canvas')}
             className={`flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-semibold whitespace-nowrap transition-all cursor-pointer ${
               activeTab === 'canvas'
-                ? 'bg-purple-500/20 text-purple-400 border border-purple-500/40 shadow-sm'
-                : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/60'
+                ? 'border border-accent/45 bg-accent/12 text-accent shadow-sm'
+                : 'border border-transparent text-text-secondary hover:bg-panel2/65 hover:text-text-primary'
             }`}
           >
             <Network className="w-3.5 h-3.5" />
@@ -229,8 +229,8 @@ export function UnifiedMissionHub({ mission, onBack }: UnifiedMissionHubProps) {
             onClick={() => setActiveTab('links')}
             className={`flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-semibold whitespace-nowrap transition-all cursor-pointer ${
               activeTab === 'links'
-                ? 'bg-cyan-500/20 text-cyan-400 border border-cyan-500/40 shadow-sm'
-                : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/60'
+                ? 'border border-accent/45 bg-accent/12 text-accent shadow-sm'
+                : 'border border-transparent text-text-secondary hover:bg-panel2/65 hover:text-text-primary'
             }`}
           >
             <Link2 className="w-3.5 h-3.5" />
@@ -242,8 +242,8 @@ export function UnifiedMissionHub({ mission, onBack }: UnifiedMissionHubProps) {
             onClick={() => setActiveTab('problems')}
             className={`flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-semibold whitespace-nowrap transition-all cursor-pointer ${
               activeTab === 'problems'
-                ? 'bg-rose-500/20 text-rose-400 border border-rose-500/40 shadow-sm'
-                : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/60'
+                ? 'border border-accent/45 bg-accent/12 text-accent shadow-sm'
+                : 'border border-transparent text-text-secondary hover:bg-panel2/65 hover:text-text-primary'
             }`}
           >
             <AlertOctagon className="w-3.5 h-3.5" />
@@ -255,8 +255,8 @@ export function UnifiedMissionHub({ mission, onBack }: UnifiedMissionHubProps) {
             onClick={() => setActiveTab('notes')}
             className={`flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-semibold whitespace-nowrap transition-all cursor-pointer ${
               activeTab === 'notes'
-                ? 'bg-teal-500/20 text-teal-400 border border-teal-500/40 shadow-sm'
-                : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/60'
+                ? 'border border-accent/45 bg-accent/12 text-accent shadow-sm'
+                : 'border border-transparent text-text-secondary hover:bg-panel2/65 hover:text-text-primary'
             }`}
           >
             <FileText className="w-3.5 h-3.5" />

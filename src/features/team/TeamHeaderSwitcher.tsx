@@ -16,7 +16,7 @@ export function TeamHeaderSwitcher({ onSwitchMode }: TeamHeaderSwitcherProps) {
   const session = useAuthStore((state) => state.session);
   const roomState = useTeamRoomStore();
   const activeRoom = getActiveTeamRoom(roomState);
-  const [showRoomModal, setShowRoomModal] = useState(false);
+  const [showRoomModal, setShowRoomModal] = useState(() => Boolean(new URLSearchParams(window.location.search).get('teamInvite')));
 
   const displayName = String(session?.user.user_metadata?.display_name || session?.user.user_metadata?.full_name || session?.user.email?.split('@')[0] || 'Member');
   const initials = displayName.split(/\s+/).map((part) => part[0]).join('').slice(0, 2).toUpperCase();

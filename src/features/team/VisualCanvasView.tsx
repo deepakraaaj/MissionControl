@@ -1,218 +1,44 @@
-import { useState, useRef } from 'react';
-import { Network, Plus, Download, ZoomIn, ZoomOut, Move, ArrowRight, User, Calendar, CreditCard, CheckCircle, Smartphone, Activity, Clock, MessageCircle, Monitor, Sparkles } from 'lucide-react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
+import { Download, Edit3, Network, Plus, Trash2 } from 'lucide-react';
+import {
+  Background, Controls, MiniMap, ReactFlow, ReactFlowProvider, addEdge,
+  useEdgesState, useNodesState, type Connection, type Edge, type Node,
+} from '@xyflow/react';
+import '@xyflow/react/dist/style.css';
 import { useTeamStore } from './team-store';
-import type { VisualDiagram, DiagramNode, DiagramEdge } from './team-types';
+import type { DiagramNode, VisualDiagram } from './team-types';
 
-interface VisualCanvasViewProps {
-  missionId: string;
+interface VisualCanvasViewProps { missionId: string; }
+type FlowData = { label: string; sublabel?: string; type: string };
+type NodeDraft = { label: string; sublabel: string; type: string };
+const nodeStyle = { background: 'rgb(var(--surface-1))', color: 'rgb(var(--text-primary))', border: '1px solid rgb(var(--border-strong) / .65)', borderRadius: 14, padding: 12, width: 210, boxShadow: '0 10px 24px rgb(var(--shadow-color) / .2)' };
+
+const toFlowNodes = (nodes: DiagramNode[]): Node<FlowData>[] => nodes.map((node) => ({ id: node.id, position: { x: node.x, y: node.y }, data: { label: node.label, sublabel: node.sublabel, type: node.type }, style: { ...nodeStyle, borderRadius: node.type === 'actor' || node.type === 'action' ? 999 : node.type === 'database' ? '50% / 18%' : node.type === 'system' ? 4 : 14, borderColor: node.type === 'actor' ? 'rgb(192 132 252 / .65)' : node.type === 'database' ? 'rgb(96 165 250 / .65)' : node.type === 'system' ? 'rgb(34 211 238 / .65)' : node.type === 'action' ? 'rgb(251 191 36 / .65)' : 'rgb(var(--accent) / .65)' } }));
+const toDiagramNodes = (nodes: Node<FlowData>[]): DiagramNode[] => nodes.map((node) => ({ id: node.id, x: node.position.x, y: node.position.y, label: node.data.label, sublabel: node.data.sublabel, type: (node.data.type as DiagramNode['type']) || 'process', color: 'blue' }));
+
+
+function FlowEditor({ diagram, onChange }: { diagram: VisualDiagram; onChange: (nodes: Node<FlowData>[], edges: Edge[]) => void }) {
+  const [nodes, setNodes, onNodesChange] = useNodesState(toFlowNodes(diagram.nodes));
+  const [edges, setEdges, onEdgesChange] = useEdgesState<Edge>(diagram.edges.map((edge) => ({ id: edge.id, source: edge.from, target: edge.to, label: edge.label, animated: edge.dashed })));
+  const [nodeDraft, setNodeDraft] = useState<NodeDraft>({ label: '', sublabel: '', type: 'process' });
+  const [editingNodeId, setEditingNodeId] = useState<string | null>(null);
+  const [nodeEditorOpen, setNodeEditorOpen] = useState(false);
+  useEffect(() => { setNodes(toFlowNodes(diagram.nodes)); setEdges(diagram.edges.map((edge) => ({ id: edge.id, source: edge.from, target: edge.to, label: edge.label, animated: edge.dashed }))); }, [diagram.id, setEdges, setNodes]);
+  const persistNodes = useCallback((next: Node<FlowData>[]) => { setNodes(next); onChange(next, edges); }, [edges, onChange, setNodes]);
+  const handleNodesChange = useCallback((changes: Parameters<typeof onNodesChange>[0]) => { onNodesChange(changes); const moved = changes.some((change) => change.type === 'position' && change.dragging === false); if (moved) window.setTimeout(() => onChange(nodes, edges), 0); }, [edges, nodes, onChange, onNodesChange]);
+  const connect = useCallback((connection: Connection) => { const next = addEdge({ ...connection, animated: false, style: { stroke: 'rgb(var(--accent))' } }, edges); setEdges(next); onChange(nodes, next); }, [edges, nodes, onChange, setEdges]);
+  const openNodeEditor = (node?: Node<FlowData>) => { setEditingNodeId(node?.id ?? null); setNodeDraft(node ? { label: node.data.label, sublabel: node.data.sublabel ?? '', type: node.data.type } : { label: '', sublabel: '', type: 'process' }); setNodeEditorOpen(true); };
+  const saveNode = (event: React.FormEvent) => { event.preventDefault(); if (!nodeDraft.label.trim()) return; const next = editingNodeId ? nodes.map((node) => node.id === editingNodeId ? { ...node, data: { ...node.data, ...nodeDraft, label: nodeDraft.label.trim() } } : node) : [...nodes, { id: `${diagram.id}-node-${nodes.length + 1}`, position: { x: 80 + (nodes.length % 3) * 260, y: 70 + Math.floor(nodes.length / 3) * 160 }, data: { ...nodeDraft, label: nodeDraft.label.trim() } }]; persistNodes(next); setEditingNodeId(null); setNodeDraft({ label: '', sublabel: '', type: 'process' }); setNodeEditorOpen(false); };
+  return <div className="relative h-[520px] overflow-hidden rounded-2xl border border-borderSoft/40 bg-panel2/55"><ReactFlow nodes={nodes} edges={edges} onNodesChange={handleNodesChange} onEdgesChange={onEdgesChange} onConnect={connect} onNodeDoubleClick={(_, node) => openNodeEditor(node as Node<FlowData>)} fitView deleteKeyCode="Delete"><Background color="rgb(var(--border-subtle))" gap={22} /><Controls /><MiniMap nodeColor="rgb(var(--accent))" maskColor="rgb(var(--bg-base) / .75)" /></ReactFlow><button type="button" onClick={() => openNodeEditor()} className="absolute bottom-5 left-5 z-10 inline-flex items-center gap-1.5 rounded-xl bg-accent px-3 py-2 text-xs font-bold text-[rgb(var(--accent-contrast))]"><Plus className="h-4 w-4" />Add node</button>{nodeEditorOpen && <form onSubmit={saveNode} className="absolute left-1/2 top-1/2 z-20 w-[min(92%,360px)] -translate-x-1/2 -translate-y-1/2 rounded-2xl border border-borderSoft/50 bg-panel p-4 shadow-2xl"><div className="mb-3 flex items-center justify-between"><h3 className="text-sm font-bold text-text-primary">{editingNodeId ? 'Edit node' : 'Add node'}</h3><button type="button" onClick={() => setNodeEditorOpen(false)} className="text-text-muted">×</button></div><input autoFocus required value={nodeDraft.label} onChange={(e) => setNodeDraft({ ...nodeDraft, label: e.target.value })} placeholder="Node label" className="w-full rounded-xl border border-borderSoft/45 bg-panel2 px-3 py-2.5 text-sm text-text-primary" /><textarea value={nodeDraft.sublabel} onChange={(e) => setNodeDraft({ ...nodeDraft, sublabel: e.target.value })} placeholder="Details (optional)" className="mt-2 min-h-16 w-full rounded-xl border border-borderSoft/45 bg-panel2 px-3 py-2.5 text-sm text-text-primary" /><select value={nodeDraft.type} onChange={(e) => setNodeDraft({ ...nodeDraft, type: e.target.value })} className="mt-2 w-full rounded-xl border border-borderSoft/45 bg-panel2 px-3 py-2.5 text-sm text-text-primary"><option>actor</option><option>process</option><option>system</option><option>database</option><option>action</option></select><button className="mt-3 w-full rounded-xl bg-accent py-2 text-xs font-bold text-[rgb(var(--accent-contrast))]">Save node</button></form>}</div>;
 }
 
-const ICON_MAP: Record<string, any> = {
-  User,
-  Calendar,
-  CreditCard,
-  CheckCircle,
-  Smartphone,
-  Activity,
-  Clock,
-  MessageCircle,
-  Monitor,
-};
-
 export function VisualCanvasView({ missionId }: VisualCanvasViewProps) {
-  const diagrams = useTeamStore((s) => s.diagrams);
-  const missionDiagrams = diagrams.filter((d) => d.missionId === missionId);
-  const [selectedDiagramId, setSelectedDiagramId] = useState<string>(
-    missionDiagrams[0]?.id || ''
-  );
-
-  const activeDiagram = missionDiagrams.find((d) => d.id === selectedDiagramId) || missionDiagrams[0];
-  const [zoom, setZoom] = useState(1);
-  const [selectedNode, setSelectedNode] = useState<DiagramNode | null>(null);
-
-  if (!activeDiagram) {
-    return (
-      <div className="flex flex-col items-center justify-center p-12 text-center bg-slate-900/40 rounded-2xl border border-slate-800">
-        <Network className="w-10 h-10 text-slate-600 mb-3" />
-        <h3 className="text-sm font-semibold text-slate-300">No Visual Architecture Mapped Yet</h3>
-        <p className="text-xs text-slate-500 max-w-sm mt-1">
-          Sketch the customer flow, process, or technical plan for this project.
-        </p>
-      </div>
-    );
-  }
-
-  const exportJSON = () => {
-    const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(activeDiagram, null, 2));
-    const downloadAnchor = document.createElement('a');
-    downloadAnchor.setAttribute("href", dataStr);
-    downloadAnchor.setAttribute("download", `${activeDiagram.title.toLowerCase().replace(/\s+/g, '-')}-diagram.json`);
-    document.body.appendChild(downloadAnchor);
-    downloadAnchor.click();
-    downloadAnchor.remove();
-  };
-
-  return (
-    <div className="space-y-4">
-      {/* Top Controls */}
-      <div className="flex flex-wrap items-center justify-between gap-3 p-3.5 bg-slate-900/80 rounded-2xl border border-slate-800">
-        <div className="flex items-center gap-2">
-          <div className="p-2 rounded-xl bg-purple-500/20 text-purple-400 border border-purple-500/30">
-            <Network className="w-4 h-4" />
-          </div>
-          <div>
-            <h3 className="text-xs font-semibold text-white flex items-center gap-2">
-              {activeDiagram.title}
-              <span className="text-[10px] px-2 py-0.5 rounded-full bg-purple-500/10 text-purple-400 border border-purple-500/20 uppercase font-mono">
-                {activeDiagram.diagramType.replace('_', ' ')}
-              </span>
-            </h3>
-            <p className="text-[11px] text-slate-400">{activeDiagram.description}</p>
-          </div>
-        </div>
-
-        <div className="flex items-center gap-2">
-          {/* Zoom controls */}
-          <div className="flex items-center bg-slate-950 rounded-xl border border-slate-800 p-0.5">
-            <button
-              type="button"
-              onClick={() => setZoom((z) => Math.max(0.7, z - 0.1))}
-              className="p-1.5 text-slate-400 hover:text-white rounded-lg hover:bg-slate-800 transition-colors"
-              title="Zoom Out"
-            >
-              <ZoomOut className="w-3.5 h-3.5" />
-            </button>
-            <span className="text-[11px] font-mono text-slate-400 px-2">
-              {Math.round(zoom * 100)}%
-            </span>
-            <button
-              type="button"
-              onClick={() => setZoom((z) => Math.min(1.4, z + 0.1))}
-              className="p-1.5 text-slate-400 hover:text-white rounded-lg hover:bg-slate-800 transition-colors"
-              title="Zoom In"
-            >
-              <ZoomIn className="w-3.5 h-3.5" />
-            </button>
-          </div>
-
-          <button
-            type="button"
-            onClick={exportJSON}
-            className="flex items-center gap-1.5 px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-medium rounded-xl border border-slate-700 transition-colors"
-          >
-            <Download className="w-3.5 h-3.5" />
-            Export Flow
-          </button>
-        </div>
-      </div>
-
-      {/* Interactive Flow Canvas */}
-      <div className="relative w-full h-[380px] sm:h-[440px] bg-slate-950/90 rounded-2xl border border-slate-800 overflow-hidden shadow-inner flex flex-col justify-between">
-        {/* Subtle Grid Background */}
-        <div 
-          className="absolute inset-0 opacity-20 pointer-events-none"
-          style={{
-            backgroundImage: `radial-gradient(#6366f1 1px, transparent 1px)`,
-            backgroundSize: '24px 24px',
-          }}
-        />
-
-        {/* Canvas Surface */}
-        <div 
-          className="relative w-full h-full p-6 overflow-auto transition-transform duration-150 origin-top-left"
-          style={{ transform: `scale(${zoom})` }}
-        >
-          {/* Render Flow Nodes */}
-          <div className="relative min-w-[700px] min-h-[320px]">
-            {activeDiagram.nodes.map((node, idx) => {
-              const IconComp = (node.icon && ICON_MAP[node.icon]) || Sparkles;
-              const isSelected = selectedNode?.id === node.id;
-
-              return (
-                <div
-                  key={node.id}
-                  onClick={() => setSelectedNode(node)}
-                  style={{
-                    left: `${node.x}px`,
-                    top: `${node.y}px`,
-                  }}
-                  className={`absolute w-56 p-3.5 rounded-2xl border transition-all cursor-pointer select-none shadow-xl ${
-                    isSelected
-                      ? 'bg-slate-800 border-accent shadow-accent/20 scale-105 z-20'
-                      : 'bg-slate-900/90 border-slate-700/80 hover:border-slate-600 hover:scale-[1.02] z-10'
-                  }`}
-                >
-                  <div className="flex items-center gap-2.5 mb-1.5">
-                    <div className={`p-1.5 rounded-xl ${
-                      node.color === 'emerald'
-                        ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30'
-                        : node.color === 'blue'
-                        ? 'bg-blue-500/20 text-blue-400 border border-blue-500/30'
-                        : node.color === 'purple'
-                        ? 'bg-purple-500/20 text-purple-400 border border-purple-500/30'
-                        : 'bg-amber-500/20 text-amber-400 border border-amber-500/30'
-                    }`}>
-                      <IconComp className="w-4 h-4" />
-                    </div>
-                    <div className="overflow-hidden">
-                      <div className="text-xs font-bold text-white truncate">{node.label}</div>
-                      <div className="text-[10px] text-slate-400 uppercase font-mono tracking-wider">{node.type}</div>
-                    </div>
-                  </div>
-
-                  {node.sublabel && (
-                    <p className="text-[11px] text-slate-300 leading-snug line-clamp-2 mt-1">
-                      {node.sublabel}
-                    </p>
-                  )}
-                </div>
-              );
-            })}
-          </div>
-        </div>
-
-        {/* Step Sequence Bar at Bottom */}
-        <div className="relative z-20 flex items-center justify-between px-4 py-2.5 bg-slate-900/90 border-t border-slate-800 text-xs">
-          <div className="flex items-center gap-2 text-slate-400">
-            <span className="font-semibold text-slate-200">Sequence:</span>
-            {activeDiagram.nodes.map((node, i) => (
-              <span key={node.id} className="flex items-center gap-1.5 text-[11px]">
-                <span className="px-1.5 py-0.5 rounded bg-slate-800 text-slate-300 font-mono">
-                  {i + 1}
-                </span>
-                <span className="text-slate-300 font-medium truncate max-w-[100px]">{node.label}</span>
-                {i < activeDiagram.nodes.length - 1 && <ArrowRight className="w-3 h-3 text-slate-600" />}
-              </span>
-            ))}
-          </div>
-
-          <div className="text-[11px] text-slate-500 font-mono">
-            {activeDiagram.nodes.length} Nodes • {activeDiagram.edges.length} Connectors
-          </div>
-        </div>
-      </div>
-
-      {/* Selected Node Details Drawer */}
-      {selectedNode && (
-        <div className="p-4 bg-slate-900/90 rounded-2xl border border-slate-700/80 flex items-start justify-between animate-in fade-in">
-          <div className="space-y-1">
-            <div className="flex items-center gap-2">
-              <span className="text-xs font-bold text-white">{selectedNode.label}</span>
-              <span className="text-[10px] px-2 py-0.5 rounded bg-slate-800 text-slate-400 font-mono uppercase">
-                {selectedNode.type}
-              </span>
-            </div>
-            <p className="text-xs text-slate-300">{selectedNode.sublabel}</p>
-          </div>
-          <button
-            type="button"
-            onClick={() => setSelectedNode(null)}
-            className="text-xs text-slate-400 hover:text-white px-2 py-1 rounded-lg hover:bg-slate-800"
-          >
-            Dismiss
-          </button>
-        </div>
-      )}
-    </div>
-  );
+  const diagrams = useTeamStore((state) => state.diagrams); const addDiagram = useTeamStore((state) => state.addDiagram); const updateDiagram = useTeamStore((state) => state.updateDiagram); const deleteDiagram = useTeamStore((state) => state.deleteDiagram); const updateDiagramNodes = useTeamStore((state) => state.updateDiagramNodes);
+  const missionDiagrams = useMemo(() => diagrams.filter((diagram) => diagram.missionId === missionId), [diagrams, missionId]); const [selectedId, setSelectedId] = useState(''); const active = missionDiagrams.find((diagram) => diagram.id === selectedId) ?? missionDiagrams[0];
+  const create = () => { const title = window.prompt('Diagram name'); if (!title?.trim()) return; const diagram = addDiagram({ missionId, title: title.trim(), description: '', diagramType: 'custom', nodes: [], edges: [] }); setSelectedId(diagram.id); };
+  const edit = () => { if (!active) return; const title = window.prompt('Diagram name', active.title); if (title?.trim()) updateDiagram(active.id, { title: title.trim() }); };
+  const remove = () => { if (active && window.confirm(`Delete “${active.title}”?`)) { deleteDiagram(active.id); setSelectedId(''); } };
+  const exportJson = () => { if (!active) return; const link = document.createElement('a'); link.href = `data:application/json;charset=utf-8,${encodeURIComponent(JSON.stringify(active, null, 2))}`; link.download = `${active.title.toLowerCase().replace(/\s+/g, '-')}.json`; link.click(); };
+  const persistFlow = (nodes: Node<FlowData>[], edges: Edge[]) => { if (!active) return; updateDiagramNodes(active.id, toDiagramNodes(nodes)); updateDiagram(active.id, { edges: edges.map((edge) => ({ id: edge.id, from: edge.source, to: edge.target, label: typeof edge.label === 'string' ? edge.label : undefined, dashed: Boolean(edge.animated) })) }); };
+  return <ReactFlowProvider><div className="space-y-4"><div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-borderSoft/40 bg-panel/70 p-3.5"><div className="flex items-center gap-2.5"><span className="flex h-9 w-9 items-center justify-center rounded-xl border border-accent/25 bg-accent/12 text-accent"><Network className="h-4 w-4" /></span><div><h3 className="text-sm font-bold text-text-primary">Visual diagrams</h3><p className="text-xs text-text-secondary">Drag nodes, connect flows, and double-click to rename.</p></div></div><button type="button" onClick={create} className="inline-flex items-center gap-1.5 rounded-xl bg-accent px-3 py-2 text-xs font-bold text-[rgb(var(--accent-contrast))]"><Plus className="h-4 w-4" />New diagram</button></div>{missionDiagrams.length > 0 && <div className="flex gap-2 overflow-x-auto">{missionDiagrams.map((diagram) => <button key={diagram.id} type="button" onClick={() => setSelectedId(diagram.id)} className={`shrink-0 rounded-xl border px-3 py-2 text-xs ${diagram.id === active?.id ? 'border-accent/45 bg-accent/12 text-accent' : 'border-borderSoft/35 bg-panel/45 text-text-secondary'}`}>{diagram.title}</button>)}</div>}{active ? <><div className="flex items-center justify-between rounded-2xl border border-borderSoft/40 bg-panel/65 p-3.5"><div><h3 className="text-sm font-bold text-text-primary">{active.title}</h3><p className="text-xs text-text-secondary">{active.nodes.length} nodes · {active.edges.length} connections</p></div><div className="flex gap-1.5"><button type="button" onClick={edit} className="rounded-lg border border-borderSoft/45 p-2 text-text-secondary"><Edit3 className="h-4 w-4" /></button><button type="button" onClick={exportJson} className="rounded-lg border border-borderSoft/45 p-2 text-text-secondary"><Download className="h-4 w-4" /></button><button type="button" onClick={remove} className="rounded-lg p-2 text-danger"><Trash2 className="h-4 w-4" /></button></div></div><FlowEditor diagram={active} onChange={persistFlow} /></> : <div className="rounded-2xl border border-dashed border-borderSoft/50 p-14 text-center text-sm text-text-secondary"><Network className="mx-auto mb-3 h-10 w-10 text-text-muted" />No diagram yet. <button type="button" onClick={create} className="text-accent">Create one</button></div>}</div></ReactFlowProvider>;
 }

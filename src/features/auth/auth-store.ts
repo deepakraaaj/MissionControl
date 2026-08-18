@@ -116,9 +116,10 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
         password,
         // Persist the name into user_metadata so it's available everywhere
         // (profile card, collaborator lookup) right from signup.
-        options: trimmedName
-          ? { data: { display_name: trimmedName, full_name: trimmedName } }
-          : undefined,
+        options: {
+          ...(trimmedName ? { data: { display_name: trimmedName, full_name: trimmedName } } : {}),
+          emailRedirectTo: typeof window !== 'undefined' ? window.location.href : undefined,
+        },
       });
 
       if (error) {

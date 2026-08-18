@@ -30,6 +30,7 @@
     "@tiptap/pm": "^3.26.1",
     "@tiptap/react": "^3.26.1",
     "@tiptap/starter-kit": "^3.26.1",
+    "@xyflow/react": "^12.11.3",
     "framer-motion": "^12.37.0",
     "lucide-react": "^1.14.0",
     "react": "^19.2.4",

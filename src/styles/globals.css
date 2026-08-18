@@ -16,32 +16,39 @@
    whole workspace aligned with the active SynCatch theme while those feature
    components use the shared semantic surface. Scoped so personal views and
    intentional overlays are unaffected. */
-.team-workspace :is(.bg-slate-950, [class*='bg-slate-950/']) {
+:is(.team-workspace, .team-room-modal) :is(.bg-slate-950, [class*='bg-slate-950/']) {
   background-color: rgb(var(--surface-2) / 0.55) !important;
 }
 
-.team-workspace :is(.bg-slate-900, [class*='bg-slate-900/']) {
+:is(.team-workspace, .team-room-modal) :is(.bg-slate-900, [class*='bg-slate-900/']) {
   background-color: rgb(var(--surface-1) / 0.72) !important;
 }
 
-.team-workspace :is(.bg-slate-800, [class*='bg-slate-800/']) {
+:is(.team-workspace, .team-room-modal) :is(.bg-slate-800, [class*='bg-slate-800/']) {
   background-color: rgb(var(--surface-2) / 0.72) !important;
 }
 
-.team-workspace :is(.border-slate-900, [class*='border-slate-900/'], .border-slate-800, [class*='border-slate-800/'], .border-slate-700, [class*='border-slate-700/']) {
+:is(.team-workspace, .team-room-modal) :is(.border-slate-900, [class*='border-slate-900/'], .border-slate-800, [class*='border-slate-800/'], .border-slate-700, [class*='border-slate-700/']) {
   border-color: rgb(var(--border-subtle) / 0.55) !important;
 }
 
-.team-workspace :is(.text-white, .text-slate-100, .text-slate-200) {
+:is(.team-workspace, .team-room-modal) :is(.text-white, .text-slate-100, .text-slate-200) {
   color: rgb(var(--text-primary)) !important;
 }
 
-.team-workspace :is(.text-slate-300, .text-slate-400) {
+:is(.team-workspace, .team-room-modal) :is(.text-slate-300, .text-slate-400) {
   color: rgb(var(--text-secondary)) !important;
 }
 
-.team-workspace :is(.text-slate-500, .text-slate-600) {
+:is(.team-workspace, .team-room-modal) :is(.text-slate-500, .text-slate-600) {
   color: rgb(var(--text-muted)) !important;
+}
+
+/* The room overlay is part of the app, so it follows the selected theme too.
+   The backdrop uses the theme base instead of a fixed black veil. */
+.team-room-modal {
+  color-scheme: inherit;
+  background-color: rgb(var(--bg-base) / 0.72) !important;
 }
 
 :root,
