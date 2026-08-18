@@ -4345,7 +4345,7 @@ export function MainApp() {
         </aside>
 
         <div className="relative z-10 flex min-w-0 flex-1 flex-col">
-          <header className={`flex items-center justify-between gap-3 border-b border-borderSoft/24 px-3 sm:gap-4 sm:px-6 ${workspaceMode === 'team' ? 'py-1.5' : 'py-3'}`}>
+          <header className="flex items-center justify-between gap-3 border-b border-borderSoft/24 px-3 py-3 sm:gap-4 sm:px-6 sm:py-3">
             <div className="flex min-w-0 items-center gap-2 sm:gap-3">
               <Button
                 onClick={() => setMobileNavOpen(true)}
@@ -4418,6 +4418,7 @@ export function MainApp() {
             <main
               className={cn(
                 'main-scroll-region absolute inset-0 overflow-y-scroll px-3 py-4 pb-32 sm:px-6 sm:py-6 lg:relative lg:inset-auto lg:h-full lg:min-w-0 lg:flex-1 lg:pb-6',
+                workspaceMode === 'team' && 'py-0 sm:py-0',
                 workspaceMode === 'team' && teamUnlocked ? 'team-workspace' : null,
               )}
               style={{ WebkitOverflowScrolling: 'touch' }}

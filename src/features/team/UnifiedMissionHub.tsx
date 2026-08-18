@@ -84,20 +84,24 @@ export function UnifiedMissionHub({ mission, onBack }: UnifiedMissionHubProps) {
   };
 
   return (
-    <div className="-mt-3 flex min-w-0 flex-1 flex-col overflow-y-auto text-text-primary sm:-mt-6">
+    <div className="flex min-w-0 flex-1 flex-col overflow-y-auto text-text-primary">
       {/* Top Mission Banner & Live Demo Launcher */}
-      <div className="relative space-y-3 border-b border-borderSoft/30 bg-panel/35 p-3 sm:p-4">
+      <div className="relative space-y-4 border-b border-borderSoft/30 bg-panel/35 p-3.5 sm:p-5">
         {/* Breadcrumb / Back */}
         <div className="flex items-center justify-between gap-3">
           <button
             type="button"
             onClick={onBack}
-            className="flex items-center gap-1.5 text-xs text-text-muted transition-colors hover:text-text-primary cursor-pointer"
+            className="flex shrink-0 items-center gap-1.5 rounded-lg px-2 py-1.5 text-xs font-medium text-text-muted transition-colors hover:bg-panel2/70 hover:text-text-primary cursor-pointer"
           >
             <ArrowLeft className="w-3.5 h-3.5" /> Back to projects
           </button>
 
-          <div className="flex items-center gap-2">
+          <div className="order-3 flex min-w-0 flex-1 items-center gap-1 overflow-x-auto rounded-xl border border-borderSoft/30 bg-panel2/35 p-1 scrollbar-none lg:order-2">
+            {([['tasks', `Tasks & Sprints (${teamTasks.length})`], ['leads', `Leads & CRM (${leads.length})`], ['workflows', `Process (${workflows.length})`], ['canvas', 'Diagram'], ['links', `Links (${workLinks.length})`], ['problems', `Issues (${problems.length})`], ['notes', `Notes (${notes.length})`]] as const).map(([key, label]) => <button key={key} type="button" onClick={() => setActiveTab(key)} className={`shrink-0 rounded-lg px-2.5 py-1.5 text-[11px] font-semibold whitespace-nowrap transition-colors ${activeTab === key ? 'bg-panel text-accent shadow-sm ring-1 ring-accent/25' : 'text-text-secondary hover:bg-panel/60 hover:text-text-primary'}`}>{label}</button>)}
+          </div>
+
+          <div className="order-2 flex items-center gap-2 lg:order-3">
             {activeTab !== 'canvas' && <button type="button" onClick={() => setActiveTab('canvas')} className="flex items-center gap-2 rounded-xl border border-accent/35 bg-accent/10 px-3.5 py-1.5 text-xs font-bold text-accent transition-colors hover:bg-accent/18">
               <Network className="h-3.5 w-3.5" /> View diagram
             </button>}
@@ -170,7 +174,7 @@ export function UnifiedMissionHub({ mission, onBack }: UnifiedMissionHubProps) {
         </div>
 
         {/* Unified Navigation Tabs */}
-        <div className="flex items-center gap-1 overflow-x-auto border-t border-borderSoft/25 pt-3 scrollbar-none">
+        <div className="hidden items-center gap-1 overflow-x-auto border-t border-borderSoft/25 pt-3 scrollbar-none">
           <button
             type="button"
             onClick={() => setActiveTab('tasks')}
