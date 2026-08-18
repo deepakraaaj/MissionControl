@@ -139,7 +139,7 @@ export function UnifiedMissionHub({ mission, onBack }: UnifiedMissionHubProps) {
         </div>
 
         {/* Metrics Pill Bar */}
-        <div className="grid grid-cols-2 gap-2 border-t border-borderSoft/25 pt-3 sm:grid-cols-4">
+        <div className={`grid grid-cols-2 gap-2 border-t border-borderSoft/25 pt-3 sm:grid-cols-4 ${activeTab === 'canvas' ? 'hidden' : ''}`}>
           <div className="rounded-xl border border-borderSoft/30 bg-panel2/35 p-2.5">
             <div className="font-mono text-[10px] uppercase text-text-muted">Sprint Progress</div>
             <div className="text-sm font-bold text-emerald-400 font-mono mt-0.5">
@@ -170,7 +170,7 @@ export function UnifiedMissionHub({ mission, onBack }: UnifiedMissionHubProps) {
         </div>
 
         {/* Unified Navigation Tabs */}
-        <div className="flex items-center gap-1 overflow-x-auto border-t border-borderSoft/25 pt-3 scrollbar-none">
+        <div className={`flex items-center gap-1 overflow-x-auto border-t border-borderSoft/25 pt-3 scrollbar-none ${activeTab === 'canvas' ? 'hidden' : ''}`}>
           <button
             type="button"
             onClick={() => setActiveTab('tasks')}
