@@ -4357,9 +4357,7 @@ export function MainApp() {
               >
                 <Menu className="h-5 w-5" />
               </Button>
-              <h2 className="truncate text-lg font-semibold text-text-primary sm:text-2xl">
-                {workspaceMode === 'team' ? 'Team Workspace' : viewCopy}
-              </h2>
+              {workspaceMode !== 'team' && <h2 className="truncate text-lg font-semibold text-text-primary sm:text-2xl">{viewCopy}</h2>}
             </div>
 
             <div className="flex shrink-0 items-center gap-2 sm:gap-3">
