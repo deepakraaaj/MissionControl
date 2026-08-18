@@ -26,14 +26,13 @@ import { VisualCanvasView } from './VisualCanvasView';
 import { ProblemBankView } from './ProblemBankView';
 import { TeamTasksView } from './TeamTasksView';
 import { TeamNotesView } from './TeamNotesView';
-import { TurfBookingView } from './TurfBookingView';
 
 interface UnifiedMissionHubProps {
   mission: Mission | TeamMissionItem;
   onBack?: () => void;
 }
 
-type TabKey = 'tasks' | 'leads' | 'workflows' | 'canvas' | 'links' | 'problems' | 'notes' | 'turf';
+type TabKey = 'tasks' | 'leads' | 'workflows' | 'canvas' | 'links' | 'problems' | 'notes';
 
 export function UnifiedMissionHub({ mission, onBack }: UnifiedMissionHubProps) {
   const [activeTab, setActiveTab] = useState<TabKey>('tasks');
@@ -74,7 +73,6 @@ export function UnifiedMissionHub({ mission, onBack }: UnifiedMissionHubProps) {
   const taskProgress = teamTasks.length > 0 ? Math.round((completedTasks / teamTasks.length) * 100) : 0;
 
   const demoLink = workLinks.find((w) => w.category === 'demo');
-  const isTurfProject = mission.title.toLowerCase().includes('turf');
 
   const getMissionIcon = () => {
     const title = mission.title.toLowerCase();
@@ -174,7 +172,6 @@ export function UnifiedMissionHub({ mission, onBack }: UnifiedMissionHubProps) {
 
         {/* Unified Navigation Tabs */}
         <div className="flex items-center gap-1 overflow-x-auto border-t border-borderSoft/25 pt-3 scrollbar-none">
-          {isTurfProject && <button type="button" onClick={() => setActiveTab('turf')} className={`flex items-center gap-2 rounded-xl border px-3.5 py-2 text-xs font-semibold whitespace-nowrap transition-all ${activeTab === 'turf' ? 'border-accent/45 bg-accent/12 text-accent shadow-sm' : 'border-transparent text-text-secondary hover:bg-panel2/65 hover:text-text-primary'}`}><Activity className="h-3.5 w-3.5" /><span>Book turf</span></button>}
           <button
             type="button"
             onClick={() => setActiveTab('tasks')}
@@ -271,7 +268,6 @@ export function UnifiedMissionHub({ mission, onBack }: UnifiedMissionHubProps) {
       {/* Main Tab Content Surface */}
       <div className="w-full p-4 sm:p-6">
         {activeTab === 'tasks' && <TeamTasksView filterMissionId={mission.id} />}
-        {activeTab === 'turf' && <TurfBookingView />}
         {activeTab === 'leads' && <LeadsCRMView missionId={mission.id} />}
         {activeTab === 'workflows' && <WorkflowGuardrailView missionId={mission.id} />}
         {activeTab === 'canvas' && <VisualCanvasView missionId={mission.id} />}
