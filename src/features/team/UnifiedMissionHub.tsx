@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { lazy, Suspense, useMemo, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { 
   AlertOctagon,
@@ -17,14 +17,14 @@ import type { Mission } from '../missions/mission-types';
 import type { ChatRef } from './team-types';
 import type { TeamMissionItem } from './team-seed';
 import { useTeamStore } from './team-store';
-import { LeadsCRMView } from './LeadsCRMView';
-import { WorkflowGuardrailView } from './WorkflowGuardrailView';
-import { WorkLinksView } from './WorkLinksView';
-import { VisualCanvasView } from './VisualCanvasView';
-import { ProblemBankView } from './ProblemBankView';
-import { TeamTasksView } from './TeamTasksView';
-import { TeamNotesView } from './TeamNotesView';
-import { TeamChatView } from './TeamChatView';
+const LeadsCRMView = lazy(() => import('./LeadsCRMView').then((m) => ({ default: m.LeadsCRMView })));
+const WorkflowGuardrailView = lazy(() => import('./WorkflowGuardrailView').then((m) => ({ default: m.WorkflowGuardrailView })));
+const WorkLinksView = lazy(() => import('./WorkLinksView').then((m) => ({ default: m.WorkLinksView })));
+const VisualCanvasView = lazy(() => import('./VisualCanvasView').then((m) => ({ default: m.VisualCanvasView })));
+const ProblemBankView = lazy(() => import('./ProblemBankView').then((m) => ({ default: m.ProblemBankView })));
+const TeamTasksView = lazy(() => import('./TeamTasksView').then((m) => ({ default: m.TeamTasksView })));
+const TeamNotesView = lazy(() => import('./TeamNotesView').then((m) => ({ default: m.TeamNotesView })));
+const TeamChatView = lazy(() => import('./TeamChatView').then((m) => ({ default: m.TeamChatView })));
 import { useUnreadCount } from './team-chat-unread';
 import { useMissionHubNavSlot } from './mission-hub-nav-slot';
 
@@ -230,6 +230,13 @@ export function UnifiedMissionHub({ mission, onBack }: UnifiedMissionHubProps) {
         {activeTab === 'chat' && (
           <TeamChatView missionId={mission.id} onOpenRef={(ref) => setActiveTab(REF_TAB[ref.kind])} />
         )}
+        <Suspense
+          fallback={
+            <div className="flex min-h-[280px] items-center justify-center" role="status" aria-label="Loading">
+              <span className="h-6 w-6 animate-spin rounded-full border-2 border-borderSoft border-t-accent" />
+            </div>
+          }
+        >
         {activeTab === 'tasks' && <TeamTasksView filterMissionId={mission.id} />}
         {activeTab === 'leads' && <LeadsCRMView missionId={mission.id} />}
         {activeTab === 'workflows' && <WorkflowGuardrailView missionId={mission.id} />}
@@ -237,6 +244,7 @@ export function UnifiedMissionHub({ mission, onBack }: UnifiedMissionHubProps) {
         {activeTab === 'links' && <WorkLinksView missionId={mission.id} />}
         {activeTab === 'problems' && <ProblemBankView missionId={mission.id} />}
         {activeTab === 'notes' && <TeamNotesView filterMissionId={mission.id} />}
+        </Suspense>
       </div>
     </div>
   );

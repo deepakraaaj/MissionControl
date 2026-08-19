@@ -3,16 +3,18 @@ import { PocketDropFAB } from "../../features/team/PocketDropModal";
 import { UnifiedMissionHub } from "../../features/team/UnifiedMissionHub";
 import { MissionHubNavSlotContext } from "../../features/team/mission-hub-nav-slot";
 import { TeamHubView } from "../../features/team/TeamHubView";
-import { TeamCalendarView } from "../../features/team/TeamCalendarView";
+const TeamCalendarView = lazy(() => import('../../features/team/TeamCalendarView').then((m) => ({ default: m.TeamCalendarView })));
 import { TeamTasksView } from "../../features/team/TeamTasksView";
-import { LeadsCRMView } from "../../features/team/LeadsCRMView";
-import { ProblemBankView } from "../../features/team/ProblemBankView";
-import { TeamNotesView } from "../../features/team/TeamNotesView";
+const LeadsCRMView = lazy(() => import('../../features/team/LeadsCRMView').then((m) => ({ default: m.LeadsCRMView })));
+const ProblemBankView = lazy(() => import('../../features/team/ProblemBankView').then((m) => ({ default: m.ProblemBankView })));
+const TeamNotesView = lazy(() => import('../../features/team/TeamNotesView').then((m) => ({ default: m.TeamNotesView })));
 import { useTeamStore } from "../../features/team/team-store";
 import {
   type DragEvent as ReactDragEvent,
   type ReactNode,
   type RefObject,
+  lazy,
+  Suspense,
   useEffect,
   useMemo,
   useRef,
@@ -58,13 +60,14 @@ import { DownloadsCard } from '../../features/settings/DownloadsCard';
 import type { SidebarPinnedAppId } from '../../features/preferences/preferences-types';
 import { MissionComposer } from '../../features/missions/MissionComposer';
 import { useMissionStore } from '../../features/missions/mission-store';
-import { RoadmapView } from '../../features/roadmap/RoadmapView';
-import { JournalView } from '../../features/journal/JournalView';
+const RoadmapView = lazy(() => import('../../features/roadmap/RoadmapView').then((m) => ({ default: m.RoadmapView })));
+const JournalView = lazy(() => import('../../features/journal/JournalView').then((m) => ({ default: m.JournalView })));
 import { useJournalStore } from '../../features/journal/journal-store';
-import { NotesView } from '../../features/notes/NotesView';
-import { AssistantView } from '../../features/assistant/AssistantView';
+const NotesView = lazy(() => import('../../features/notes/NotesView').then((m) => ({ default: m.NotesView })));
+const AssistantView = lazy(() => import('../../features/assistant/AssistantView').then((m) => ({ default: m.AssistantView })));
 import { DashboardView } from '../../features/dashboard/DashboardView';
-import { CalendarView, type CalendarOpenTarget } from '../../features/calendar/CalendarView';
+import type { CalendarOpenTarget } from '../../features/calendar/CalendarView';
+const CalendarView = lazy(() => import('../../features/calendar/CalendarView').then((m) => ({ default: m.CalendarView })));
 import { AssistantWidget } from '../../features/assistant/AssistantWidget';
 import { SynCatchWordmark } from '../../components/SynCatchLogo';
 import { TaskCreationComposer } from '../../features/tasks/TaskCreationComposer';
@@ -80,7 +83,15 @@ import { cn } from '../../lib/cn';
 import { formatRelativeTime } from '../../lib/date';
 import { isTauriApp, showHudWindow, showQuickAddWindow, subscribeAppEvent } from '../../lib/tauri';
 import { useIsMobile } from '../../hooks/use-mobile';
-import { ChallengesView } from '../../features/challenges/ChallengesView';
+const ChallengesView = lazy(() => import('../../features/challenges/ChallengesView').then((m) => ({ default: m.ChallengesView })));
+
+function ViewLoading() {
+  return (
+    <div className="flex min-h-[280px] items-center justify-center" role="status" aria-label="Loading view">
+      <span className="h-6 w-6 animate-spin rounded-full border-2 border-borderSoft border-t-accent" />
+    </div>
+  );
+}
 
 type MainView = 'dashboard' | 'focus' | 'missions' | 'roadmap' | 'today' | 'calendar' | 'challenges' | 'tasks' | 'history' | 'insights' | 'review' | 'journal' | 'notes' | 'assistant' | 'settings' | 'apps' | 'crm' | 'problems';
 
@@ -4428,6 +4439,7 @@ export function MainApp() {
               )}
               style={{ WebkitOverflowScrolling: 'touch' }}
             >
+              <Suspense fallback={<ViewLoading />}>
               {workspaceMode === 'team' && teamUnlocked ? (
                 <>
                   {activeView === 'calendar' ? (
@@ -4492,6 +4504,7 @@ export function MainApp() {
                   {activeView === 'settings' ? renderSettings() : null}
                 </>
               )}
+              </Suspense>
 
               <CapturePopup
                 loading={captureSaving}

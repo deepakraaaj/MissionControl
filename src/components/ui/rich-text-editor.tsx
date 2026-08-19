@@ -18,14 +18,13 @@ import {
   Minimize2,
 } from 'lucide-react';
 import { cn } from '../../lib/cn';
+import { isHtmlContent } from './rich-text-content';
 
 // Rich-text notepad built on Tiptap/ProseMirror. Stores HTML so it stays
 // compatible with previously saved notes. Tiptap handles selection, caret and
 // cross-engine quirks (WebKitGTK) that the old execCommand approach couldn't.
 
-export function isHtmlContent(value: string): boolean {
-  return /<\/?[a-z][\s\S]*>/i.test(value);
-}
+
 
 function escapeHtml(value: string): string {
   return value
@@ -280,20 +279,3 @@ export function RichTextEditor({
 }
 
 // Renders saved note content (HTML or legacy plain text) for display surfaces.
-export function RichTextContent({
-  content,
-  className,
-}: {
-  content: string;
-  className?: string;
-}) {
-  if (isHtmlContent(content)) {
-    return (
-      <div
-        className={cn('rte-content', className)}
-        dangerouslySetInnerHTML={{ __html: content }}
-      />
-    );
-  }
-  return <p className={cn('whitespace-pre-wrap', className)}>{content}</p>;
-}

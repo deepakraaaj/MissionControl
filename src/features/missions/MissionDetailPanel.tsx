@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, useMemo } from 'react';
+import { useEffect, useRef, useState, useMemo, lazy, Suspense } from 'react';
 import { Badge } from '../../components/ui/badge';
 import { Button } from '../../components/ui/button';
 import { Input } from '../../components/ui/input';
@@ -14,8 +14,8 @@ import {
 } from 'lucide-react';
 import { useNoteStore } from '../notes/note-store';
 import { getCategoryById, NoteCategoryIcon, getNoteColorStyle, getNoteDisplayTitle } from '../notes/note-helpers';
-import { NoteEditorModal } from '../notes/NotesView';
-import { RichTextContent } from '../../components/ui/rich-text-editor';
+const NoteEditorModal = lazy(() => import('../notes/NotesView').then((m) => ({ default: m.NoteEditorModal })));
+import { RichTextContent } from '../../components/ui/rich-text-content';
 import type { Note } from '../notes/note-types';
 import { AssigneeSelect } from '../collaborators/AssigneeSelect';
 import { getChallengeStreak, useChallengeStore } from '../challenges/challenge-store';
@@ -600,7 +600,7 @@ export function MissionDetailPanel({
       </div>
 
       {noteEditorState && (
-        <NoteEditorModal
+        <Suspense fallback={null}><NoteEditorModal
           mode={noteEditorState.mode}
           note={noteEditorState.note}
           categories={categories}
@@ -613,7 +613,7 @@ export function MissionDetailPanel({
               await updateNote({ ...noteEditorState.note, ...draft });
             }
           }}
-        />
+        /></Suspense>
       )}
     </div>
   );
