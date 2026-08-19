@@ -44,6 +44,30 @@
   color: rgb(var(--text-muted)) !important;
 }
 
+/* Status text in these views was written as fixed Tailwind tints (rose-300,
+   amber-400, ...) chosen against the original dark prototype. On the light
+   themes those land pale-on-pale and are effectively unreadable — a rose-300
+   label on a rose-500/20 pill is roughly 1.6:1. Map each hue onto the theme's
+   own semantic token so the contrast is whatever the rest of the app already
+   uses for that meaning (~4.3:1 on light, ~7:1 on dark). Text only: the
+   translucent chip backgrounds stay as-is so the tints keep their weight. */
+:is(.team-workspace, .team-room-modal) :is(.text-rose-300, .text-rose-400, .text-rose-500, .text-rose-600, .text-red-300, .text-red-400, .text-red-500, .text-red-600, .text-pink-300, .text-pink-400, .text-pink-500, .text-pink-600) {
+  color: rgb(var(--danger)) !important;
+}
+
+:is(.team-workspace, .team-room-modal) :is(.text-amber-300, .text-amber-400, .text-amber-500, .text-amber-600, .text-orange-300, .text-orange-400, .text-orange-500, .text-orange-600, .text-yellow-300, .text-yellow-400, .text-yellow-500, .text-yellow-600) {
+  color: rgb(var(--warning)) !important;
+}
+
+:is(.team-workspace, .team-room-modal) :is(.text-emerald-300, .text-emerald-400, .text-emerald-500, .text-emerald-600, .text-green-300, .text-green-400, .text-green-500, .text-green-600, .text-teal-300, .text-teal-400, .text-teal-500, .text-teal-600, .text-lime-300, .text-lime-400, .text-lime-500, .text-lime-600) {
+  color: rgb(var(--success)) !important;
+}
+
+:is(.team-workspace, .team-room-modal) :is(.text-blue-300, .text-blue-400, .text-blue-500, .text-blue-600, .text-sky-300, .text-sky-400, .text-sky-500, .text-sky-600, .text-cyan-300, .text-cyan-400, .text-cyan-500, .text-cyan-600, .text-indigo-300, .text-indigo-400, .text-indigo-500, .text-indigo-600, .text-violet-300, .text-violet-400, .text-violet-500, .text-violet-600, .text-purple-300, .text-purple-400, .text-purple-500, .text-purple-600, .text-fuchsia-300, .text-fuchsia-400, .text-fuchsia-500, .text-fuchsia-600) {
+  color: rgb(var(--accent)) !important;
+}
+
+
 /* The room overlay is part of the app, so it follows the selected theme too.
    The backdrop uses the theme base instead of a fixed black veil. */
 .team-room-modal {

@@ -13,6 +13,7 @@ import {
   X
 } from 'lucide-react';
 import { useTeamStore } from './team-store';
+import { DiscussButton } from './DiscussButton';
 import type { Lead, LeadCategory, LeadStatus } from './team-types';
 
 interface LeadsCRMViewProps {
@@ -200,7 +201,7 @@ export function LeadsCRMView({ missionId }: LeadsCRMViewProps) {
           disabled={!hasProjects}
           title={hasProjects ? 'Add lead' : 'Create a project from the Mission tab first'}
           onClick={() => { if (isAdding) closeEditor(); else setIsAdding(true); }}
-          className="flex items-center gap-1.5 px-3.5 py-1.5 bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold text-xs rounded-xl shadow-lg shadow-emerald-500/20 transition-all cursor-pointer disabled:cursor-not-allowed disabled:opacity-45"
+          className="flex items-center gap-1.5 px-3.5 py-1.5 bg-accent hover:bg-accentSoft text-[rgb(var(--accent-contrast))] font-bold text-xs rounded-xl shadow-glow transition-all cursor-pointer disabled:cursor-not-allowed disabled:opacity-45"
         >
           <Plus className="w-3.5 h-3.5" />
           <span>Add Lead</span>
@@ -331,7 +332,7 @@ export function LeadsCRMView({ missionId }: LeadsCRMViewProps) {
             </button>
             <button
               type="submit"
-              className="px-4 py-1.5 bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold text-xs rounded-xl shadow-md transition-all cursor-pointer"
+              className="px-4 py-1.5 bg-accent hover:bg-accentSoft text-[rgb(var(--accent-contrast))] font-bold text-xs rounded-xl shadow-glow transition-all cursor-pointer"
             >
               {editingLeadId ? 'Save Changes' : 'Save Lead to Pipeline'}
             </button>
@@ -391,7 +392,7 @@ export function LeadsCRMView({ missionId }: LeadsCRMViewProps) {
                         {lead.nextFollowUp ? <span className="flex items-center gap-1.5 text-sm text-text-secondary"><Clock className="h-3.5 w-3.5 text-amber-500" />{lead.nextFollowUp}</span> : <span className="text-sm text-text-muted">Not scheduled</span>}
                       </td>
                       <td className="px-4 py-4 text-right align-top text-sm font-semibold text-text-primary">{lead.monthlyValue ? `₹${lead.monthlyValue.toLocaleString()}/mo` : '—'}</td>
-                      <td className="px-4 py-4 align-top"><div className="flex justify-end gap-1"><button type="button" onClick={() => openEditor(lead)} className="flex items-center gap-1 rounded-lg px-2.5 py-1.5 text-xs font-semibold text-blue-500 hover:bg-blue-500/10" aria-label={`Edit ${lead.businessName}`}><Pencil className="h-3.5 w-3.5" />Edit</button><button type="button" onClick={() => deleteLead(lead.id)} className="rounded-lg p-1.5 text-text-muted hover:bg-rose-500/10 hover:text-rose-500" aria-label={`Delete ${lead.businessName}`}><Trash2 className="h-4 w-4" /></button></div></td>
+                      <td className="px-4 py-4 align-top"><div className="flex justify-end gap-1"><button type="button" onClick={() => openEditor(lead)} className="flex items-center gap-1 rounded-lg px-2.5 py-1.5 text-xs font-semibold text-blue-500 hover:bg-blue-500/10" aria-label={`Edit ${lead.businessName}`}><Pencil className="h-3.5 w-3.5" />Edit</button><DiscussButton item={{ kind: 'lead', id: lead.id, label: lead.businessName, detail: lead.status }} /><button type="button" onClick={() => deleteLead(lead.id)} className="rounded-lg p-1.5 text-text-muted hover:bg-rose-500/10 hover:text-rose-500" aria-label={`Delete ${lead.businessName}`}><Trash2 className="h-4 w-4" /></button></div></td>
                     </tr>
                   );
                 })}

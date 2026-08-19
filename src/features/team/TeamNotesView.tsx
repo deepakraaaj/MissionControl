@@ -10,6 +10,7 @@ import {
   Edit3,
 } from 'lucide-react';
 import { useTeamStore } from './team-store';
+import { DiscussButton } from './DiscussButton';
 import type { TeamNote } from './team-types';
 
 interface TeamNotesViewProps {
@@ -155,7 +156,7 @@ export function TeamNotesView({ filterMissionId }: TeamNotesViewProps) {
             disabled={!teamMissions.length}
             onClick={handleStartCreate}
             title={teamMissions.length ? 'Create note' : 'Create a project from the Mission tab first'}
-            className="flex items-center gap-2 px-3.5 py-1.5 bg-teal-500 hover:bg-teal-400 text-slate-950 font-bold text-xs rounded-xl shadow-lg shadow-teal-500/20 transition-all cursor-pointer disabled:cursor-not-allowed disabled:opacity-45"
+            className="flex items-center gap-2 px-3.5 py-1.5 bg-accent hover:bg-accentSoft text-[rgb(var(--accent-contrast))] font-bold text-xs rounded-xl shadow-glow transition-all cursor-pointer disabled:cursor-not-allowed disabled:opacity-45"
           >
             <Plus className="w-3.5 h-3.5" />
             <span>New Team Note</span>
@@ -371,7 +372,7 @@ export function TeamNotesView({ filterMissionId }: TeamNotesViewProps) {
               <div className="flex items-center justify-end gap-2 pt-2 border-t border-slate-800">
                 <button
                   type="submit"
-                  className="px-4 py-2 bg-teal-500 hover:bg-teal-400 text-slate-950 font-bold text-xs rounded-xl shadow-md transition-all cursor-pointer"
+                  className="px-4 py-2 bg-accent hover:bg-accentSoft text-[rgb(var(--accent-contrast))] font-bold text-xs rounded-xl shadow-glow transition-all cursor-pointer"
                 >
                   {isCreating ? 'Publish Team Note' : 'Save Changes'}
                 </button>
@@ -414,6 +415,10 @@ export function TeamNotesView({ filterMissionId }: TeamNotesViewProps) {
                     <Edit3 className="w-3.5 h-3.5" />
                     <span>Edit</span>
                   </button>
+                  <DiscussButton
+                    className="p-2"
+                    item={{ kind: 'note', id: activeNote.id, label: activeNote.title, detail: activeNote.category }}
+                  />
                   <button
                     type="button"
                     onClick={() => deleteTeamNote(activeNote.id)}

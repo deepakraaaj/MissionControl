@@ -1,6 +1,7 @@
 import { useState, type DragEvent } from 'react';
 import { AlertOctagon, CheckCircle2, Plus, Search, Trash2 } from 'lucide-react';
 import { useTeamStore } from './team-store';
+import { DiscussButton } from './DiscussButton';
 import type { ProblemItem, ProblemSeverity, ProblemStatus } from './team-types';
 
 interface ProblemBankViewProps { missionId?: string }
@@ -12,9 +13,9 @@ const severityStyle: Record<ProblemSeverity, string> = {
 };
 
 const columns: Array<{ status: ProblemStatus; label: string; caption: string; dot: string }> = [
-  { status: 'open', label: 'Open', caption: 'Needs triage', dot: 'bg-rose-500' },
-  { status: 'investigating', label: 'Investigating', caption: 'Finding the cause', dot: 'bg-amber-500' },
-  { status: 'solved', label: 'Solved', caption: 'Reusable learning', dot: 'bg-emerald-500' },
+  { status: 'open', label: 'Open', caption: 'Needs triage', dot: 'bg-danger' },
+  { status: 'investigating', label: 'Investigating', caption: 'Finding the cause', dot: 'bg-warning' },
+  { status: 'solved', label: 'Solved', caption: 'Reusable learning', dot: 'bg-success' },
 ];
 
 export function ProblemBankView({ missionId }: ProblemBankViewProps) {
@@ -64,7 +65,7 @@ export function ProblemBankView({ missionId }: ProblemBankViewProps) {
     <article key={problem.id} draggable onDragStart={(event) => { setDraggedId(problem.id); event.dataTransfer.setData('text/plain', problem.id); }} onDragEnd={() => { setDraggedId(null); setDropStatus(null); }} className={`group rounded-2xl border border-borderSoft/35 bg-panel p-4 shadow-sm transition hover:-translate-y-0.5 hover:border-borderSoft/60 hover:shadow-md ${draggedId === problem.id ? 'opacity-40' : ''}`}>
       <div className="flex items-start justify-between gap-2">
         <div className="flex flex-wrap gap-1.5"><span className={`rounded-full border px-2 py-0.5 text-[11px] font-bold uppercase ${severityStyle[problem.severity]}`}>{problem.severity}</span><span className="rounded-full bg-panel2/65 px-2 py-0.5 text-[11px] text-text-secondary">{problem.audienceCategory}</span></div>
-        <button type="button" onClick={() => deleteProblem(problem.id)} className="rounded-lg p-1.5 text-text-muted opacity-100 hover:bg-rose-500/10 hover:text-rose-500 lg:opacity-0 lg:group-hover:opacity-100"><Trash2 className="h-4 w-4" /></button>
+        <div className="flex shrink-0 items-center gap-0.5"><DiscussButton className="opacity-100 lg:opacity-0 lg:group-hover:opacity-100" item={{ kind: 'problem', id: problem.id, label: problem.title, detail: problem.severity }} /><button type="button" onClick={() => deleteProblem(problem.id)} className="rounded-lg p-1.5 text-text-muted opacity-100 hover:bg-rose-500/10 hover:text-rose-500 lg:opacity-0 lg:group-hover:opacity-100"><Trash2 className="h-4 w-4" /></button></div>
       </div>
       <h3 className="mt-3 text-[15px] font-bold leading-snug text-text-primary">{problem.title}</h3>
       <p className="mt-2 line-clamp-3 text-sm leading-relaxed text-text-secondary">{problem.description}</p>
@@ -75,7 +76,7 @@ export function ProblemBankView({ missionId }: ProblemBankViewProps) {
 
   return <div className="space-y-4">
     <section className="rounded-2xl border border-borderSoft/30 bg-panel/45 p-4">
-      <div className="flex flex-wrap items-center justify-between gap-3"><div className="flex items-center gap-3"><div className="flex h-10 w-10 items-center justify-center rounded-xl border border-rose-500/25 bg-rose-500/10 text-rose-500"><AlertOctagon className="h-5 w-5" /></div><div><h2 className="text-base font-bold text-text-primary">Issues</h2><p className="mt-0.5 text-xs text-text-muted">Track problems, feedback, and ideas.</p></div></div><button type="button" disabled={!hasProjects} onClick={() => setAdding(!adding)} title={hasProjects ? 'Add issue' : 'Create a project from the Mission tab first'} className="flex items-center gap-2 rounded-xl bg-rose-500 px-4 py-2.5 text-sm font-bold text-white shadow-lg shadow-rose-500/15 disabled:cursor-not-allowed disabled:opacity-45"><Plus className="h-4 w-4" /> Add issue</button></div>
+      <div className="flex flex-wrap items-center justify-between gap-3"><div className="flex items-center gap-3"><div className="flex h-10 w-10 items-center justify-center rounded-xl border border-rose-500/25 bg-rose-500/10 text-rose-500"><AlertOctagon className="h-5 w-5" /></div><div><h2 className="text-base font-bold text-text-primary">Issues</h2><p className="mt-0.5 text-xs text-text-muted">Track problems, feedback, and ideas.</p></div></div><button type="button" disabled={!hasProjects} onClick={() => setAdding(!adding)} title={hasProjects ? 'Add issue' : 'Create a project from the Mission tab first'} className="flex items-center gap-2 rounded-xl bg-rose-500 px-4 py-2.5 text-sm font-bold text-white shadow-glow disabled:cursor-not-allowed disabled:opacity-45"><Plus className="h-4 w-4" /> Add issue</button></div>
       {!hasProjects && <div className="mt-4 rounded-xl border border-amber-500/25 bg-amber-500/10 px-4 py-3 text-sm text-amber-500"><strong>No projects in this room yet.</strong> Open the Mission tab and create your first project before logging issues.</div>}
       <div className="mt-4 flex flex-wrap items-center gap-2 border-t border-borderSoft/25 pt-3">
         {!missionId && <select value={venture} onChange={(e) => setVenture(e.target.value)} className="rounded-xl border border-borderSoft/35 bg-panel2/55 px-3 py-2 text-sm text-text-primary"><option value="all">All projects</option>{missions.map((item) => <option key={item.id} value={item.id}>{item.title}</option>)}</select>}

@@ -5,18 +5,19 @@ import { INITIAL_DIAGRAMS, INITIAL_LEADS, INITIAL_PROBLEMS, INITIAL_TEAM_NOTES, 
 
 const DATA_KEYS = [
   'teamMissions', 'selectedTeamMissionId', 'leads', 'workflows', 'workLinks',
-  'problems', 'diagrams', 'teamNotes', 'teamTasks',
+  'problems', 'diagrams', 'teamNotes', 'teamTasks', 'chatMessages',
 ] as const;
 
 type SharedTeamState = Pick<ReturnType<typeof useTeamStore.getState>, (typeof DATA_KEYS)[number]>;
 const EMPTY_ROOM_STATE: SharedTeamState = {
   teamMissions: [], selectedTeamMissionId: null, leads: [], workflows: [], workLinks: [],
-  problems: [], diagrams: [], teamNotes: [], teamTasks: [],
+  problems: [], diagrams: [], teamNotes: [], teamTasks: [], chatMessages: [],
 };
 const KUMBAKONAM_PROJECT: SharedTeamState['teamMissions'][number] = {
   id: 'm-turf-booking-app', title: 'Turf booking app', description: 'Shared turf booking, team roster, and live scorebook for Kumbakonam.', iconName: 'Activity', color: 'emerald', objective: 'Let the team discover open turf slots, book together, and track every match score.', why_it_matters: 'Remove WhatsApp back-and-forth and make every booking visible to the whole team.', definition_of_success: 'Every turf slot, booking, and match score is recorded in one shared room workspace.', status: 'active', is_pinned: true, target_date: '2026-09-30', tags: ['Turf', 'Booking', 'Team scorebook'],
 };
-const KUMBAKONAM_CONTENT: Pick<SharedTeamState, 'leads' | 'workflows' | 'workLinks' | 'problems' | 'diagrams' | 'teamNotes' | 'teamTasks'> = {
+const KUMBAKONAM_CONTENT: Pick<SharedTeamState, 'leads' | 'workflows' | 'workLinks' | 'problems' | 'diagrams' | 'teamNotes' | 'teamTasks' | 'chatMessages'> = {
+  chatMessages: [],
   leads: INITIAL_LEADS.filter((item) => item.missionId === 'm-turf').map((item) => ({ ...item, missionId: KUMBAKONAM_PROJECT.id })),
   workflows: INITIAL_WORKFLOWS.filter((item) => item.missionId === 'm-turf').map((item) => ({ ...item, missionId: KUMBAKONAM_PROJECT.id })),
   workLinks: INITIAL_WORK_LINKS.filter((item) => item.missionId === 'm-turf').map((item) => ({ ...item, missionId: KUMBAKONAM_PROJECT.id })),

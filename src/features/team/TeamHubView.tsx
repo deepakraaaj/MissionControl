@@ -83,7 +83,7 @@ export function TeamHubView() {
       <section className="overflow-hidden rounded-2xl border border-slate-800 bg-slate-900/55">
         <div className="flex flex-wrap items-center justify-between gap-4 px-5 py-4">
           <div className="flex items-center gap-3">
-            <div className="flex h-10 w-10 items-center justify-center rounded-xl border border-amber-500/25 bg-amber-500/10 text-amber-400">
+            <div className="flex h-10 w-10 items-center justify-center rounded-xl border border-accent/25 bg-accent/10 text-accent">
               <Users className="h-5 w-5" />
             </div>
             <div>
@@ -97,7 +97,7 @@ export function TeamHubView() {
           <button
             type="button"
             onClick={() => setIsCreatingVenture((value) => !value)}
-            className="flex items-center gap-2 rounded-xl bg-amber-500 px-4 py-2.5 text-sm font-bold text-slate-950 shadow-lg shadow-amber-500/15 transition-colors hover:bg-amber-400"
+            className="flex items-center gap-2 rounded-xl bg-accent hover:bg-accentSoft text-[rgb(var(--accent-contrast))] px-4 py-2.5 text-sm font-bold shadow-glow transition-all"
           >
             <Plus className="h-3.5 w-3.5" />
             New project
@@ -124,7 +124,7 @@ export function TeamHubView() {
           {isCreatingVenture && (
             <form
               onSubmit={handleCreateVenture}
-              className="mx-auto max-w-4xl space-y-6 rounded-3xl border border-amber-500/35 bg-panel p-5 shadow-2xl shadow-black/20 animate-in fade-in sm:p-7"
+              className="mx-auto max-w-4xl space-y-6 rounded-3xl border border-accent/35 bg-panel p-5 shadow-2xl shadow-black/20 animate-in fade-in sm:p-7"
             >
               <div className="border-b border-borderSoft/35 pb-5">
                 <h2 className="text-xl font-bold text-text-primary">Create a new project</h2>
@@ -142,7 +142,7 @@ export function TeamHubView() {
                     placeholder="Example: Website redesign"
                     value={newTitle}
                     onChange={(e) => setNewTitle(e.target.value)}
-                    className="h-12 w-full rounded-xl border border-borderSoft/70 bg-panel2 px-4 text-base text-text-primary outline-none placeholder:text-text-muted focus:border-amber-500 focus:ring-2 focus:ring-amber-500/15"
+                    className="h-12 w-full rounded-xl border border-borderSoft/70 bg-panel2 px-4 text-base text-text-primary outline-none placeholder:text-text-muted focus:border-accent focus:ring-2 focus:ring-accent/15"
                   />
                 </div>
 
@@ -153,7 +153,7 @@ export function TeamHubView() {
                     type="date"
                     value={newTargetDate}
                     onChange={(e) => setNewTargetDate(e.target.value)}
-                    className="h-12 w-full rounded-xl border border-borderSoft/70 bg-panel2 px-4 text-base text-text-primary outline-none focus:border-amber-500 focus:ring-2 focus:ring-amber-500/15 [color-scheme:dark]"
+                    className="h-12 w-full rounded-xl border border-borderSoft/70 bg-panel2 px-4 text-base text-text-primary outline-none focus:border-accent focus:ring-2 focus:ring-accent/15 [color-scheme:dark]"
                   />
                 </div>
               </div>
@@ -167,7 +167,7 @@ export function TeamHubView() {
                   placeholder="What are you delivering for the client?"
                   value={newDescription}
                   onChange={(e) => setNewDescription(e.target.value)}
-                  className="h-12 w-full rounded-xl border border-borderSoft/70 bg-panel2 px-4 text-base text-text-primary outline-none placeholder:text-text-muted focus:border-amber-500 focus:ring-2 focus:ring-amber-500/15"
+                  className="h-12 w-full rounded-xl border border-borderSoft/70 bg-panel2 px-4 text-base text-text-primary outline-none placeholder:text-text-muted focus:border-accent focus:ring-2 focus:ring-accent/15"
                 />
                 <p className="text-xs text-text-muted">Keep it to one clear sentence.</p>
               </div>
@@ -180,7 +180,7 @@ export function TeamHubView() {
                   placeholder="What should be true when this project is finished?"
                   value={newObjective}
                   onChange={(e) => setNewObjective(e.target.value)}
-                  className="w-full resize-y rounded-xl border border-borderSoft/70 bg-panel2 px-4 py-3 text-base leading-relaxed text-text-primary outline-none placeholder:text-text-muted focus:border-amber-500 focus:ring-2 focus:ring-amber-500/15"
+                  className="w-full resize-y rounded-xl border border-borderSoft/70 bg-panel2 px-4 py-3 text-base leading-relaxed text-text-primary outline-none placeholder:text-text-muted focus:border-accent focus:ring-2 focus:ring-accent/15"
                 />
               </div>
 
@@ -194,7 +194,7 @@ export function TeamHubView() {
                 </button>
                 <button
                   type="submit"
-                  className="h-11 rounded-xl bg-amber-500 px-6 text-sm font-bold text-slate-950 shadow-lg shadow-amber-500/15 transition-all hover:bg-amber-400"
+                  className="h-11 rounded-xl bg-accent hover:bg-accentSoft text-[rgb(var(--accent-contrast))] px-6 text-sm font-bold shadow-glow transition-all"
                 >
                   Create project
                 </button>

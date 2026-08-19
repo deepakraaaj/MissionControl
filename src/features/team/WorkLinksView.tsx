@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { ExternalLink, Globe, Code2, Palette, FileText, Plus, Trash2, Folder, Link2 } from 'lucide-react';
 import { useTeamStore } from './team-store';
+import { DiscussButton } from './DiscussButton';
 import type { WorkLink, WorkLinkCategory } from './team-types';
 
 interface WorkLinksViewProps {
@@ -131,7 +132,7 @@ export function WorkLinksView({ missionId }: WorkLinksViewProps) {
 
           <button
             type="submit"
-            className="w-full py-2 bg-accent hover:bg-accent/90 text-slate-950 font-bold text-xs rounded-xl shadow-lg transition-colors"
+            className="w-full py-2 bg-accent hover:bg-accentSoft text-[rgb(var(--accent-contrast))] font-bold text-xs rounded-xl shadow-lg transition-colors"
           >
             Save Link
           </button>
@@ -176,6 +177,10 @@ export function WorkLinksView({ missionId }: WorkLinksViewProps) {
                 </div>
               </div>
 
+              <DiscussButton
+                className="opacity-0 group-hover:opacity-100"
+                item={{ kind: 'link', id: link.id, label: link.title, detail: link.category }}
+              />
               <button
                 type="button"
                 onClick={() => deleteWorkLink(link.id)}

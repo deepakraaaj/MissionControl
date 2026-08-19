@@ -12,6 +12,9 @@ import type {
   TeamNote,
   TeamTask,
   DiagramNode,
+  ChatRef,
+  TeamChatMessage,
+  TeamPersona as Persona,
 } from './team-types';
 import {
   INITIAL_PERSONAS,
@@ -26,6 +29,40 @@ import {
   type TeamMissionItem,
 } from './team-seed';
 
+let chatSeq = 0;
+const chatId = () => `chat-${Date.now().toString(36)}-${(chatSeq += 1).toString(36)}`;
+
+/**
+ * Modules post their own activity into the project chat, so the conversation
+ * and the work stay in one timeline. Built as a plain value so a mutator can
+ * append it inside the same `set` call that changes the item — one atomic
+ * update, one sync write.
+ */
+const systemMessage = (missionId: string, body: string, ref?: ChatRef): TeamChatMessage => ({
+  id: chatId(),
+  missionId,
+  kind: 'system',
+  authorName: 'Workspace',
+  body,
+  refs: ref ? [ref] : [],
+  reactions: [],
+  mentions: [],
+  createdAt: new Date().toISOString(),
+});
+
+/** @Name matches against the room's personas; unknown handles stay plain text. */
+const extractMentions = (body: string, personas: Persona[]): string[] => {
+  const lower = body.toLowerCase();
+  return personas.filter((p) => lower.includes(`@${p.name.toLowerCase()}`)).map((p) => p.name);
+};
+
+const TASK_STATUS_COPY: Record<TeamTask['status'], string> = {
+  backlog: 'moved to Backlog',
+  in_progress: 'started',
+  review: 'moved to Review',
+  done: 'completed',
+};
+
 interface TeamState {
   workspaceMode: 'personal' | 'team';
   teamUnlocked: boolean;
@@ -39,6 +76,12 @@ interface TeamState {
   diagrams: VisualDiagram[];
   teamNotes: TeamNote[];
   teamTasks: TeamTask[];
+  personas: TeamPersona[];
+  chatMessages: TeamChatMessage[];
+  /** Item handed to the chat composer by a module's "Discuss" action. */
+  chatDraftRef: ChatRef | null;
+  /** missionId -> ISO timestamp the current user last read that channel. */
+  channelReads: Record<string, string>;
 
   // Auth & Workspace Switching
   setWorkspaceMode: (mode: 'personal' | 'team') => void;
@@ -88,6 +131,23 @@ interface TeamState {
   toggleTeamTaskDone: (id: string) => void;
   deleteTeamTask: (id: string) => void;
 
+  // Project Chat Actions
+  sendChatMessage: (input: {
+    missionId: string;
+    body: string;
+    refs?: ChatRef[];
+    /** Set to reply inside a thread rather than the channel. */
+    parentId?: string;
+  }) => TeamChatMessage;
+  editChatMessage: (id: string, body: string) => void;
+  toggleChatReaction: (id: string, emoji: string) => void;
+  deleteChatMessage: (id: string) => void;
+  markChannelRead: (missionId: string) => void;
+  startChatDraft: (ref: ChatRef) => void;
+  clearChatDraft: () => void;
+  /** Turn a message into a task / issue / note, keeping the link both ways. */
+  promoteChatMessage: (messageId: string, target: 'task' | 'problem' | 'note') => void;
+
   // Fast Pocket Drops
   pocketDropLead: (data: {
     missionId: string;
@@ -123,6 +183,10 @@ export const useTeamStore = create<TeamState>()(
       diagrams: INITIAL_DIAGRAMS,
       teamNotes: INITIAL_TEAM_NOTES,
       teamTasks: INITIAL_TEAM_TASKS,
+      personas: INITIAL_PERSONAS,
+      chatMessages: [],
+      chatDraftRef: null,
+      channelReads: {},
 
       setWorkspaceMode: (mode) => set({ workspaceMode: mode }),
 
@@ -166,7 +230,15 @@ export const useTeamStore = create<TeamState>()(
           createdAt: new Date().toISOString(),
           updatedAt: new Date().toISOString(),
         };
-        set((state) => ({ leads: [newLead, ...state.leads] }));
+        set((state) => ({
+          leads: [newLead, ...state.leads],
+          chatMessages: [
+            ...state.chatMessages,
+            systemMessage(newLead.missionId, 'logged a lead', {
+              kind: 'lead', id: newLead.id, label: newLead.businessName, detail: newLead.status,
+            }),
+          ],
+        }));
         return newLead;
       },
 
@@ -185,11 +257,21 @@ export const useTeamStore = create<TeamState>()(
       },
 
       updateLeadStatus: (id, status) => {
-        set((state) => ({
-          leads: state.leads.map((l) =>
-            l.id === id ? { ...l, status, updatedAt: new Date().toISOString() } : l
-          ),
-        }));
+        set((state) => {
+          const lead = state.leads.find((l) => l.id === id);
+          if (!lead || lead.status === status) return {};
+          return {
+            leads: state.leads.map((l) =>
+              l.id === id ? { ...l, status, updatedAt: new Date().toISOString() } : l
+            ),
+            chatMessages: [
+              ...state.chatMessages,
+              systemMessage(lead.missionId, `moved a lead to ${status.replace(/_/g, ' ')}`, {
+                kind: 'lead', id: lead.id, label: lead.businessName, detail: status,
+              }),
+            ],
+          };
+        });
       },
 
       // Workflows & SOPs
@@ -233,7 +315,15 @@ export const useTeamStore = create<TeamState>()(
           id: `wl-${Date.now()}`,
           createdAt: new Date().toISOString(),
         };
-        set((state) => ({ workLinks: [newLink, ...state.workLinks] }));
+        set((state) => ({
+          workLinks: [newLink, ...state.workLinks],
+          chatMessages: [
+            ...state.chatMessages,
+            systemMessage(newLink.missionId, 'added a link', {
+              kind: 'link', id: newLink.id, label: newLink.title, detail: newLink.category,
+            }),
+          ],
+        }));
       },
 
       deleteWorkLink: (id) => {
@@ -249,14 +339,32 @@ export const useTeamStore = create<TeamState>()(
           id: `prob-${Date.now()}`,
           createdAt: new Date().toISOString(),
         };
-        set((state) => ({ problems: [newProb, ...state.problems] }));
+        set((state) => ({
+          problems: [newProb, ...state.problems],
+          chatMessages: [
+            ...state.chatMessages,
+            systemMessage(newProb.missionId, 'logged an issue', {
+              kind: 'problem', id: newProb.id, label: newProb.title, detail: newProb.severity,
+            }),
+          ],
+        }));
         return newProb;
       },
 
       updateProblemStatus: (id, status) => {
-        set((state) => ({
-          problems: state.problems.map((p) => (p.id === id ? { ...p, status } : p)),
-        }));
+        set((state) => {
+          const problem = state.problems.find((p) => p.id === id);
+          if (!problem || problem.status === status) return {};
+          return {
+            problems: state.problems.map((p) => (p.id === id ? { ...p, status } : p)),
+            chatMessages: [
+              ...state.chatMessages,
+              systemMessage(problem.missionId, status === 'solved' ? 'solved an issue' : `moved an issue to ${status}`, {
+                kind: 'problem', id: problem.id, label: problem.title, detail: status,
+              }),
+            ],
+          };
+        });
       },
 
       deleteProblem: (id) => {
@@ -304,7 +412,15 @@ export const useTeamStore = create<TeamState>()(
           createdAt: new Date().toISOString(),
           updatedAt: new Date().toISOString(),
         };
-        set((state) => ({ teamNotes: [newNote, ...state.teamNotes] }));
+        set((state) => ({
+          teamNotes: [newNote, ...state.teamNotes],
+          chatMessages: [
+            ...state.chatMessages,
+            systemMessage(newNote.missionId, 'added a note', {
+              kind: 'note', id: newNote.id, label: newNote.title, detail: newNote.category,
+            }),
+          ],
+        }));
         return newNote;
       },
 
@@ -329,33 +445,174 @@ export const useTeamStore = create<TeamState>()(
           id: `tt-${Date.now()}`,
           createdAt: new Date().toISOString(),
         };
-        set((state) => ({ teamTasks: [newTask, ...state.teamTasks] }));
+        set((state) => ({
+          teamTasks: [newTask, ...state.teamTasks],
+          chatMessages: [
+            ...state.chatMessages,
+            systemMessage(newTask.missionId, 'added a task', {
+              kind: 'task', id: newTask.id, label: newTask.title, detail: newTask.priority,
+            }),
+          ],
+        }));
         return newTask;
       },
 
       updateTeamTask: (id, updates) => {
-        set((state) => ({
-          teamTasks: state.teamTasks.map((t) => (t.id === id ? { ...t, ...updates } : t)),
-        }));
+        set((state) => {
+          const task = state.teamTasks.find((t) => t.id === id);
+          const teamTasks = state.teamTasks.map((t) => (t.id === id ? { ...t, ...updates } : t));
+          // Only a status move is worth announcing; edits to a title are not.
+          if (!task || !updates.status || updates.status === task.status) return { teamTasks };
+          return {
+            teamTasks,
+            chatMessages: [
+              ...state.chatMessages,
+              systemMessage(task.missionId, TASK_STATUS_COPY[updates.status], {
+                kind: 'task', id: task.id, label: task.title, detail: updates.status,
+              }),
+            ],
+          };
+        });
       },
 
       toggleTeamTaskDone: (id) => {
-        set((state) => ({
-          teamTasks: state.teamTasks.map((t) => {
-            if (t.id !== id) return t;
-            const isDone = t.status === 'done';
-            return {
-              ...t,
-              status: isDone ? 'in_progress' : 'done',
-              completedAt: isDone ? undefined : new Date().toISOString(),
-            };
-          }),
-        }));
+        set((state) => {
+          const task = state.teamTasks.find((t) => t.id === id);
+          if (!task) return {};
+          const nextStatus: TeamTask['status'] = task.status === 'done' ? 'in_progress' : 'done';
+          return {
+            teamTasks: state.teamTasks.map((t) =>
+              t.id === id
+                ? { ...t, status: nextStatus, completedAt: nextStatus === 'done' ? new Date().toISOString() : undefined }
+                : t
+            ),
+            chatMessages: [
+              ...state.chatMessages,
+              systemMessage(task.missionId, TASK_STATUS_COPY[nextStatus], {
+                kind: 'task', id: task.id, label: task.title, detail: nextStatus,
+              }),
+            ],
+          };
+        });
       },
 
       deleteTeamTask: (id) => {
         set((state) => ({
           teamTasks: state.teamTasks.filter((t) => t.id !== id),
+        }));
+      },
+
+      // Project Chat
+      sendChatMessage: ({ missionId, body, refs = [], parentId }) => {
+        const message: TeamChatMessage = {
+          id: chatId(),
+          missionId,
+          kind: 'message',
+          authorName: get().activePersona.name,
+          body,
+          refs,
+          reactions: [],
+          mentions: extractMentions(body, get().personas),
+          parentId,
+          createdAt: new Date().toISOString(),
+        };
+        set((state) => ({ chatMessages: [...state.chatMessages, message], chatDraftRef: null }));
+        return message;
+      },
+
+      editChatMessage: (id, body) => {
+        set((state) => ({
+          chatMessages: state.chatMessages.map((m) =>
+            m.id === id
+              ? { ...m, body, mentions: extractMentions(body, state.personas), editedAt: new Date().toISOString() }
+              : m
+          ),
+        }));
+      },
+
+      toggleChatReaction: (id, emoji) => {
+        const me = get().activePersona.name;
+        set((state) => ({
+          chatMessages: state.chatMessages.map((m) => {
+            if (m.id !== id) return m;
+            const existing = m.reactions.find((r) => r.emoji === emoji);
+            if (!existing) return { ...m, reactions: [...m.reactions, { emoji, by: [me] }] };
+            const by = existing.by.includes(me) ? existing.by.filter((n) => n !== me) : [...existing.by, me];
+            return {
+              ...m,
+              reactions: by.length
+                ? m.reactions.map((r) => (r.emoji === emoji ? { ...r, by } : r))
+                : m.reactions.filter((r) => r.emoji !== emoji),
+            };
+          }),
+        }));
+      },
+
+      deleteChatMessage: (id) => {
+        set((state) => ({
+          chatMessages: state.chatMessages.filter((m) => m.id !== id && m.parentId !== id),
+        }));
+      },
+
+      markChannelRead: (missionId) => {
+        set((state) => ({
+          channelReads: { ...state.channelReads, [missionId]: new Date().toISOString() },
+        }));
+      },
+
+      startChatDraft: (ref) => set({ chatDraftRef: ref }),
+
+      clearChatDraft: () => set({ chatDraftRef: null }),
+
+      promoteChatMessage: (messageId, target) => {
+        const message = get().chatMessages.find((m) => m.id === messageId);
+        if (!message || message.spawned) return;
+
+        // First line becomes the title, the rest the body.
+        const [firstLine, ...rest] = message.body.split('\n');
+        const title = firstLine.trim().slice(0, 120) || 'Untitled';
+        const detail = rest.join('\n').trim();
+        const persona = get().activePersona;
+        let spawned: ChatRef;
+
+        if (target === 'task') {
+          const task = get().addTeamTask({
+            missionId: message.missionId,
+            title,
+            outcome: detail || undefined,
+            status: 'backlog',
+            priority: 'normal',
+            assigneeRole: persona.role,
+          });
+          spawned = { kind: 'task', id: task.id, label: task.title, detail: 'backlog' };
+        } else if (target === 'problem') {
+          const problem = get().addProblem({
+            missionId: message.missionId,
+            audienceCategory: 'Team',
+            title,
+            description: detail || title,
+            source: `Chat · ${message.authorName}`,
+            severity: 'friction',
+            status: 'open',
+            tags: ['From-Chat'],
+            loggedBy: persona.name,
+          });
+          spawned = { kind: 'problem', id: problem.id, label: problem.title, detail: 'open' };
+        } else {
+          const note = get().addTeamNote({
+            missionId: message.missionId,
+            title,
+            content: detail || title,
+            category: 'General',
+            author: persona.name,
+          });
+          spawned = { kind: 'note', id: note.id, label: note.title, detail: note.category };
+        }
+
+        // The add* call above already posted its own system message; this just
+        // links the source message to what came out of it.
+        set((state) => ({
+          chatMessages: state.chatMessages.map((m) => (m.id === messageId ? { ...m, spawned } : m)),
         }));
       },
 
@@ -377,7 +634,15 @@ export const useTeamStore = create<TeamState>()(
           createdAt: new Date().toISOString(),
           updatedAt: new Date().toISOString(),
         };
-        set((state) => ({ leads: [newLead, ...state.leads] }));
+        set((state) => ({
+          leads: [newLead, ...state.leads],
+          chatMessages: [
+            ...state.chatMessages,
+            systemMessage(missionId, 'dropped a lead from the field', {
+              kind: 'lead', id: newLead.id, label: newLead.businessName, detail: newLead.status,
+            }),
+          ],
+        }));
         return newLead;
       },
 
@@ -403,7 +668,15 @@ export const useTeamStore = create<TeamState>()(
           loggedBy: persona.name,
           createdAt: new Date().toISOString(),
         };
-        set((state) => ({ problems: [newProb, ...state.problems] }));
+        set((state) => ({
+          problems: [newProb, ...state.problems],
+          chatMessages: [
+            ...state.chatMessages,
+            systemMessage(missionId, 'dropped an issue from the field', {
+              kind: 'problem', id: newProb.id, label: newProb.title, detail: newProb.severity,
+            }),
+          ],
+        }));
         return newProb;
       },
     }),
@@ -422,6 +695,8 @@ export const useTeamStore = create<TeamState>()(
         diagrams: state.diagrams,
         teamNotes: state.teamNotes,
         teamTasks: state.teamTasks,
+        chatMessages: state.chatMessages,
+        channelReads: state.channelReads,
       }),
     }
   )

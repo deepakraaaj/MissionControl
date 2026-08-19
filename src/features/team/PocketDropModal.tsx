@@ -159,7 +159,7 @@ export function PocketDropModal({ isOpen, onClose, defaultMissionId }: PocketDro
           <select
             value={selectedMissionId}
             onChange={(e) => setSelectedMissionId(e.target.value)}
-            className="w-full px-3 py-2.5 bg-slate-950 border border-slate-800 rounded-2xl text-xs font-medium text-slate-100 focus:outline-none focus:border-amber-500 transition-all cursor-pointer"
+            className="w-full px-3 py-2.5 bg-slate-950 border border-slate-800 rounded-2xl text-xs font-medium text-slate-100 focus:outline-none focus:border-accent transition-all cursor-pointer"
           >
             <option value="" disabled>{teamMissions.length ? 'Select a project' : 'Create a project first'}</option>
             {teamMissions.map((m) => (
@@ -240,7 +240,7 @@ export function PocketDropModal({ isOpen, onClose, defaultMissionId }: PocketDro
 
             <button
               type="submit"
-              className="w-full py-3 bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold text-xs rounded-2xl shadow-xl shadow-emerald-500/20 transition-all flex items-center justify-center gap-2 cursor-pointer"
+              className="w-full py-3 bg-accent hover:bg-accentSoft text-[rgb(var(--accent-contrast))] font-bold text-xs rounded-2xl shadow-glow transition-all flex items-center justify-center gap-2 cursor-pointer"
             >
               <Plus className="w-4 h-4" />
               <span>Fast Drop Lead Contact</span>
@@ -300,7 +300,7 @@ export function PocketDropModal({ isOpen, onClose, defaultMissionId }: PocketDro
 
             <button
               type="submit"
-              className="w-full py-3 bg-rose-500 hover:bg-rose-400 text-slate-950 font-bold text-xs rounded-2xl shadow-xl shadow-rose-500/20 transition-all flex items-center justify-center gap-2 cursor-pointer"
+              className="w-full py-3 bg-accent hover:bg-accentSoft text-[rgb(var(--accent-contrast))] font-bold text-xs rounded-2xl shadow-glow transition-all flex items-center justify-center gap-2 cursor-pointer"
             >
               <Plus className="w-4 h-4" />
               <span>Fast Drop Problem Item</span>
@@ -333,9 +333,9 @@ export function PocketDropFAB() {
       <button
         type="button"
         onClick={() => setOpen(true)}
-        className="fixed bottom-20 right-5 z-40 flex h-12 w-12 items-center justify-center gap-2 rounded-2xl border border-amber-400/40 bg-gradient-to-r from-amber-500 to-amber-600 p-0 text-xs font-bold text-slate-950 shadow-2xl shadow-amber-500/30 transition-all hover:scale-105 hover:from-amber-400 hover:to-amber-500 active:scale-95 cursor-pointer lg:bottom-6 lg:right-24 lg:h-auto lg:w-auto lg:px-4 lg:py-3"
+        className="fixed bottom-20 right-5 z-40 flex h-12 w-12 items-center justify-center gap-2 rounded-2xl border border-accent/40 bg-gradient-to-r from-accent to-accentSoft p-0 text-xs font-bold text-[rgb(var(--accent-contrast))] shadow-glow transition-all hover:scale-105 hover:from-accent hover:to-accent active:scale-95 cursor-pointer lg:bottom-6 lg:right-24 lg:h-auto lg:w-auto lg:px-4 lg:py-3"
       >
-        <Zap className="w-4 h-4 fill-slate-950" />
+        <Zap className="w-4 h-4 fill-current" />
         <span className="hidden sm:inline">Quick Drop</span>
       </button>
 

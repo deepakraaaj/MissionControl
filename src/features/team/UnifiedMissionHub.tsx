@@ -1,22 +1,20 @@
 import { useMemo, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { 
-  CheckSquare, 
-  Users, 
-  ShieldCheck, 
-  Link2, 
-  Network, 
-  AlertOctagon, 
+  AlertOctagon,
   ArrowLeft, 
-  Play, 
+  CheckSquare,
+  FileText,
+  Link2,
+  MessageSquare,
+  Network,
+  ShieldCheck,
   Target,
-  Activity,
-  Dumbbell,
-  Tag,
-  Compass,
-  Layers,
-  FileText
+  Users,
 } from 'lucide-react';
+import type { LucideIcon } from 'lucide-react';
 import type { Mission } from '../missions/mission-types';
+import type { ChatRef } from './team-types';
 import type { TeamMissionItem } from './team-seed';
 import { useTeamStore } from './team-store';
 import { LeadsCRMView } from './LeadsCRMView';
@@ -26,16 +24,32 @@ import { VisualCanvasView } from './VisualCanvasView';
 import { ProblemBankView } from './ProblemBankView';
 import { TeamTasksView } from './TeamTasksView';
 import { TeamNotesView } from './TeamNotesView';
+import { TeamChatView } from './TeamChatView';
+import { useUnreadCount } from './team-chat-unread';
+import { useMissionHubNavSlot } from './mission-hub-nav-slot';
 
 interface UnifiedMissionHubProps {
   mission: Mission | TeamMissionItem;
   onBack?: () => void;
 }
 
-type TabKey = 'tasks' | 'leads' | 'workflows' | 'canvas' | 'links' | 'problems' | 'notes';
+type TabKey = 'chat' | 'tasks' | 'leads' | 'workflows' | 'canvas' | 'links' | 'problems' | 'notes';
+
+/** Where each referenced item lives, so chat can jump straight to it. */
+const REF_TAB: Record<ChatRef['kind'], TabKey> = {
+  task: 'tasks',
+  lead: 'leads',
+  workflow: 'workflows',
+  link: 'links',
+  problem: 'problems',
+  note: 'notes',
+};
 
 export function UnifiedMissionHub({ mission, onBack }: UnifiedMissionHubProps) {
-  const [activeTab, setActiveTab] = useState<TabKey>('tasks');
+  const [selectedTab, setSelectedTab] = useState<TabKey>('tasks');
+  const navSlot = useMissionHubNavSlot();
+  const unreadChat = useUnreadCount(mission.id);
+  const chatDraftRef = useTeamStore((s) => s.chatDraftRef);
   const teamState = useTeamStore();
   const allTeamTasks = teamState.teamTasks;
   const allLeads = teamState.leads;
@@ -72,204 +86,150 @@ export function UnifiedMissionHub({ mission, onBack }: UnifiedMissionHubProps) {
   const completedTasks = teamTasks.filter((t) => t.status === 'done').length;
   const taskProgress = teamTasks.length > 0 ? Math.round((completedTasks / teamTasks.length) * 100) : 0;
 
-  const demoLink = workLinks.find((w) => w.category === 'demo');
-
-  const getMissionIcon = () => {
-    const title = mission.title.toLowerCase();
-    if (title.includes('turf')) return <Activity className="w-7 h-7 text-emerald-400" />;
-    if (title.includes('gym')) return <Dumbbell className="w-7 h-7 text-blue-400" />;
-    if (title.includes('deal') || title.includes('flash')) return <Tag className="w-7 h-7 text-amber-400" />;
-    if (title.includes('popup') || title.includes('radar')) return <Compass className="w-7 h-7 text-purple-400" />;
-    return <Layers className="w-7 h-7 text-cyan-400" />;
+  const clearChatDraft = useTeamStore((s) => s.clearChatDraft);
+  // A "Discuss" action elsewhere in the project pulls the hub onto the chat
+  // tab until the message is sent or the attachment dropped.
+  const activeTab: TabKey = chatDraftRef ? 'chat' : selectedTab;
+  const setActiveTab = (key: TabKey) => {
+    if (chatDraftRef) clearChatDraft();
+    setSelectedTab(key);
   };
 
+  const tabs: Array<{ key: TabKey; label: string; icon: LucideIcon; count?: number; badge?: number }> = [
+    { key: 'chat', label: 'Chat', icon: MessageSquare, badge: unreadChat },
+    { key: 'tasks', label: 'Tasks & Sprints', icon: CheckSquare, count: teamTasks.length },
+    { key: 'leads', label: 'Leads & CRM', icon: Users, count: leads.length },
+    { key: 'workflows', label: 'Process', icon: ShieldCheck, count: workflows.length },
+    { key: 'canvas', label: 'Diagram', icon: Network },
+    { key: 'links', label: 'Links', icon: Link2, count: workLinks.length },
+    { key: 'problems', label: 'Issues', icon: AlertOctagon, count: problems.length },
+    { key: 'notes', label: 'Notes', icon: FileText, count: notes.length },
+  ];
+
+  const navBar = (
+    <div className="flex h-full min-w-0 flex-1 items-stretch gap-3 sm:gap-5">
+      <button
+        type="button"
+        onClick={onBack}
+        aria-label="Back to projects"
+        className="group my-auto flex h-8 shrink-0 cursor-pointer items-center gap-1.5 rounded-lg px-2 text-[13px] font-medium text-text-secondary transition-colors hover:bg-panel2 hover:text-text-primary"
+      >
+        <ArrowLeft className="h-4 w-4 transition-transform group-hover:-translate-x-0.5" />
+        <span className="hidden whitespace-nowrap sm:inline">Back to projects</span>
+      </button>
+
+      <div className="my-auto h-5 w-px shrink-0 bg-borderSoft" />
+
+      <nav aria-label="Project sections" className="flex h-full min-w-0 flex-1 items-stretch gap-5 overflow-x-auto scrollbar-none sm:gap-6">
+        {tabs.map(({ key, label, icon: Icon, count, badge }) => {
+          const isActive = activeTab === key;
+          return (
+            <button
+              key={key}
+              type="button"
+              onClick={() => setActiveTab(key)}
+              aria-current={isActive ? 'page' : undefined}
+              className={`group relative flex h-full min-h-[2.25rem] shrink-0 cursor-pointer items-center gap-1.5 px-0.5 text-[13px] transition-colors ${
+                isActive ? 'font-semibold text-text-primary' : 'font-medium text-text-secondary hover:text-text-primary'
+              }`}
+            >
+              <Icon className={`h-4 w-4 shrink-0 transition-colors ${isActive ? 'text-accent' : 'text-text-muted group-hover:text-text-secondary'}`} />
+              <span className="whitespace-nowrap">{label}</span>
+              {count !== undefined && (
+                <span className={`ml-0.5 text-[11px] font-normal tabular-nums ${isActive ? 'text-accent' : 'text-text-secondary'}`}>
+                  {count}
+                </span>
+              )}
+              {badge !== undefined && badge > 0 && (
+                <span className="ml-0.5 flex h-4 min-w-[1rem] items-center justify-center rounded-full bg-danger px-1 text-[10px] font-bold tabular-nums text-[rgb(var(--accent-contrast))]">
+                  {badge > 99 ? '99+' : badge}
+                </span>
+              )}
+              <span
+                aria-hidden
+                className={`pointer-events-none absolute inset-x-0 bottom-0 h-[2px] rounded-full transition-colors ${
+                  isActive ? 'bg-accent' : 'bg-transparent group-hover:bg-borderSoft'
+                }`}
+              />
+            </button>
+          );
+        })}
+      </nav>
+    </div>
+  );
+
+  const isActiveMission = mission.status === 'active';
+
   return (
-    <div className="flex min-w-0 flex-1 flex-col overflow-y-auto text-text-primary">
-      {/* Top Mission Banner & Live Demo Launcher */}
-      <div className="relative space-y-4 border-b border-borderSoft/30 bg-panel/35 p-3.5 sm:p-5">
-        {/* Breadcrumb / Back */}
-        <div className="flex items-center justify-between gap-3">
-          <button
-            type="button"
-            onClick={onBack}
-            className="flex shrink-0 items-center gap-1.5 rounded-lg px-2 py-1.5 text-xs font-medium text-text-muted transition-colors hover:bg-panel2/70 hover:text-text-primary cursor-pointer"
+    <div className={`flex min-w-0 flex-1 flex-col text-text-primary ${activeTab === 'chat' ? 'h-full overflow-hidden' : 'overflow-y-auto'}`}>
+      {navSlot ? createPortal(navBar, navSlot) : null}
+
+      {/* Compact project banner */}
+      <div className="space-y-1.5 border-b border-borderSoft/60 bg-panel/40 px-4 py-3 sm:px-5">
+        {navSlot ? null : navBar}
+
+        <div className="flex min-w-0 items-center gap-2">
+          <h1 className="truncate text-base font-bold tracking-tight text-text-primary sm:text-lg">
+            {mission.title}
+          </h1>
+          <span
+            className={`shrink-0 rounded-full border px-2 py-px text-[10px] font-semibold uppercase tracking-wide ${
+              isActiveMission
+                ? 'border-success/40 bg-success/14 text-success'
+                : 'border-borderSoft bg-panel2 text-text-secondary'
+            }`}
           >
-            <ArrowLeft className="w-3.5 h-3.5" /> Back to projects
-          </button>
-
-          <div className="order-3 flex min-w-0 flex-1 items-center gap-1 overflow-x-auto rounded-xl border border-borderSoft/30 bg-panel2/35 p-1 scrollbar-none lg:order-2">
-            {([['tasks', `Tasks & Sprints (${teamTasks.length})`], ['leads', `Leads & CRM (${leads.length})`], ['workflows', `Process (${workflows.length})`], ['canvas', 'Diagram'], ['links', `Links (${workLinks.length})`], ['problems', `Issues (${problems.length})`], ['notes', `Notes (${notes.length})`]] as const).map(([key, label]) => <button key={key} type="button" onClick={() => setActiveTab(key)} className={`shrink-0 rounded-lg px-2.5 py-1.5 text-[11px] font-semibold whitespace-nowrap transition-colors ${activeTab === key ? 'bg-panel text-accent shadow-sm ring-1 ring-accent/25' : 'text-text-secondary hover:bg-panel/60 hover:text-text-primary'}`}>{label}</button>)}
-          </div>
-
-          <div className="order-2 flex items-center gap-2 lg:order-3">
-            {activeTab !== 'canvas' && <button type="button" onClick={() => setActiveTab('canvas')} className="flex items-center gap-2 rounded-xl border border-accent/35 bg-accent/10 px-3.5 py-1.5 text-xs font-bold text-accent transition-colors hover:bg-accent/18">
-              <Network className="h-3.5 w-3.5" /> View diagram
-            </button>}
-            {demoLink && (
-              <a href={demoLink.url} target="_blank" rel="noreferrer" className="flex items-center gap-2 rounded-xl bg-emerald-500 px-3.5 py-1.5 text-xs font-bold text-slate-950 shadow-lg shadow-emerald-500/20 transition-all hover:bg-emerald-400 hover:scale-105">
-                <Play className="h-3.5 w-3.5 fill-slate-950" /><span>Launch Live Mobile Demo</span>
-              </a>
-            )}
-          </div>
+            {mission.status}
+          </span>
         </div>
 
-        {/* Mission Title & Objective */}
-        <div className="flex items-start gap-4">
-          <div className="flex flex-shrink-0 items-center justify-center rounded-2xl border border-borderSoft/35 bg-panel2/55 p-3.5">
-            {getMissionIcon()}
-          </div>
+        <p
+          className="truncate text-xs text-text-secondary"
+          title={mission.objective ? `${mission.description}\n\nGoal: ${mission.objective}` : mission.description}
+        >
+          {mission.description}
+          {mission.objective && (
+            <>
+              <span className="mx-1.5 text-text-muted">&middot;</span>
+              <Target className="mr-1 inline h-3 w-3 -translate-y-px text-accent" />
+              <span className="font-medium text-text-primary">Goal:</span> {mission.objective}
+            </>
+          )}
+        </p>
 
-          <div className="min-w-0 flex-1 space-y-1">
-            <div className="flex flex-wrap items-center gap-2">
-              <h1 className="truncate text-xl font-bold tracking-tight text-text-primary sm:text-2xl">
-                {mission.title}
-              </h1>
-              <span className="text-[11px] px-2.5 py-0.5 rounded-full bg-emerald-500/15 text-emerald-300 border border-emerald-500/30 font-semibold uppercase font-mono">
-                {mission.status}
-              </span>
-            </div>
-
-            <p className="text-xs leading-relaxed text-text-secondary sm:text-sm">
-              {mission.description}
-            </p>
-
-            {mission.objective && (
-              <div className="flex items-center gap-2 pt-1 text-xs text-text-muted">
-                <Target className="w-3.5 h-3.5 text-emerald-400 flex-shrink-0" />
-                <span className="truncate"><strong>Goal:</strong> {mission.objective}</span>
-              </div>
-            )}
-          </div>
-        </div>
-
-        {/* Metrics Pill Bar */}
-        <div className={`grid grid-cols-2 gap-2 border-t border-borderSoft/25 pt-3 sm:grid-cols-4 ${activeTab === 'canvas' ? 'hidden' : ''}`}>
-          <div className="rounded-xl border border-borderSoft/30 bg-panel2/35 p-2.5">
-            <div className="font-mono text-[10px] uppercase text-text-muted">Sprint Progress</div>
-            <div className="text-sm font-bold text-emerald-400 font-mono mt-0.5">
-              {taskProgress}% ({completedTasks}/{teamTasks.length})
-            </div>
-          </div>
-
-          <div className="rounded-xl border border-borderSoft/30 bg-panel2/35 p-2.5">
-            <div className="font-mono text-[10px] uppercase text-text-muted">Active Clients</div>
-            <div className="text-sm font-bold text-blue-400 font-mono mt-0.5">
-              {leads.filter((l) => l.status === 'active_pilot').length} Venues Live
-            </div>
-          </div>
-
-          <div className="rounded-xl border border-borderSoft/30 bg-panel2/35 p-2.5">
-            <div className="font-mono text-[10px] uppercase text-text-muted">Total Leads</div>
-            <div className="text-sm font-bold text-purple-400 font-mono mt-0.5">
-              {leads.length} Logged
-            </div>
-          </div>
-
-          <div className="rounded-xl border border-borderSoft/30 bg-panel2/35 p-2.5">
-            <div className="font-mono text-[10px] uppercase text-text-muted">Open Issues</div>
-            <div className="text-sm font-bold text-rose-400 font-mono mt-0.5">
-              {problems.length} Logged
-            </div>
-          </div>
-        </div>
-
-        {/* Unified Navigation Tabs */}
-        <div className="hidden items-center gap-1 overflow-x-auto border-t border-borderSoft/25 pt-3 scrollbar-none">
-          <button
-            type="button"
-            onClick={() => setActiveTab('tasks')}
-            className={`flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-semibold whitespace-nowrap transition-all cursor-pointer ${
-              activeTab === 'tasks'
-                ? 'border border-accent/45 bg-accent/12 text-accent shadow-sm'
-                : 'border border-transparent text-text-secondary hover:bg-panel2/65 hover:text-text-primary'
-            }`}
-          >
-            <CheckSquare className="w-3.5 h-3.5" />
-            <span>Sprints & Tasks ({teamTasks.length})</span>
-          </button>
-
-          <button
-            type="button"
-            onClick={() => setActiveTab('leads')}
-            className={`flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-semibold whitespace-nowrap transition-all cursor-pointer ${
-              activeTab === 'leads'
-                ? 'border border-accent/45 bg-accent/12 text-accent shadow-sm'
-                : 'border border-transparent text-text-secondary hover:bg-panel2/65 hover:text-text-primary'
-            }`}
-          >
-            <Users className="w-3.5 h-3.5" />
-            <span>Leads & CRM ({leads.length})</span>
-          </button>
-
-          <button
-            type="button"
-            onClick={() => setActiveTab('workflows')}
-            className={`flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-semibold whitespace-nowrap transition-all cursor-pointer ${
-              activeTab === 'workflows'
-                ? 'border border-accent/45 bg-accent/12 text-accent shadow-sm'
-                : 'border border-transparent text-text-secondary hover:bg-panel2/65 hover:text-text-primary'
-            }`}
-          >
-            <ShieldCheck className="w-3.5 h-3.5" />
-            <span>Process ({workflows.length})</span>
-          </button>
-
-          <button
-            type="button"
-            onClick={() => setActiveTab('canvas')}
-            className={`flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-semibold whitespace-nowrap transition-all cursor-pointer ${
-              activeTab === 'canvas'
-                ? 'border border-accent/45 bg-accent/12 text-accent shadow-sm'
-                : 'border border-transparent text-text-secondary hover:bg-panel2/65 hover:text-text-primary'
-            }`}
-          >
-            <Network className="w-3.5 h-3.5" />
-            <span>Diagram</span>
-          </button>
-
-          <button
-            type="button"
-            onClick={() => setActiveTab('links')}
-            className={`flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-semibold whitespace-nowrap transition-all cursor-pointer ${
-              activeTab === 'links'
-                ? 'border border-accent/45 bg-accent/12 text-accent shadow-sm'
-                : 'border border-transparent text-text-secondary hover:bg-panel2/65 hover:text-text-primary'
-            }`}
-          >
-            <Link2 className="w-3.5 h-3.5" />
-            <span>Links ({workLinks.length})</span>
-          </button>
-
-          <button
-            type="button"
-            onClick={() => setActiveTab('problems')}
-            className={`flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-semibold whitespace-nowrap transition-all cursor-pointer ${
-              activeTab === 'problems'
-                ? 'border border-accent/45 bg-accent/12 text-accent shadow-sm'
-                : 'border border-transparent text-text-secondary hover:bg-panel2/65 hover:text-text-primary'
-            }`}
-          >
-            <AlertOctagon className="w-3.5 h-3.5" />
-            <span>Issues ({problems.length})</span>
-          </button>
-
-          <button
-            type="button"
-            onClick={() => setActiveTab('notes')}
-            className={`flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-semibold whitespace-nowrap transition-all cursor-pointer ${
-              activeTab === 'notes'
-                ? 'border border-accent/45 bg-accent/12 text-accent shadow-sm'
-                : 'border border-transparent text-text-secondary hover:bg-panel2/65 hover:text-text-primary'
-            }`}
-          >
-            <FileText className="w-3.5 h-3.5" />
-            <span>Notes ({notes.length})</span>
-          </button>
+        {/* Inline metric line */}
+        <div className={`flex flex-wrap items-center gap-x-2.5 gap-y-1 text-xs text-text-secondary ${activeTab === 'canvas' ? 'hidden' : ''}`}>
+          <span>
+            <span className="font-semibold tabular-nums text-accent">{taskProgress}%</span> sprint
+            <span className="ml-1 tabular-nums text-text-muted">({completedTasks}/{teamTasks.length})</span>
+          </span>
+          <span className="h-3 w-px bg-borderSoft" />
+          <span>
+            <span className="font-semibold tabular-nums text-success">
+              {leads.filter((l) => l.status === 'active_pilot').length}
+            </span>{' '}
+            live
+          </span>
+          <span className="h-3 w-px bg-borderSoft" />
+          <span>
+            <span className="font-semibold tabular-nums text-text-primary">{leads.length}</span> leads
+          </span>
+          <span className="h-3 w-px bg-borderSoft" />
+          <span>
+            <span className={`font-semibold tabular-nums ${problems.length > 0 ? 'text-danger' : 'text-text-primary'}`}>
+              {problems.length}
+            </span>{' '}
+            issues
+          </span>
         </div>
       </div>
 
+
       {/* Main Tab Content Surface */}
-      <div className="w-full p-4 sm:p-6">
+      <div className={`w-full ${activeTab === 'chat' ? 'min-h-0 flex-1 p-3 sm:p-4' : 'p-4 sm:p-6'}`}>
+        {activeTab === 'chat' && (
+          <TeamChatView missionId={mission.id} onOpenRef={(ref) => setActiveTab(REF_TAB[ref.kind])} />
+        )}
         {activeTab === 'tasks' && <TeamTasksView filterMissionId={mission.id} />}
         {activeTab === 'leads' && <LeadsCRMView missionId={mission.id} />}
         {activeTab === 'workflows' && <WorkflowGuardrailView missionId={mission.id} />}

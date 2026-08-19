@@ -146,3 +146,38 @@ export interface TeamTask {
   createdAt: string;
   completedAt?: string;
 }
+
+/** Any module item a chat message can point at. */
+export type ChatRefKind = 'task' | 'lead' | 'workflow' | 'link' | 'problem' | 'note';
+
+export interface ChatRef {
+  kind: ChatRefKind;
+  id: string;
+  label: string;
+  detail?: string;
+}
+
+export interface ChatReaction {
+  emoji: string;
+  /** Persona names that reacted, so the tooltip can name them. */
+  by: string[];
+}
+
+export interface TeamChatMessage {
+  id: string;
+  missionId: string;
+  /** 'system' rows are written by the modules themselves, not by a person. */
+  kind: 'message' | 'system';
+  authorName: string;
+  body: string;
+  refs: ChatRef[];
+  reactions: ChatReaction[];
+  /** Set on replies; the id of the message that opened the thread. */
+  parentId?: string;
+  /** Persona names @mentioned in the body. */
+  mentions: string[];
+  createdAt: string;
+  editedAt?: string;
+  /** Item that was created out of this message, if any. */
+  spawned?: ChatRef;
+}

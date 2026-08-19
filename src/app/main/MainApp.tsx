@@ -1,6 +1,7 @@
 import { TeamHeaderSwitcher } from "../../features/team/TeamHeaderSwitcher";
 import { PocketDropFAB } from "../../features/team/PocketDropModal";
 import { UnifiedMissionHub } from "../../features/team/UnifiedMissionHub";
+import { MissionHubNavSlotContext } from "../../features/team/mission-hub-nav-slot";
 import { TeamHubView } from "../../features/team/TeamHubView";
 import { TeamCalendarView } from "../../features/team/TeamCalendarView";
 import { TeamTasksView } from "../../features/team/TeamTasksView";
@@ -2148,6 +2149,7 @@ export function MainApp() {
   const [missionComposerOpen, setMissionComposerOpen] = useState(false);
   const [editingMission, setEditingMission] = useState<Mission | null>(null);
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
+  const [missionHubNavSlot, setMissionHubNavSlot] = useState<HTMLElement | null>(null);
   const dragImageRef = useRef<HTMLImageElement | null>(null);
   const dropHandledRef = useRef(false);
   const activeSession = useMemo(
@@ -4346,7 +4348,7 @@ export function MainApp() {
 
         <div className="relative z-10 flex min-w-0 flex-1 flex-col">
           <header className="flex items-center justify-between gap-3 border-b border-borderSoft/24 px-3 py-3 sm:gap-4 sm:px-6 sm:py-3">
-            <div className="flex min-w-0 items-center gap-2 sm:gap-3">
+            <div className="flex min-w-0 flex-1 items-center gap-2 sm:gap-3">
               <Button
                 onClick={() => setMobileNavOpen(true)}
                 size="sm"
@@ -4358,6 +4360,8 @@ export function MainApp() {
                 <Menu className="h-5 w-5" />
               </Button>
               {workspaceMode !== 'team' && <h2 className="truncate text-lg font-semibold text-text-primary sm:text-2xl">{viewCopy}</h2>}
+              {/* Mission hub back button + tab strip portal in here (see MissionHubNavSlotContext) */}
+              <div ref={setMissionHubNavSlot} className="-mt-3 -mb-[calc(0.75rem+1px)] flex min-w-0 flex-1 items-stretch self-stretch empty:hidden" />
             </div>
 
             <div className="flex shrink-0 items-center gap-2 sm:gap-3">
@@ -4438,7 +4442,9 @@ export function MainApp() {
                   ) : activeView === 'settings' ? (
                     renderSettings()
                   ) : (
-                    <TeamHubView />
+                    <MissionHubNavSlotContext.Provider value={missionHubNavSlot}>
+                      <TeamHubView />
+                    </MissionHubNavSlotContext.Provider>
                   )}
                 </>
               ) : (

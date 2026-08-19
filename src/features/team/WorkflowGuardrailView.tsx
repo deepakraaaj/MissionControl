@@ -87,7 +87,7 @@ export function WorkflowGuardrailView({ missionId }: WorkflowGuardrailViewProps)
                 step.completed
                   ? 'bg-slate-900/40 border-emerald-500/30 text-slate-300 hover:bg-slate-900/60'
                   : isNextUp
-                  ? 'bg-slate-900 border-amber-500/50 shadow-lg shadow-amber-500/5 hover:border-amber-400'
+                  ? 'bg-slate-900 border-amber-500/50 shadow-glow hover:border-amber-400'
                   : 'bg-slate-950/60 border-slate-800 text-slate-500 hover:border-slate-700'
               }`}
             >

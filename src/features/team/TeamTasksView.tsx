@@ -8,6 +8,7 @@ import {
   GripVertical
 } from 'lucide-react';
 import { useTeamStore } from './team-store';
+import { DiscussButton } from './DiscussButton';
 import type { TeamRole, TeamTask } from './team-types';
 
 interface TeamTasksViewProps {
@@ -86,9 +87,9 @@ export function TeamTasksView({ filterMissionId }: TeamTasksViewProps) {
 
   const columns: Array<{ status: TeamTask['status']; label: string; tone: string }> = [
     { status: 'backlog', label: 'Backlog', tone: 'bg-slate-400' },
-    { status: 'in_progress', label: 'In progress', tone: 'bg-blue-500' },
-    { status: 'review', label: 'Review', tone: 'bg-amber-500' },
-    { status: 'done', label: 'Done', tone: 'bg-emerald-500' },
+    { status: 'in_progress', label: 'In progress', tone: 'bg-accent' },
+    { status: 'review', label: 'Review', tone: 'bg-warning' },
+    { status: 'done', label: 'Done', tone: 'bg-success' },
   ];
 
   const handleDragStart = (event: DragEvent<HTMLDivElement>, taskId: string) => {
@@ -137,7 +138,7 @@ export function TeamTasksView({ filterMissionId }: TeamTasksViewProps) {
             disabled={!hasProjects}
             onClick={() => setIsAdding(!isAdding)}
             title={hasProjects ? 'Create task' : 'Create a project from the Mission tab first'}
-            className="flex items-center gap-2 rounded-xl bg-amber-500 px-4 py-2 text-sm font-bold text-slate-950 shadow-lg shadow-amber-500/20 transition-all hover:bg-amber-400 cursor-pointer disabled:cursor-not-allowed disabled:opacity-45"
+            className="flex items-center gap-2 rounded-xl bg-accent px-4 py-2 text-sm font-bold text-[rgb(var(--accent-contrast))] shadow-glow transition-all hover:bg-accentSoft cursor-pointer disabled:cursor-not-allowed disabled:opacity-45"
           >
             <Plus className="w-3.5 h-3.5" />
             <span>New task</span>
@@ -194,7 +195,7 @@ export function TeamTasksView({ filterMissionId }: TeamTasksViewProps) {
                 placeholder="e.g. Deploy 2x acrylic QR stands to Indiranagar Arena"
                 value={newTitle}
                 onChange={(e) => setNewTitle(e.target.value)}
-                className="w-full rounded-xl border border-slate-800 bg-slate-950 px-3 py-2.5 text-sm text-white placeholder-slate-600 focus:border-amber-500 focus:outline-none"
+                className="w-full rounded-xl border border-slate-800 bg-slate-950 px-3 py-2.5 text-sm text-white placeholder-slate-600 focus:border-accent focus:outline-none"
               />
             </div>
 
@@ -205,7 +206,7 @@ export function TeamTasksView({ filterMissionId }: TeamTasksViewProps) {
                 placeholder="e.g. Owner verified live QR scanner on desk"
                 value={newOutcome}
                 onChange={(e) => setNewOutcome(e.target.value)}
-                className="w-full rounded-xl border border-slate-800 bg-slate-950 px-3 py-2.5 text-sm text-white placeholder-slate-600 focus:border-amber-500 focus:outline-none"
+                className="w-full rounded-xl border border-slate-800 bg-slate-950 px-3 py-2.5 text-sm text-white placeholder-slate-600 focus:border-accent focus:outline-none"
               />
             </div>
           </div>
@@ -216,7 +217,7 @@ export function TeamTasksView({ filterMissionId }: TeamTasksViewProps) {
               <select
                 value={newMissionId}
                 onChange={(e) => setNewMissionId(e.target.value)}
-                className="w-full rounded-xl border border-slate-800 bg-slate-950 px-3 py-2.5 text-sm text-white focus:border-amber-500 focus:outline-none"
+                className="w-full rounded-xl border border-slate-800 bg-slate-950 px-3 py-2.5 text-sm text-white focus:border-accent focus:outline-none"
               >
                 <option value="" disabled>Select a project</option>
                 {teamMissions.map((m) => (
@@ -232,7 +233,7 @@ export function TeamTasksView({ filterMissionId }: TeamTasksViewProps) {
               <select
                 value={newRole}
                 onChange={(e) => setNewRole(e.target.value as TeamRole)}
-                className="w-full rounded-xl border border-slate-800 bg-slate-950 px-3 py-2.5 text-sm text-white focus:border-amber-500 focus:outline-none"
+                className="w-full rounded-xl border border-slate-800 bg-slate-950 px-3 py-2.5 text-sm text-white focus:border-accent focus:outline-none"
               >
                 <option value="Tech Lead">Tech Lead</option>
                 <option value="BizDev Partner">BizDev Partner</option>
@@ -245,7 +246,7 @@ export function TeamTasksView({ filterMissionId }: TeamTasksViewProps) {
               <select
                 value={newPriority}
                 onChange={(e) => setNewPriority(e.target.value as TeamTask['priority'])}
-                className="w-full rounded-xl border border-slate-800 bg-slate-950 px-3 py-2.5 text-sm text-white focus:border-amber-500 focus:outline-none"
+                className="w-full rounded-xl border border-slate-800 bg-slate-950 px-3 py-2.5 text-sm text-white focus:border-accent focus:outline-none"
               >
                 <option value="critical">Critical</option>
                 <option value="high">High</option>
@@ -260,7 +261,7 @@ export function TeamTasksView({ filterMissionId }: TeamTasksViewProps) {
                 type="date"
                 value={newDueDate}
                 onChange={(e) => setNewDueDate(e.target.value)}
-                className="w-full rounded-xl border border-slate-800 bg-slate-950 px-3 py-2.5 text-sm text-white focus:border-amber-500 focus:outline-none"
+                className="w-full rounded-xl border border-slate-800 bg-slate-950 px-3 py-2.5 text-sm text-white focus:border-accent focus:outline-none"
               />
             </div>
           </div>
@@ -275,7 +276,7 @@ export function TeamTasksView({ filterMissionId }: TeamTasksViewProps) {
             </button>
             <button
               type="submit"
-              className="px-4 py-1.5 bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold text-xs rounded-xl shadow-md transition-all cursor-pointer"
+              className="px-4 py-1.5 bg-accent hover:bg-accentSoft text-[rgb(var(--accent-contrast))] font-bold text-xs rounded-xl shadow-glow transition-all cursor-pointer"
             >
               Save Team Task
             </button>
@@ -349,6 +350,10 @@ export function TeamTasksView({ filterMissionId }: TeamTasksViewProps) {
                               <p className={`text-sm font-semibold leading-snug ${isDone ? 'line-through text-text-muted' : 'text-text-primary'}`}>
                                 {task.title}
                               </p>
+                              <DiscussButton
+                                className="shrink-0 p-1 opacity-100 xl:opacity-0 xl:group-hover:opacity-100"
+                                item={{ kind: 'task', id: task.id, label: task.title, detail: task.status }}
+                              />
                               <button
                                 type="button"
                                 onClick={() => deleteTeamTask(task.id)}
