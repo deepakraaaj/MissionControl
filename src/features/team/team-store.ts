@@ -82,6 +82,8 @@ interface TeamState {
   chatDraftRef: ChatRef | null;
   /** missionId -> ISO timestamp the current user last read that channel. */
   channelReads: Record<string, string>;
+  /** Channel currently on screen; notifications skip it. */
+  activeChatChannel: string | null;
 
   // Auth & Workspace Switching
   setWorkspaceMode: (mode: 'personal' | 'team') => void;
@@ -119,6 +121,8 @@ interface TeamState {
   updateDiagram: (id: string, updates: Partial<Omit<VisualDiagram, 'id' | 'missionId'>>) => void;
   deleteDiagram: (id: string) => void;
   updateDiagramNodes: (diagramId: string, nodes: DiagramNode[]) => void;
+  /** Shuffles a diagram one slot earlier or later among its project siblings. */
+  moveDiagram: (id: string, direction: 'back' | 'forward') => void;
 
   // Team Notes Actions
   addTeamNote: (note: Omit<TeamNote, 'id' | 'createdAt' | 'updatedAt'>) => TeamNote;
@@ -143,6 +147,7 @@ interface TeamState {
   toggleChatReaction: (id: string, emoji: string) => void;
   deleteChatMessage: (id: string) => void;
   markChannelRead: (missionId: string) => void;
+  setActiveChatChannel: (missionId: string | null) => void;
   startChatDraft: (ref: ChatRef) => void;
   clearChatDraft: () => void;
   /** Turn a message into a task / issue / note, keeping the link both ways. */
@@ -187,6 +192,7 @@ export const useTeamStore = create<TeamState>()(
       chatMessages: [],
       chatDraftRef: null,
       channelReads: {},
+      activeChatChannel: null,
 
       setWorkspaceMode: (mode) => set({ workspaceMode: mode }),
 
@@ -404,6 +410,28 @@ export const useTeamStore = create<TeamState>()(
         }));
       },
 
+      moveDiagram: (id, direction) => {
+        set((state) => {
+          const target = state.diagrams.find((diagram) => diagram.id === id);
+          if (!target) return {};
+
+          // Reorder within the project only — the array holds every mission's.
+          const siblingIndexes = state.diagrams
+            .map((diagram, index) => (diagram.missionId === target.missionId ? index : -1))
+            .filter((index) => index >= 0);
+
+          const position = siblingIndexes.indexOf(state.diagrams.indexOf(target));
+          const swapPosition = direction === 'back' ? position - 1 : position + 1;
+          if (swapPosition < 0 || swapPosition >= siblingIndexes.length) return {};
+
+          const diagrams = [...state.diagrams];
+          const from = siblingIndexes[position];
+          const to = siblingIndexes[swapPosition];
+          [diagrams[from], diagrams[to]] = [diagrams[to], diagrams[from]];
+          return { diagrams };
+        });
+      },
+
       // Team Notes
       addTeamNote: (noteData) => {
         const newNote: TeamNote = {
@@ -559,6 +587,8 @@ export const useTeamStore = create<TeamState>()(
           channelReads: { ...state.channelReads, [missionId]: new Date().toISOString() },
         }));
       },
+
+      setActiveChatChannel: (missionId) => set({ activeChatChannel: missionId }),
 
       startChatDraft: (ref) => set({ chatDraftRef: ref }),
 

@@ -226,7 +226,7 @@ export function UnifiedMissionHub({ mission, onBack }: UnifiedMissionHubProps) {
 
 
       {/* Main Tab Content Surface */}
-      <div className={`w-full ${activeTab === 'chat' ? 'min-h-0 flex-1 p-3 sm:p-4' : 'p-4 sm:p-6'}`}>
+      <div className={`w-full ${activeTab === 'chat' ? 'min-h-0 flex-1 p-3 pb-[calc(var(--mobile-nav-height)+0.5rem)] sm:p-4 lg:pb-4' : 'p-4 sm:p-6'}`}>
         {activeTab === 'chat' && (
           <TeamChatView missionId={mission.id} onOpenRef={(ref) => setActiveTab(REF_TAB[ref.kind])} />
         )}

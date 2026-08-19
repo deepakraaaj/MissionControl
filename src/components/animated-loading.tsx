@@ -37,11 +37,11 @@ export function AnimatedLoading({ autoDismiss = false, dismissAfter = 2000 }: An
       }}
     >
       <div className="flex flex-col items-center gap-4 text-center">
-        <SynCatchLogoAnimated className="h-20 w-20" loop />
+        <SynCatchLogoAnimated className="h-20 w-20" loop themed />
         <div>
           <h1 className="text-5xl font-black tracking-tighter">
             <span className="text-text-primary">Syn</span>
-            <span style={{ color: '#3E8BFF' }}>Catch</span>
+            <span className="text-accent">Catch</span>
           </h1>
           <p
             className="mt-3 text-base font-medium tracking-widest"

@@ -2,6 +2,7 @@ import type { PropsWithChildren } from 'react';
 import { useEffect } from 'react';
 import { MotionConfig } from 'framer-motion';
 import { ToastViewport } from '../components/ui/toast-viewport';
+import { startChatNotifications } from '../features/team/team-chat-notifier';
 import { useMissionStore } from '../features/missions/mission-store';
 import { useJournalStore } from '../features/journal/journal-store';
 import { useNoteStore } from '../features/notes/note-store';
@@ -99,6 +100,8 @@ export function AppBootstrap({ children }: PropsWithChildren) {
       unsubscribeHudTransparency();
     };
   }, [hydrateFocus, hydrateMissions, hydrateSessions, hydrateSettings, hydrateTasks, hydrateTheme, hydrateJournal, hydrateNotes]);
+
+  useEffect(() => startChatNotifications(), []);
 
   return (
     <MotionConfig reducedMotion={reduceMotion ? 'always' : 'never'}>

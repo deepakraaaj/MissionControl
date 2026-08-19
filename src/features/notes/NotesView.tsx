@@ -26,7 +26,7 @@ import {
 } from './note-helpers';
 import type { Note, NoteCategory, NoteColor } from './note-types';
 
-function CategoryChip({
+export function CategoryChip({
   active,
   label,
   icon,
@@ -65,7 +65,7 @@ function CategoryChip({
   );
 }
 
-function NoteCard({
+export function NoteCard({
   note,
   category,
   missionTitle,
@@ -292,7 +292,7 @@ function MissionPicker({
   );
 }
 
-function NoteViewerModal({
+export function NoteViewerModal({
   note,
   category,
   missionTitle,
@@ -396,7 +396,7 @@ function NoteViewerModal({
   );
 }
 
-interface NoteEditorSubmit {
+export interface NoteEditorSubmit {
   title: string;
   content: string;
   category_id: string;

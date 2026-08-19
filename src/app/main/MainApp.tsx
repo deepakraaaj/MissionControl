@@ -2150,6 +2150,7 @@ export function MainApp() {
   const [editingMission, setEditingMission] = useState<Mission | null>(null);
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
   const [missionHubNavSlot, setMissionHubNavSlot] = useState<HTMLElement | null>(null);
+  const [fabDockOpen, setFabDockOpen] = useState(false);
   const dragImageRef = useRef<HTMLImageElement | null>(null);
   const dropHandledRef = useRef(false);
   const activeSession = useMemo(
@@ -4557,9 +4558,30 @@ export function MainApp() {
         </div>
       </div>
 
-      {/* Floating AI assistant — available on every screen, hidden while the mobile drawer is open */}
-      {!mobileNavOpen && !showTaskDetailPanel && !showMissionDetailPanel ? <AssistantWidget /> : null}
-      <PocketDropFAB />
+      {/* Floating actions live behind one toggle so they stop covering whatever
+          sits in the bottom-right corner — a chat composer's send button, a
+          table's last row. Collapsed by default; the toggle stays put and the
+          buttons stack above it. */}
+      {!mobileNavOpen && !showTaskDetailPanel && !showMissionDetailPanel ? (
+        <>
+          <button
+            type="button"
+            onClick={() => setFabDockOpen((open) => !open)}
+            aria-expanded={fabDockOpen}
+            aria-label={fabDockOpen ? 'Hide quick actions' : 'Show quick actions'}
+            className="fixed bottom-[calc(var(--mobile-nav-height)+0.75rem)] right-5 z-[67] flex h-11 w-11 items-center justify-center rounded-full border border-borderSoft bg-panel text-text-secondary shadow-[0_8px_24px_rgb(var(--shadow-color)/0.28)] transition-all hover:text-text-primary active:scale-95 lg:bottom-6"
+          >
+            <Plus className={`h-5 w-5 transition-transform duration-200 ${fabDockOpen ? 'rotate-45' : ''}`} />
+          </button>
+
+          {fabDockOpen ? (
+            <>
+              <AssistantWidget launcherPositionClassName="bottom-[calc(var(--mobile-nav-height)+4.5rem)] right-[0.875rem] lg:bottom-[5.25rem]" />
+              <PocketDropFAB positionClassName="bottom-[calc(var(--mobile-nav-height)+8.75rem)] right-5 lg:bottom-[9.5rem]" />
+            </>
+          ) : null}
+        </>
+      ) : null}
 
       {/* Mobile bottom navigation */}
       <nav className="mobile-bottom-nav lg:hidden">

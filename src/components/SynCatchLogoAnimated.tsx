@@ -87,6 +87,7 @@ export const SynCatchLogoAnimated = forwardRef<SynCatchLogoHandle, SynCatchLogoA
 
   const loopPaint = themed ? 'rgb(var(--accent-soft))' : BRAND_FOG;
   const dotPaint = themed ? 'rgb(var(--accent))' : BRAND_BLUE;
+  const landedPaint = themed ? 'rgb(var(--success))' : SUCCESS_GREEN;
 
   const sweeping = phase === 'running';
   const done = phase === 'done';
@@ -159,7 +160,7 @@ export const SynCatchLogoAnimated = forwardRef<SynCatchLogoHandle, SynCatchLogoA
         cx={leadDot.cx}
         cy={leadDot.cy}
         r={leadDot.r}
-        fill={done ? SUCCESS_GREEN : dotPaint}
+        fill={done ? landedPaint : dotPaint}
         style={{
           transformOrigin: `${leadDot.cx}px ${leadDot.cy}px`,
           opacity: sweeping ? 0.15 : 1,

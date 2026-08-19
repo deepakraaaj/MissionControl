@@ -14,40 +14,49 @@
   <meta name="format-detection" content="email=no" />
   <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
   <title>SynCatch</title>
+  <script>
+    // The splash paints before React boots, so read the persisted theme here.
+    // Without this it renders the dark brand palette and then jumps to the
+    // user's theme the moment the app mounts.
+    try {
+      var cached = JSON.parse(localStorage.getItem('missioncontrol-theme') || 'null');
+      if (cached && cached.themeId) document.documentElement.dataset.theme = cached.themeId;
+    } catch (e) { /* first run, or storage blocked */ }
+  </script>
 </head>
 
-<body style="background: linear-gradient(180deg, rgb(6, 10, 12) 0%, rgb(11, 16, 19) 100%); margin: 0; overflow: hidden;">
+<body style="background: linear-gradient(180deg, rgb(var(--bg-base, 6 10 12)) 0%, rgb(var(--bg-soft, 11 16 19)) 100%); margin: 0; overflow: hidden;">
   <div id="root">
     <!-- Initial Loading Animation -->
-    <div id="initial-loading" style="position: fixed; inset: 0; z-index: 9999; display: flex; flex-direction: column; align-items: center; justify-content: center; background: linear-gradient(180deg, rgb(6, 10, 12) 0%, rgb(11, 16, 19) 100%); gap: 32px;">
+    <div id="initial-loading" style="position: fixed; inset: 0; z-index: 9999; display: flex; flex-direction: column; align-items: center; justify-content: center; background: linear-gradient(180deg, rgb(var(--bg-base, 6 10 12)) 0%, rgb(var(--bg-soft, 11 16 19)) 100%); gap: 32px;">
       <!-- Main Content -->
       <div style="display: flex; flex-direction: column; align-items: center; gap: 16px; z-index: 10;">
         <!-- SynCatch mark: the dissolve loop, spinning while the app boots.
              Must stay visually identical to SynCatchLogoAnimated (loop mode). -->
         <div style="width: 80px; height: 80px; animation: fadeInDown 0.8s ease-out forwards; opacity: 0;">
           <svg width="100%" height="100%" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg" style="animation: syncspin 2.2s cubic-bezier(0.4, 0, 0.2, 1) infinite; transform-origin: 50% 50%;">
-            <path d="M 15.2 62.7 A 37 37 0 1 1 71.3 80.3" stroke="#F4F5F8" stroke-width="16" stroke-linecap="round"/>
-            <circle cx="50" cy="87" r="7" fill="#3E8BFF"/>
-            <circle cx="28.8" cy="80.3" r="4.5" fill="#3E8BFF"/>
+            <path d="M 15.2 62.7 A 37 37 0 1 1 71.3 80.3" stroke="rgb(var(--accent-soft, 244 245 248))" stroke-width="16" stroke-linecap="round"/>
+            <circle cx="50" cy="87" r="7" fill="rgb(var(--accent, 62 139 255))"/>
+            <circle cx="28.8" cy="80.3" r="4.5" fill="rgb(var(--accent, 62 139 255))"/>
           </svg>
         </div>
 
         <!-- SynCatch wordmark + tagline -->
         <div style="text-align: center; animation: fadeInUp 0.8s ease-out 0.2s forwards; opacity: 0;">
           <h1 style="margin: 0; padding: 0; font-size: 48px; font-weight: 900; letter-spacing: -0.05em;">
-            <span style="color: #F4F6FB;">Syn</span><span style="color: #3E8BFF;">Catch</span>
+            <span style="color: rgb(var(--text-primary, 244 246 251));">Syn</span><span style="color: rgb(var(--accent, 62 139 255));">Catch</span>
           </h1>
           <!-- Tagline -->
-          <p style="margin: 12px 0 0 0; padding: 0; font-size: 16px; font-weight: 500; color: rgba(130, 231, 220, 0.8); letter-spacing: 0.05em;">
+          <p style="margin: 12px 0 0 0; padding: 0; font-size: 16px; font-weight: 500; color: rgb(var(--accent, 130 231 220) / 0.8); letter-spacing: 0.05em;">
             Sync aachaa?
           </p>
         </div>
 
         <!-- Loading Indicator -->
         <div style="display: flex; gap: 6px; animation: fadeIn 1s ease-out 0.6s forwards; opacity: 0;">
-          <div style="width: 5px; height: 5px; border-radius: 9999px; background: rgba(62, 139, 255, 0.8); animation: bounce 1.4s ease-in-out infinite; animation-delay: 0s;"></div>
-          <div style="width: 5px; height: 5px; border-radius: 9999px; background: rgba(62, 139, 255, 0.8); animation: bounce 1.4s ease-in-out infinite; animation-delay: 0.2s;"></div>
-          <div style="width: 5px; height: 5px; border-radius: 9999px; background: rgba(62, 139, 255, 0.8); animation: bounce 1.4s ease-in-out infinite; animation-delay: 0.4s;"></div>
+          <div style="width: 5px; height: 5px; border-radius: 9999px; background: rgb(var(--accent, 62 139 255) / 0.8); animation: bounce 1.4s ease-in-out infinite; animation-delay: 0s;"></div>
+          <div style="width: 5px; height: 5px; border-radius: 9999px; background: rgb(var(--accent, 62 139 255) / 0.8); animation: bounce 1.4s ease-in-out infinite; animation-delay: 0.2s;"></div>
+          <div style="width: 5px; height: 5px; border-radius: 9999px; background: rgb(var(--accent, 62 139 255) / 0.8); animation: bounce 1.4s ease-in-out infinite; animation-delay: 0.4s;"></div>
         </div>
       </div>
 

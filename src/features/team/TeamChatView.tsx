@@ -363,7 +363,7 @@ function Composer({
           <Send className="h-4 w-4" />
         </button>
       </div>
-      <p className="mt-1.5 pl-[4.5rem] text-[11px] text-text-muted">
+      <p className="mt-1.5 hidden pl-[4.5rem] text-[11px] text-text-muted sm:block">
         Enter to send · Shift+Enter for a new line · / to attach an item
       </p>
     </div>
@@ -389,22 +389,26 @@ function MessageRow({
   const promoteChatMessage = useTeamStore((s) => s.promoteChatMessage);
   const [showPromote, setShowPromote] = useState(false);
 
+  // Workspace activity reads as a centred notice, the way WhatsApp shows
+  // "Messages are end-to-end encrypted" or a group rename.
   if (message.kind === 'system') {
     return (
-      <div className="flex items-center gap-2 py-1 pl-11 text-xs text-text-muted">
-        <span className="font-medium text-text-secondary">{message.authorName}</span>
-        <span>{message.body}</span>
-        {message.refs.map((ref) => (
-          <button
-            key={`${ref.kind}-${ref.id}`}
-            type="button"
-            onClick={() => onOpenRef?.(ref)}
-            className="max-w-[240px] truncate font-medium text-accent hover:underline"
-          >
-            {ref.label}
-          </button>
-        ))}
-        <span className="ml-auto shrink-0 tabular-nums">{clockTime(message.createdAt)}</span>
+      <div className="flex justify-center py-1.5">
+        <div className="flex max-w-[85%] flex-wrap items-center justify-center gap-1.5 rounded-lg bg-panel2/70 px-2.5 py-1 text-[11px] text-text-secondary">
+          <span className="font-medium">{message.authorName}</span>
+          <span>{message.body}</span>
+          {message.refs.map((ref) => (
+            <button
+              key={`${ref.kind}-${ref.id}`}
+              type="button"
+              onClick={() => onOpenRef?.(ref)}
+              className="max-w-[220px] truncate font-medium text-accent hover:underline"
+            >
+              {ref.label}
+            </button>
+          ))}
+          <span className="tabular-nums text-text-muted">{clockTime(message.createdAt)}</span>
+        </div>
       </div>
     );
   }
@@ -412,56 +416,58 @@ function MessageRow({
   const isMine = message.authorName === me;
 
   return (
-    <div className={`group relative flex gap-3 rounded-lg px-2 transition-colors hover:bg-panel2/40 ${grouped ? 'py-0.5' : 'pt-2 pb-0.5'}`}>
-      <div className="w-8 shrink-0">
-        {grouped ? (
-          <span className="hidden pt-1 text-[10px] tabular-nums text-text-muted group-hover:block">
-            {clockTime(message.createdAt)}
-          </span>
-        ) : (
-          <Avatar name={message.authorName} />
-        )}
-      </div>
+    <div className={`group flex gap-2 px-1 ${grouped ? 'pt-0.5' : 'pt-2'} ${isMine ? 'justify-end' : 'justify-start'}`}>
+      {/* Avatar rail — incoming only, and only on the first of a run. */}
+      {!isMine && <div className="w-8 shrink-0">{grouped ? null : <Avatar name={message.authorName} />}</div>}
 
-      <div className="min-w-0 flex-1">
-        {!grouped && (
-          <div className="flex items-baseline gap-2">
-            <span className="text-[13px] font-semibold text-text-primary">{message.authorName}</span>
-            <span className="text-[11px] tabular-nums text-text-muted">{clockTime(message.createdAt)}</span>
-            {message.editedAt && <span className="text-[10px] text-text-muted">edited</span>}
-          </div>
-        )}
+      <div className={`relative min-w-0 max-w-[86%] sm:max-w-[78%] ${isMine ? 'items-end' : 'items-start'} flex flex-col`}>
+        <div
+          className={`min-w-0 rounded-2xl px-3 py-2 ${
+            isMine
+              ? `border border-accent/25 bg-accent/12 ${grouped ? 'rounded-tr-md' : 'rounded-br-md'}`
+              : `border border-borderSoft bg-panel2/70 ${grouped ? 'rounded-tl-md' : 'rounded-bl-md'}`
+          }`}
+        >
+          {!grouped && !isMine && (
+            <p className="mb-0.5 text-[12px] font-semibold text-accent">{message.authorName}</p>
+          )}
 
-        {message.body && (
-          <div className="text-[13px] leading-relaxed text-text-secondary">
-            <MessageBody body={message.body} mentions={message.mentions} />
-          </div>
-        )}
+          {message.body && (
+            <div className="text-[13px] leading-relaxed text-text-primary">
+              <MessageBody body={message.body} mentions={message.mentions} />
+            </div>
+          )}
 
-        {message.refs.length > 0 && (
-          <div className="mt-1.5 flex flex-wrap gap-1.5">
-            {message.refs.map((ref) => (
-              <RefCard key={`${ref.kind}-${ref.id}`} item={ref} onOpen={onOpenRef} />
-            ))}
-          </div>
-        )}
+          {message.refs.length > 0 && (
+            <div className="mt-1.5 flex flex-col gap-1.5">
+              {message.refs.map((ref) => (
+                <RefCard key={`${ref.kind}-${ref.id}`} item={ref} onOpen={onOpenRef} />
+              ))}
+            </div>
+          )}
 
-        {message.spawned && (
-          <div className="mt-1.5 flex items-center gap-1.5 text-[11px] text-text-muted">
-            <ListPlus className="h-3 w-3 text-success" />
-            <span>Created</span>
-            <button
-              type="button"
-              onClick={() => onOpenRef?.(message.spawned!)}
-              className="max-w-[220px] truncate font-medium text-accent hover:underline"
-            >
-              {message.spawned.label}
-            </button>
+          {message.spawned && (
+            <div className="mt-1.5 flex items-center gap-1.5 text-[11px] text-text-secondary">
+              <ListPlus className="h-3 w-3 shrink-0 text-success" />
+              <span>Created</span>
+              <button
+                type="button"
+                onClick={() => onOpenRef?.(message.spawned!)}
+                className="max-w-[180px] truncate font-medium text-accent hover:underline"
+              >
+                {message.spawned.label}
+              </button>
+            </div>
+          )}
+
+          <div className="mt-0.5 flex items-center justify-end gap-1 text-[10px] text-text-muted">
+            {message.editedAt && <span>edited</span>}
+            <span className="tabular-nums">{clockTime(message.createdAt)}</span>
           </div>
-        )}
+        </div>
 
         {message.reactions.length > 0 && (
-          <div className="mt-1.5 flex flex-wrap gap-1">
+          <div className={`-mt-1 flex flex-wrap gap-1 ${isMine ? 'justify-end' : 'justify-start'}`}>
             {message.reactions.map((reaction) => {
               const mine = reaction.by.includes(me);
               return (
@@ -473,7 +479,7 @@ function MessageRow({
                   className={`flex items-center gap-1 rounded-full border px-1.5 py-0.5 text-[11px] transition-colors ${
                     mine
                       ? 'border-accent/45 bg-accent/12 text-accent'
-                      : 'border-borderSoft bg-panel2/60 text-text-secondary hover:border-accent/35'
+                      : 'border-borderSoft bg-panel text-text-secondary hover:border-accent/35'
                   }`}
                 >
                   <span>{reaction.emoji}</span>
@@ -488,78 +494,82 @@ function MessageRow({
           <button
             type="button"
             onClick={() => onOpenThread?.(message.id)}
-            className="mt-1.5 flex items-center gap-1.5 text-[11px] font-semibold text-accent hover:underline"
+            className="mt-1 flex items-center gap-1.5 text-[11px] font-semibold text-accent hover:underline"
           >
             <MessageSquare className="h-3 w-3" />
             {replyCount} {replyCount === 1 ? 'reply' : 'replies'}
           </button>
         )}
-      </div>
 
-      {/* Hover toolbar */}
-      <div className="absolute -top-3 right-2 hidden items-center gap-0.5 rounded-lg border border-borderSoft bg-panel p-0.5 shadow-panel group-hover:flex">
-        {QUICK_REACTIONS.map((emoji) => (
-          <button
-            key={emoji}
-            type="button"
-            aria-label={`React ${emoji}`}
-            onClick={() => toggleChatReaction(message.id, emoji)}
-            className="rounded px-1 py-0.5 text-sm transition-colors hover:bg-panel2"
-          >
-            {emoji}
-          </button>
-        ))}
-        <span className="mx-0.5 h-4 w-px bg-borderSoft" />
-        {onOpenThread && (
-          <button
-            type="button"
-            aria-label="Reply in thread"
-            onClick={() => onOpenThread(message.id)}
-            className="rounded p-1 text-text-muted transition-colors hover:bg-panel2 hover:text-text-primary"
-          >
-            <Reply className="h-3.5 w-3.5" />
-          </button>
-        )}
-        <div className="relative">
-          <button
-            type="button"
-            aria-label="Create an item from this message"
-            onClick={() => setShowPromote((current) => !current)}
-            disabled={!message.body.trim() || Boolean(message.spawned)}
-            className="rounded p-1 text-text-muted transition-colors hover:bg-panel2 hover:text-text-primary disabled:opacity-35"
-          >
-            <ListPlus className="h-3.5 w-3.5" />
-          </button>
-          {showPromote && (
-            <div className="absolute right-0 top-full z-30 mt-1 w-40 overflow-hidden rounded-lg border border-borderSoft bg-panel py-1 shadow-panel">
-              {([['task', 'Create task'], ['problem', 'Create issue'], ['note', 'Create note']] as const).map(
-                ([target, label]) => (
-                  <button
-                    key={target}
-                    type="button"
-                    onClick={() => {
-                      promoteChatMessage(message.id, target);
-                      setShowPromote(false);
-                    }}
-                    className="block w-full px-3 py-1.5 text-left text-xs text-text-secondary transition-colors hover:bg-panel2 hover:text-text-primary"
-                  >
-                    {label}
-                  </button>
-                ),
-              )}
-            </div>
+        {/* Hover toolbar, tucked to the outer edge of the bubble. */}
+        <div
+          className={`absolute -top-3 z-10 hidden items-center gap-0.5 rounded-lg border border-borderSoft bg-panel p-0.5 shadow-panel group-hover:flex ${
+            isMine ? 'right-2' : 'left-2'
+          }`}
+        >
+          {QUICK_REACTIONS.map((emoji) => (
+            <button
+              key={emoji}
+              type="button"
+              aria-label={`React ${emoji}`}
+              onClick={() => toggleChatReaction(message.id, emoji)}
+              className="rounded px-1 py-0.5 text-sm transition-colors hover:bg-panel2"
+            >
+              {emoji}
+            </button>
+          ))}
+          <span className="mx-0.5 h-4 w-px bg-borderSoft" />
+          {onOpenThread && (
+            <button
+              type="button"
+              aria-label="Reply in thread"
+              onClick={() => onOpenThread(message.id)}
+              className="rounded p-1 text-text-muted transition-colors hover:bg-panel2 hover:text-text-primary"
+            >
+              <Reply className="h-3.5 w-3.5" />
+            </button>
+          )}
+          <div className="relative">
+            <button
+              type="button"
+              aria-label="Create an item from this message"
+              onClick={() => setShowPromote((current) => !current)}
+              disabled={!message.body.trim() || Boolean(message.spawned)}
+              className="rounded p-1 text-text-muted transition-colors hover:bg-panel2 hover:text-text-primary disabled:opacity-35"
+            >
+              <ListPlus className="h-3.5 w-3.5" />
+            </button>
+            {showPromote && (
+              <div className="absolute right-0 top-full z-30 mt-1 w-40 overflow-hidden rounded-lg border border-borderSoft bg-panel py-1 shadow-panel">
+                {([['task', 'Create task'], ['problem', 'Create issue'], ['note', 'Create note']] as const).map(
+                  ([target, label]) => (
+                    <button
+                      key={target}
+                      type="button"
+                      onClick={() => {
+                        promoteChatMessage(message.id, target);
+                        setShowPromote(false);
+                      }}
+                      className="block w-full px-3 py-1.5 text-left text-xs text-text-secondary transition-colors hover:bg-panel2 hover:text-text-primary"
+                    >
+                      {label}
+                    </button>
+                  ),
+                )}
+              </div>
+            )}
+          </div>
+          {isMine && (
+            <button
+              type="button"
+              aria-label="Delete message"
+              onClick={() => deleteChatMessage(message.id)}
+              className="rounded p-1 text-text-muted transition-colors hover:bg-panel2 hover:text-danger"
+            >
+              <Trash2 className="h-3.5 w-3.5" />
+            </button>
           )}
         </div>
-        {isMine && (
-          <button
-            type="button"
-            aria-label="Delete message"
-            onClick={() => deleteChatMessage(message.id)}
-            className="rounded p-1 text-text-muted transition-colors hover:bg-panel2 hover:text-danger"
-          >
-            <Trash2 className="h-3.5 w-3.5" />
-          </button>
-        )}
       </div>
     </div>
   );
@@ -568,6 +578,7 @@ function MessageRow({
 export function TeamChatView({ missionId, onOpenRef }: TeamChatViewProps) {
   const chatMessages = useTeamStore((s) => s.chatMessages);
   const markChannelRead = useTeamStore((s) => s.markChannelRead);
+  const setActiveChatChannel = useTeamStore((s) => s.setActiveChatChannel);
   const [threadId, setThreadId] = useState<string | null>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
 
@@ -599,8 +610,13 @@ export function TeamChatView({ missionId, onOpenRef }: TeamChatViewProps) {
     markChannelRead(missionId);
   }, [markChannelRead, missionId, messages.length]);
 
+  useEffect(() => {
+    setActiveChatChannel(missionId);
+    return () => setActiveChatChannel(null);
+  }, [missionId, setActiveChatChannel]);
+
   return (
-    <div className="flex h-full min-h-0 gap-3">
+    <div className="flex h-full min-h-0 gap-0 lg:gap-3">
       <section className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden rounded-2xl border border-borderSoft/60 bg-panel/40">
         <div ref={scrollRef} className="flex-1 overflow-y-auto px-2 py-3">
           {channel.length === 0 ? (
@@ -656,7 +672,7 @@ export function TeamChatView({ missionId, onOpenRef }: TeamChatViewProps) {
       </section>
 
       {thread && (
-        <aside className="flex min-h-0 w-[360px] shrink-0 flex-col overflow-hidden rounded-2xl border border-borderSoft/60 bg-panel/40">
+        <aside className="fixed inset-0 z-40 flex min-h-0 flex-col overflow-hidden border border-borderSoft/60 bg-panel lg:relative lg:inset-auto lg:z-auto lg:w-[360px] lg:shrink-0 lg:rounded-2xl lg:bg-panel/40">
           <header className="flex items-center justify-between border-b border-borderSoft/60 px-3 py-2.5">
             <span className="text-[13px] font-semibold text-text-primary">Thread</span>
             <button

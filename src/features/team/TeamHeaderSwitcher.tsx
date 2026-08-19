@@ -4,6 +4,7 @@ import { useAuthStore } from '../auth/auth-store';
 import { useTeamStore } from './team-store';
 import { getActiveTeamRoom, useTeamRoomStore } from './team-room-store';
 import { TeamUnlockModal } from './TeamUnlockModal';
+import { resumeLastTeamRoom } from './team-room-entry';
 
 interface TeamHeaderSwitcherProps { onSwitchMode?: (mode: 'personal' | 'team') => void; }
 
@@ -16,6 +17,7 @@ export function TeamHeaderSwitcher({ onSwitchMode }: TeamHeaderSwitcherProps) {
   const session = useAuthStore((state) => state.session);
   const roomState = useTeamRoomStore();
   const activeRoom = getActiveTeamRoom(roomState);
+  const [switching, setSwitching] = useState(false);
   const [showRoomModal, setShowRoomModal] = useState(() => Boolean(new URLSearchParams(window.location.search).get('teamInvite')));
 
   const displayName = String(session?.user.user_metadata?.display_name || session?.user.user_metadata?.full_name || session?.user.email?.split('@')[0] || 'Member');
@@ -27,13 +29,33 @@ export function TeamHeaderSwitcher({ onSwitchMode }: TeamHeaderSwitcherProps) {
   }, [displayName, initials, session?.user, setAuthenticatedPersona]);
 
   const openTeamRooms = () => setShowRoomModal(true);
+
+  // Switching to Team resumes the room you were last in. The picker is only
+  // for the cases it cannot decide: no rooms yet, or several to choose from.
+  const goToTeam = async () => {
+    if (switching) return;
+    setSwitching(true);
+    try {
+      if (await resumeLastTeamRoom()) {
+        setWorkspaceMode('team');
+        onSwitchMode?.('team');
+        return;
+      }
+      setShowRoomModal(true);
+    } catch {
+      setShowRoomModal(true);
+    } finally {
+      setSwitching(false);
+    }
+  };
+
   const switchPersonal = () => { setWorkspaceMode('personal'); onSwitchMode?.('personal'); };
 
   return <>
     <div className="flex items-center gap-2">
       {workspaceMode === 'personal' ? <div className="flex items-center rounded-2xl border border-borderSoft/30 bg-panel/55 p-1">
         <button type="button" onClick={switchPersonal} className="flex items-center gap-1.5 rounded-xl bg-panel2 px-3 py-1.5 text-xs font-semibold text-text-primary shadow-sm"><User className="h-3.5 w-3.5" /><span className="hidden sm:inline">Personal</span></button>
-        <button type="button" onClick={openTeamRooms} className="flex items-center gap-1.5 rounded-xl px-3 py-1.5 text-xs font-semibold text-text-muted hover:text-text-primary"><Users className="h-3.5 w-3.5 text-amber-400" /><span>Team Hub</span></button>
+        <button type="button" onClick={() => void goToTeam()} disabled={switching} className="flex items-center gap-1.5 rounded-xl px-3 py-1.5 text-xs font-semibold text-text-muted hover:text-text-primary disabled:opacity-60"><Users className="h-3.5 w-3.5 text-amber-400" /><span>{switching ? 'Opening…' : 'Team Hub'}</span></button>
       </div> : <button type="button" onClick={switchPersonal} className="flex h-10 w-10 items-center justify-center rounded-xl border border-borderSoft/30 bg-panel/45 text-text-muted hover:text-text-primary" aria-label="Switch to personal workspace"><User className="h-4 w-4" /></button>}
 
       {workspaceMode === 'team' && teamUnlocked && activeRoom && <button type="button" onClick={openTeamRooms} className="flex items-center gap-2 rounded-2xl border border-borderSoft/35 bg-panel/65 px-3 py-1.5 text-xs text-text-secondary hover:border-amber-500/35">

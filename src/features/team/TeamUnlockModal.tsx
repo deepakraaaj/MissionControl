@@ -1,8 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { ArrowRight, Check, Clock3, Copy, Crown, DoorOpen, Plus, RefreshCw, ShieldCheck, UserCheck, UserRound, UserX, Users, X } from 'lucide-react';
-import { useTeamStore } from './team-store';
 import { getActiveTeamRoom, useTeamRoomStore } from './team-room-store';
-import { connectTeamRoomSync } from './team-room-sync';
+import { enterTeamRoom } from './team-room-entry';
 
 interface TeamUnlockModalProps { isOpen: boolean; onClose: () => void; onSuccess?: () => void; }
 
@@ -14,7 +13,6 @@ export function TeamUnlockModal({ isOpen, onClose, onSuccess }: TeamUnlockModalP
   const hydrateRooms = roomState.hydrate;
   const loadMembers = roomState.loadMembers;
   const activeRoom = getActiveTeamRoom(roomState);
-  const grantApprovedTeamAccess = useTeamStore((state) => state.grantApprovedTeamAccess);
   const [mode, setMode] = useState<'rooms' | 'create' | 'join' | 'members'>(() => getInviteCodeFromUrl() ? 'join' : 'rooms');
   const [roomName, setRoomName] = useState('');
   const [inviteCode, setInviteCode] = useState(() => getInviteCodeFromUrl());
@@ -34,10 +32,7 @@ export function TeamUnlockModal({ isOpen, onClose, onSuccess }: TeamUnlockModalP
   };
 
   const enterRoom = async (roomId: string) => {
-    roomState.selectRoom(roomId);
-    const room = rooms.find((item) => item.roomId === roomId);
-    await connectTeamRoomSync(roomId, room?.name);
-    grantApprovedTeamAccess();
+    await enterTeamRoom(roomId);
     onSuccess?.();
     closeModal();
   };

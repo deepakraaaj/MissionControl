@@ -4,7 +4,10 @@ import { useAssistantStore } from './assistant-store';
 import { ChatPanel } from './ChatPanel';
 
 // Floating assistant button + popover chat, available on every screen.
-export function AssistantWidget() {
+export function AssistantWidget({
+  /** Overrides the default corner placement so a dock can stack the launcher. */
+  launcherPositionClassName = 'bottom-[max(1.25rem,env(safe-area-inset-bottom))] right-5 lg:bottom-6',
+}: { launcherPositionClassName?: string } = {}) {
   const open = useAssistantStore((s) => s.open);
   const toggle = useAssistantStore((s) => s.toggle);
   const setOpen = useAssistantStore((s) => s.setOpen);
@@ -19,7 +22,7 @@ export function AssistantWidget() {
         <button
           type="button"
           onClick={toggle}
-          className="fixed bottom-[max(1.25rem,env(safe-area-inset-bottom))] right-5 z-[70] flex h-14 w-14 items-center justify-center rounded-full border border-accent/50 bg-accent text-[rgb(var(--accent-contrast))] shadow-[0_10px_32px_rgb(var(--shadow-color)/0.32),0_0_0_4px_rgb(var(--surface-1)/0.75)] transition-transform hover:scale-105 active:scale-95 lg:bottom-6"
+          className={`fixed z-[70] ${launcherPositionClassName} flex h-14 w-14 items-center justify-center rounded-full border border-accent/50 bg-accent text-[rgb(var(--accent-contrast))] shadow-[0_10px_32px_rgb(var(--shadow-color)/0.32),0_0_0_4px_rgb(var(--surface-1)/0.75)] transition-transform hover:scale-105 active:scale-95`}
           aria-label="Open assistant"
         >
           <MessageCircle className="h-6 w-6" strokeWidth={2.25} />

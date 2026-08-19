@@ -321,7 +321,10 @@ export function PocketDropModal({ isOpen, onClose, defaultMissionId }: PocketDro
   );
 }
 
-export function PocketDropFAB() {
+export function PocketDropFAB({
+  /** Overrides the default corner placement so a dock can stack the button. */
+  positionClassName = 'bottom-20 right-5 lg:bottom-6 lg:right-24',
+}: { positionClassName?: string } = {}) {
   const [open, setOpen] = useState(false);
   const workspaceMode = useTeamStore((s) => s.workspaceMode);
   const teamUnlocked = useTeamStore((s) => s.teamUnlocked);
@@ -333,7 +336,7 @@ export function PocketDropFAB() {
       <button
         type="button"
         onClick={() => setOpen(true)}
-        className="fixed bottom-20 right-5 z-40 flex h-12 w-12 items-center justify-center gap-2 rounded-2xl border border-accent/40 bg-gradient-to-r from-accent to-accentSoft p-0 text-xs font-bold text-[rgb(var(--accent-contrast))] shadow-glow transition-all hover:scale-105 hover:from-accent hover:to-accent active:scale-95 cursor-pointer lg:bottom-6 lg:right-24 lg:h-auto lg:w-auto lg:px-4 lg:py-3"
+        className={`fixed z-40 ${positionClassName} flex h-12 w-12 items-center justify-center gap-2 rounded-2xl border border-accent/40 bg-gradient-to-r from-accent to-accentSoft p-0 text-xs font-bold text-[rgb(var(--accent-contrast))] shadow-glow transition-all hover:scale-105 hover:from-accent hover:to-accent active:scale-95 cursor-pointer lg:h-auto lg:w-auto lg:px-4 lg:py-3`}
       >
         <Zap className="w-4 h-4 fill-current" />
         <span className="hidden sm:inline">Quick Drop</span>
