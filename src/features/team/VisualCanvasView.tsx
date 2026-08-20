@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { ChevronLeft, ChevronRight, Download, Edit3, LayoutGrid, Maximize2, Minimize2, Network, Plus, Trash2 } from 'lucide-react';
 import {
   Background, Controls, Handle, MiniMap, Position, ReactFlow, ReactFlowProvider, addEdge,
@@ -73,7 +73,27 @@ const toDiagramNodes = (nodes: Node<FlowData>[]): DiagramNode[] => nodes.map((no
 /** Node card width is fixed (see SynCatchNode), so spacing can be exact. */
 const NODE_WIDTH = 210;
 const COLUMN_STEP = NODE_WIDTH + 110;
-const ROW_STEP = 150;
+const ROW_STEP = 170;
+
+/** Rough rendered card height; only used to decide whether cards collide. */
+const NODE_HEIGHT = 110;
+
+/**
+ * True when any two cards sit close enough to touch. Diagrams saved with
+ * hand-picked coordinates (or seeded ones) routinely pack cards tighter than
+ * their own width, which leaves edges and their labels no room and makes the
+ * whole thing unreadable.
+ */
+function hasCollisions(nodes: Node<FlowData>[]): boolean {
+  for (let i = 0; i < nodes.length; i += 1) {
+    for (let j = i + 1; j < nodes.length; j += 1) {
+      const dx = Math.abs(nodes[i].position.x - nodes[j].position.x);
+      const dy = Math.abs(nodes[i].position.y - nodes[j].position.y);
+      if (dx < NODE_WIDTH + 40 && dy < NODE_HEIGHT + 30) return true;
+    }
+  }
+  return false;
+}
 
 /**
  * Re-lays a diagram left-to-right in dependency order.
@@ -156,6 +176,8 @@ function FlowEditor({ diagram, onChange }: { diagram: VisualDiagram; onChange: (
   const [nodeEditorOpen, setNodeEditorOpen] = useState(false);
   const [fullscreen, setFullscreen] = useState(false);
   const { fitView } = useReactFlow();
+  const onChangeRef = useRef(onChange);
+  useEffect(() => { onChangeRef.current = onChange; });
 
   // Escape leaves fullscreen; without it the only way out is the toggle.
   useEffect(() => {
@@ -166,7 +188,24 @@ function FlowEditor({ diagram, onChange }: { diagram: VisualDiagram; onChange: (
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
   }, [fullscreen]);
-  useEffect(() => { setNodes(toFlowNodes(diagram.nodes)); setEdges(diagram.edges.map((edge) => ({ id: edge.id, source: edge.from, target: edge.to, label: edge.label, animated: edge.dashed }))); }, [diagram.id, setEdges, setNodes]);
+  useEffect(() => {
+    const loadedNodes = toFlowNodes(diagram.nodes);
+    const loadedEdges = diagram.edges.map((edge) => ({ id: edge.id, source: edge.from, target: edge.to, label: edge.label, animated: edge.dashed }));
+    setEdges(loadedEdges);
+
+    // Open readable by default. Only rearrange when the saved coordinates
+    // actually collide, so a layout somebody arranged by hand is left alone.
+    // Persisting the result means this self-heals once rather than on every load.
+    if (hasCollisions(loadedNodes)) {
+      const arranged = autoLayout(loadedNodes, loadedEdges);
+      setNodes(arranged);
+      onChangeRef.current(arranged, loadedEdges);
+      window.setTimeout(() => fitView({ padding: 0.15, duration: 0 }), 0);
+      return;
+    }
+
+    setNodes(loadedNodes);
+  }, [diagram.id, fitView, setEdges, setNodes]);
   const persistNodes = useCallback((next: Node<FlowData>[]) => { setNodes(next); onChange(next, edges); }, [edges, onChange, setNodes]);
   const tidyLayout = useCallback(() => {
     const arranged = autoLayout(nodes, edges);
