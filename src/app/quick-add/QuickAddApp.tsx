@@ -45,7 +45,6 @@ export function QuickAddApp() {
               fillHeight
               onCancel={() => void hideCurrentWindow()}
               onSubmitted={() => hideCurrentWindow()}
-              source="quick-add"
               submitLabel="Save task"
             />
           </div>

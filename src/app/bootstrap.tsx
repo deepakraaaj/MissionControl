@@ -89,7 +89,7 @@ export function AppBootstrap({ children }: PropsWithChildren) {
     });
 
     const unsubscribeHudTransparency = subscribeAppEvent(TOGGLE_HUD_TRANSPARENCY_EVENT, () => {
-      useFocusStore.getState().toggleHudTransparency('hud');
+      useFocusStore.getState().toggleHudTransparency();
     });
 
     return () => {

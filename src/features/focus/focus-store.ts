@@ -1,6 +1,4 @@
 import { create } from 'zustand';
-import { logActivity } from '../activity/activity-repository';
-import type { ActivitySource } from '../activity/activity-repository';
 import { emitAppEvent, FOCUS_CHANGED_EVENT } from '../../lib/tauri';
 import { getElapsedSeconds } from '../../lib/date';
 import { getFocusRepository } from './focus-repository';
@@ -36,15 +34,15 @@ const DEFAULT_FOCUS_STATE: FocusSyncState = {
 interface FocusState extends FocusSyncState {
   hydrated: boolean;
   hydrate: () => Promise<void>;
-  setCurrentMission: (taskId: string | null, source?: ActivitySource) => void;
-  startSession: (minutes?: number, source?: ActivitySource) => void;
-  resumeSession: (source?: ActivitySource) => void;
-  pauseSession: (source?: ActivitySource) => void;
-  setStatus: (status: FocusStatus, source?: ActivitySource) => void;
-  resetSession: (source?: ActivitySource) => void;
+  setCurrentMission: (taskId: string | null) => void;
+  startSession: (minutes?: number) => void;
+  resumeSession: () => void;
+  pauseSession: () => void;
+  setStatus: (status: FocusStatus) => void;
+  resetSession: () => void;
   setHudMode: (mode: HudMode) => void;
-  toggleHudMode: (source?: ActivitySource) => void;
-  toggleHudTransparency: (source?: ActivitySource) => void;
+  toggleHudMode: () => void;
+  toggleHudTransparency: () => void;
   syncFromExternal: (state: FocusSyncState) => void;
 }
 
@@ -108,7 +106,7 @@ export const useFocusStore = create<FocusState>((set, get) => {
         set({ hydrated: true });
       }
     },
-    setCurrentMission: (currentMissionId, source = 'system') => {
+    setCurrentMission: (currentMissionId) => {
       const previousMissionId = get().currentMissionId;
       const shouldResetProgress = previousMissionId !== currentMissionId;
 
@@ -119,18 +117,9 @@ export const useFocusStore = create<FocusState>((set, get) => {
         status: shouldResetProgress ? 'idle' : state.status,
       }));
       commitFocusUpdate();
-
-      if (currentMissionId) {
-        void logActivity({
-          action: 'task_selected',
-          source,
-          taskId: currentMissionId,
-        });
-      }
     },
-    startSession: (minutes, source = 'system') => {
+    startSession: (minutes) => {
       const duration = minutes ?? get().focusSessionDuration;
-      const currentMissionId = get().currentMissionId;
 
       set({
         focusSessionStart: new Date().toISOString(),
@@ -139,19 +128,9 @@ export const useFocusStore = create<FocusState>((set, get) => {
         status: 'locked-in',
       });
       commitFocusUpdate();
-
-      void logActivity({
-        action: 'focus_started',
-        source,
-        taskId: currentMissionId,
-        details: {
-          durationMinutes: duration,
-        },
-      });
     },
-    resumeSession: (source = 'system') => {
+    resumeSession: () => {
       const currentMissionId = get().currentMissionId;
-      const focusElapsedSeconds = get().focusElapsedSeconds;
 
       if (!currentMissionId || get().focusSessionStart) {
         return;
@@ -162,18 +141,8 @@ export const useFocusStore = create<FocusState>((set, get) => {
         status: 'locked-in',
       });
       commitFocusUpdate();
-
-      void logActivity({
-        action: 'focus_resumed',
-        source,
-        taskId: currentMissionId,
-        details: {
-          elapsedSeconds: focusElapsedSeconds,
-        },
-      });
     },
-    pauseSession: (source = 'system') => {
-      const currentMissionId = get().currentMissionId;
+    pauseSession: () => {
       const focusSessionStart = get().focusSessionStart;
 
       if (!focusSessionStart) {
@@ -188,40 +157,12 @@ export const useFocusStore = create<FocusState>((set, get) => {
         status: 'idle',
       });
       commitFocusUpdate();
-
-      void logActivity({
-        action: 'focus_paused',
-        source,
-        taskId: currentMissionId,
-        details: {
-          elapsedSeconds,
-        },
-      });
     },
-    setStatus: (status, source = 'system') => {
-      const previousStatus = get().status;
-      const currentMissionId = get().currentMissionId;
+    setStatus: (status) => {
       set({ status });
       commitFocusUpdate();
-
-      if (previousStatus !== status) {
-        void logActivity({
-          action: 'focus_status_changed',
-          source,
-          taskId: currentMissionId,
-          details: {
-            previousStatus,
-            status,
-          },
-        });
-      }
     },
-    resetSession: (source = 'system') => {
-      const currentMissionId = get().currentMissionId;
-      const focusSessionStart = get().focusSessionStart;
-      const elapsedSeconds = getElapsedSeconds(focusSessionStart, get().focusElapsedSeconds);
-      const hadProgress = elapsedSeconds > 0;
-
+    resetSession: () => {
       set((state) => ({
         focusSessionStart: null,
         focusElapsedSeconds: 0,
@@ -229,18 +170,6 @@ export const useFocusStore = create<FocusState>((set, get) => {
         manualFocusReset: state.manualFocusReset + 1,
       }));
       commitFocusUpdate();
-
-      if (hadProgress) {
-        void logActivity({
-          action: 'focus_paused',
-          source,
-          taskId: currentMissionId,
-          details: {
-            elapsedSeconds,
-            reset: true,
-          },
-        });
-      }
     },
     setHudMode: (hudMode) => {
       if (get().hudMode === hudMode) {
@@ -252,39 +181,21 @@ export const useFocusStore = create<FocusState>((set, get) => {
       }));
       commitFocusUpdate();
     },
-    toggleHudMode: (source = 'system') => {
+    toggleHudMode: () => {
       const nextMode = get().hudMode === 'expanded' ? 'compact' : 'expanded';
 
       set(() => ({
         hudMode: nextMode,
       }));
       commitFocusUpdate();
-
-      void logActivity({
-        action: 'hud_mode_toggled',
-        source,
-        taskId: get().currentMissionId,
-        details: {
-          hudMode: nextMode,
-        },
-      });
     },
-    toggleHudTransparency: (source = 'system') => {
+    toggleHudTransparency: () => {
       const nextTransparency = get().hudTransparency === 'ghost' ? 'standard' : 'ghost';
 
       set(() => ({
         hudTransparency: nextTransparency,
       }));
       commitFocusUpdate();
-
-      void logActivity({
-        action: 'hud_transparency_toggled',
-        source,
-        taskId: get().currentMissionId,
-        details: {
-          hudTransparency: nextTransparency,
-        },
-      });
     },
     syncFromExternal: (state) => {
       set({ ...state, hydrated: true });

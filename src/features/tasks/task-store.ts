@@ -1,6 +1,4 @@
 import { create } from 'zustand';
-import { logActivity } from '../activity/activity-repository';
-import type { ActivitySource } from '../activity/activity-repository';
 import { emitAppEvent, TASKS_CHANGED_EVENT } from '../../lib/tauri';
 import { deriveStatusFromLane, sortTasks } from './task-helpers';
 import { getTaskRepository } from './task-repository';
@@ -15,13 +13,13 @@ interface TaskStore {
   error: string | null;
   hydrate: () => Promise<void>;
   refresh: (silent?: boolean) => Promise<void>;
-  createTask: (draft: TaskDraft, source?: ActivitySource) => Promise<Task>;
-  createSubtask: (parentTaskId: string, draft: Omit<TaskDraft, 'parent_task_id'>, source?: ActivitySource) => Promise<Task>;
+  createTask: (draft: TaskDraft) => Promise<Task>;
+  createSubtask: (parentTaskId: string, draft: Omit<TaskDraft, 'parent_task_id'>) => Promise<Task>;
   selectTask: (taskId: string | null) => void;
-  saveTask: (task: Task, source?: ActivitySource) => Promise<void>;
-  moveTaskToLane: (taskId: string, lane: TaskLane, source?: ActivitySource) => Promise<void>;
-  markDone: (taskId: string, source?: ActivitySource) => Promise<void>;
-  deleteTask: (taskId: string, source?: ActivitySource) => Promise<void>;
+  saveTask: (task: Task) => Promise<void>;
+  moveTaskToLane: (taskId: string, lane: TaskLane) => Promise<void>;
+  markDone: (taskId: string) => Promise<void>;
+  deleteTask: (taskId: string) => Promise<void>;
 }
 
 export const useTaskStore = create<TaskStore>((set, get) => ({
@@ -76,29 +74,23 @@ export const useTaskStore = create<TaskStore>((set, get) => ({
     }
   },
 
-  createTask: async (draft, source = 'system') => {
+  createTask: async (draft) => {
     const repository = await getTaskRepository();
     const task = await repository.createTask(draft);
     const tasks = sortTasks([task, ...get().tasks]);
     set({ tasks, selectedTaskId: task.id });
-    await logActivity({
-      action: 'task_created',
-      source,
-      taskId: task.id,
-      details: { lane: task.lane, priority: task.priority, title: task.title },
-    });
     await emitAppEvent(TASKS_CHANGED_EVENT, { type: 'created', taskId: task.id });
     showSuccessToast('Task created', task.title);
     return task;
   },
 
-  createSubtask: async (parentTaskId, draft, source = 'system') => {
-    return get().createTask({ ...draft, parent_task_id: parentTaskId }, source);
+  createSubtask: async (parentTaskId, draft) => {
+    return get().createTask({ ...draft, parent_task_id: parentTaskId });
   },
 
   selectTask: (selectedTaskId) => set({ selectedTaskId }),
 
-  saveTask: async (task, source = 'system') => {
+  saveTask: async (task) => {
     const repository = await getTaskRepository();
     const nextTask: Task = { ...task, updated_at: new Date().toISOString() };
     await repository.updateTask(nextTask);
@@ -106,16 +98,10 @@ export const useTaskStore = create<TaskStore>((set, get) => ({
       tasks: sortTasks(get().tasks.map((item) => (item.id === task.id ? nextTask : item))),
       selectedTaskId: task.id,
     });
-    await logActivity({
-      action: 'task_updated',
-      source,
-      taskId: task.id,
-      details: { lane: task.lane, title: task.title },
-    });
     await emitAppEvent(TASKS_CHANGED_EVENT, { type: 'updated', taskId: task.id });
   },
 
-  moveTaskToLane: async (taskId, lane, source = 'system') => {
+  moveTaskToLane: async (taskId, lane) => {
     const task = get().tasks.find((item) => item.id === taskId);
     if (!task || task.lane === lane) return;
 
@@ -137,12 +123,6 @@ export const useTaskStore = create<TaskStore>((set, get) => ({
     try {
       const repository = await getTaskRepository();
       await repository.updateTask(nextTask);
-      await logActivity({
-        action: 'task_lane_changed',
-        source,
-        taskId,
-        details: { fromLane: task.lane, toLane: lane },
-      });
       await emitAppEvent(TASKS_CHANGED_EVENT, { type: 'moved', taskId, lane });
       if (lane === 'done') {
         showSuccessToast('Task completed', task.title);
@@ -155,7 +135,7 @@ export const useTaskStore = create<TaskStore>((set, get) => ({
     }
   },
 
-  markDone: async (taskId, source = 'system') => {
+  markDone: async (taskId) => {
     const repository = await getTaskRepository();
     const task = get().tasks.find((item) => item.id === taskId);
     if (!task) return;
@@ -176,12 +156,6 @@ export const useTaskStore = create<TaskStore>((set, get) => ({
     try {
       const repository = await getTaskRepository();
       await repository.updateTask(nextTask);
-      await logActivity({
-        action: 'task_completed',
-        source,
-        taskId,
-        details: { fromLane: task.lane, title: task.title },
-      });
       await emitAppEvent(TASKS_CHANGED_EVENT, { type: 'done', taskId });
       showSuccessToast('Task completed', task.title);
     } catch (error) {
@@ -189,20 +163,20 @@ export const useTaskStore = create<TaskStore>((set, get) => ({
     }
   },
 
-  deleteTask: async (taskId, source = 'system') => {
+  deleteTask: async (taskId) => {
     const task = get().tasks.find((item) => item.id === taskId);
     if (!task) return;
 
     // Optimistic update
     const previousTasks = get().tasks;
     const previousSelectedId = get().selectedTaskId;
-    
+
     set((state) => {
       const nextTasks = state.tasks.filter((t) => t.id !== taskId);
       return {
         tasks: sortTasks(nextTasks),
-        selectedTaskId: state.selectedTaskId === taskId 
-          ? (nextTasks[0]?.id ?? null) 
+        selectedTaskId: state.selectedTaskId === taskId
+          ? (nextTasks[0]?.id ?? null)
           : state.selectedTaskId,
       };
     });
@@ -210,20 +184,14 @@ export const useTaskStore = create<TaskStore>((set, get) => ({
     try {
       const repository = await getTaskRepository();
       await repository.deleteTask(taskId);
-      
-      await logActivity({
-        action: 'task_deleted',
-        source,
-        taskId,
-        details: { title: task.title },
-      });
+
       await emitAppEvent(TASKS_CHANGED_EVENT, { type: 'deleted', taskId });
       showSuccessToast('Task deleted', task.title);
     } catch (error) {
-      set({ 
-        tasks: previousTasks, 
+      set({
+        tasks: previousTasks,
         selectedTaskId: previousSelectedId,
-        error: error instanceof Error ? error.message : 'Unable to delete task' 
+        error: error instanceof Error ? error.message : 'Unable to delete task'
       });
     }
   },

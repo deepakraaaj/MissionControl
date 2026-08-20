@@ -12,7 +12,6 @@ import {
 import { Button } from '../../components/ui/button';
 import { Input, Textarea } from '../../components/ui/input';
 import { cn } from '../../lib/cn';
-import type { ActivitySource } from '../activity/activity-repository';
 import type { TaskClarification } from '../ai/ai-types';
 import { getTaskAiAssistant } from '../ai/mock-ai-provider';
 import { MissionComposer } from '../missions/MissionComposer';
@@ -23,7 +22,6 @@ import { useTaskStore } from './task-store';
 import type { Task, TaskDraft, TaskEnergy, TaskLane, TaskPriority } from './task-types';
 
 interface TaskCreationComposerProps {
-  source: ActivitySource;
   submitLabel: string;
   onCancel?: () => void;
   onSubmitted?: () => void | Promise<void>;
@@ -156,7 +154,6 @@ function parseChecklistItems(value: string) {
 }
 
 export function TaskCreationComposer({
-  source,
   submitLabel,
   onCancel,
   onSubmitted,
@@ -271,7 +268,7 @@ export function TaskCreationComposer({
     if (!canSave || isSaving) return;
     setIsSaving(true);
     try {
-      const task = await createTask(buildTaskDraft(draft, clarification, { status }, parentTaskId), source);
+      const task = await createTask(buildTaskDraft(draft, clarification, { status }, parentTaskId));
       if (checklistItems.length > 0) {
         await Promise.all(
           checklistItems.map((title) =>
@@ -284,8 +281,7 @@ export function TaskCreationComposer({
                 energy: 'shallow',
                 priority: 'normal',
               },
-              source,
-            ),
+                        ),
           ),
         );
       }

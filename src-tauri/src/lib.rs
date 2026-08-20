@@ -276,6 +276,14 @@ fn database_migrations() -> Vec<Migration> {
             "#,
             kind: MigrationKind::Up,
         },
+        Migration {
+            version: 15,
+            description: "drop_activity_log",
+            sql: r#"
+              DROP TABLE IF EXISTS activity_log;
+            "#,
+            kind: MigrationKind::Up,
+        },
     ]
 }
 

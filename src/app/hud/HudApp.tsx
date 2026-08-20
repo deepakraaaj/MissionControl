@@ -1,10 +1,5 @@
 import type { ReactNode, RefObject } from 'react';
 import { useEffect, useRef, useState } from 'react';
-import { logActivity } from '../../features/activity/activity-repository';
-import {
-  distractionCategoryOptions,
-  type DistractionCategory,
-} from '../../features/activity/distraction-insights';
 import { getFocusStatusLabel } from '../../features/focus/focus-presenter';
 import { useFocusStore } from '../../features/focus/focus-store';
 import { TaskCreationComposer } from '../../features/tasks/TaskCreationComposer';
@@ -246,16 +241,6 @@ function BacklogIcon() {
   );
 }
 
-function DistractionIcon() {
-  return (
-    <Icon>
-      <path d="M12 3 21 19H3L12 3Z" />
-      <path d="M12 9v4" />
-      <path d="M12 16h.01" />
-    </Icon>
-  );
-}
-
 function PlayIcon() {
   return (
     <Icon>
@@ -452,11 +437,6 @@ export function HudApp() {
   const [showCompactTaskPicker, setShowCompactTaskPicker] = useState(false);
   const [showCompactTaskComposer, setShowCompactTaskComposer] = useState(false);
   const [isCompactHudExpanded, setIsCompactHudExpanded] = useState(false);
-  const [distractionTrigger, setDistractionTrigger] = useState('');
-  const [distractionCategory, setDistractionCategory] = useState<DistractionCategory>('context_switch');
-  const [distractionNote, setDistractionNote] = useState('');
-  const [showCompactDistractionComposer, setShowCompactDistractionComposer] = useState(false);
-  const [isSavingDistraction, setIsSavingDistraction] = useState(false);
   const [customTime, setCustomTime] = useState('');
   const hasNormalizedLaunchHudMode = useRef(false);
   const expandedTaskComposerRef = useRef<HTMLDivElement>(null);
@@ -485,7 +465,7 @@ export function HudApp() {
   const hudTransparent = hudTransparency === 'ghost';
   const hudShellToneClass = hudTransparent ? 'hud-shell--ghost' : 'hud-shell--solid';
   const compactDrawerOpen =
-    hudMode === 'compact' && (showCompactTaskPicker || showCompactTaskComposer || showCompactDistractionComposer);
+    hudMode === 'compact' && (showCompactTaskPicker || showCompactTaskComposer);
   const compactHudExpanded = hudMode === 'compact' && (isCompactHudExpanded || compactDrawerOpen);
   // When the transparent HUD setting is on, the compact shell drops its
   // background entirely so only the timer + task name float on the desktop
@@ -559,7 +539,6 @@ export function HudApp() {
       setHudMode('compact');
       setShowCompactTaskPicker(false);
       setShowCompactTaskComposer(false);
-      setShowCompactDistractionComposer(false);
       setIsCompactHudExpanded(false);
     });
 
@@ -573,7 +552,6 @@ export function HudApp() {
       if (hudMode === 'compact' && showCompactTaskComposer) {
         setShowCompactTaskComposer(false);
         setShowCompactTaskPicker(false);
-        setShowCompactDistractionComposer(false);
         setIsCompactHudExpanded(false);
         return;
       }
@@ -581,7 +559,6 @@ export function HudApp() {
       setHudMode('compact');
       setHudTaskLane('inbox');
       setShowCompactTaskPicker(false);
-      setShowCompactDistractionComposer(false);
       setShowCompactTaskComposer(true);
       setIsCompactHudExpanded(true);
 
@@ -676,12 +653,11 @@ export function HudApp() {
   }, [hudMode]);
 
   useEffect(() => {
-    if (hudMode === 'expanded' && (showCompactTaskPicker || showCompactTaskComposer || showCompactDistractionComposer)) {
+    if (hudMode === 'expanded' && (showCompactTaskPicker || showCompactTaskComposer)) {
       setShowCompactTaskPicker(false);
       setShowCompactTaskComposer(false);
-      setShowCompactDistractionComposer(false);
     }
-  }, [hudMode, showCompactDistractionComposer, showCompactTaskComposer, showCompactTaskPicker]);
+  }, [hudMode, showCompactTaskComposer, showCompactTaskPicker]);
 
   useEffect(() => {
     if (!isTauriApp()) {
@@ -718,10 +694,10 @@ export function HudApp() {
   }, []);
 
   function showTaskInHud(task: Task, expand = false) {
-    setCurrentMission(task.id, 'hud');
+    setCurrentMission(task.id);
 
     if (expand && hudMode === 'compact') {
-      toggleHudMode('hud');
+      toggleHudMode();
     }
   }
 
@@ -731,16 +707,16 @@ export function HudApp() {
     }
 
     if (isSessionRunning) {
-      pauseSession('hud');
+      pauseSession();
       return;
     }
 
     if (hasPausedProgress) {
-      resumeSession('hud');
+      resumeSession();
       return;
     }
 
-    startSession(currentMission.estimated_minutes, 'hud');
+    startSession(currentMission.estimated_minutes);
   }
 
   async function openTaskCompletionReview() {
@@ -782,7 +758,6 @@ export function HudApp() {
     if (hudMode === 'compact') {
       setIsCompactHudExpanded(true);
       setShowCompactTaskPicker(false);
-      setShowCompactDistractionComposer(false);
       setShowCompactTaskComposer(true);
       focusTaskComposer(compactTaskComposerRef);
       return;
@@ -791,17 +766,9 @@ export function HudApp() {
     focusTaskComposer(expandedTaskComposerRef);
   }
 
-  function resetDistractionComposer() {
-    setDistractionTrigger('');
-    setDistractionCategory('context_switch');
-    setDistractionNote('');
-    setShowCompactDistractionComposer(false);
-  }
-
   function toggleCompactTaskPicker() {
     setIsCompactHudExpanded(true);
     setShowCompactTaskComposer(false);
-    setShowCompactDistractionComposer(false);
     setShowCompactTaskPicker((current) => {
       const next = !current;
 
@@ -820,22 +787,13 @@ export function HudApp() {
   function toggleCompactTaskComposer() {
     setIsCompactHudExpanded(true);
     setShowCompactTaskPicker(false);
-    setShowCompactDistractionComposer(false);
     setShowCompactTaskComposer((current) => !current);
-  }
-
-  function toggleCompactDistractionComposer() {
-    setIsCompactHudExpanded(true);
-    setShowCompactTaskPicker(false);
-    setShowCompactTaskComposer(false);
-    setShowCompactDistractionComposer((current) => !current);
   }
 
   function toggleCompactHudExpanded() {
     if (compactDrawerOpen || isCompactHudExpanded) {
       setShowCompactTaskPicker(false);
       setShowCompactTaskComposer(false);
-      setShowCompactDistractionComposer(false);
       setIsCompactHudExpanded(false);
       return;
     }
@@ -845,47 +803,20 @@ export function HudApp() {
 
   async function selectCompactHudTask(task: Task) {
     if (task.lane !== 'now') {
-      await moveTaskToLane(task.id, 'now', 'hud');
+      await moveTaskToLane(task.id, 'now');
     }
 
-    setCurrentMission(task.id, 'hud');
+    setCurrentMission(task.id);
     setShowCompactTaskPicker(false);
   }
 
   async function handleHudTaskCreated(task: Task, closeCompactComposer = false) {
     if (hudTaskLane === 'now') {
-      setCurrentMission(task.id, 'hud');
+      setCurrentMission(task.id);
     }
 
     if (closeCompactComposer) {
       resetHudTaskComposer();
-    }
-  }
-
-  async function logDistraction() {
-    if (!distractionTrigger.trim()) {
-      return;
-    }
-
-    setIsSavingDistraction(true);
-
-    try {
-      await logActivity({
-        action: 'distraction_logged',
-        source: 'hud',
-        taskId: currentMission?.id ?? null,
-        details: {
-          category: distractionCategory,
-          trigger: distractionTrigger.trim(),
-          note: distractionNote.trim(),
-          taskTitle: currentMission?.title ?? '',
-          focusStatus,
-        },
-      });
-
-      resetDistractionComposer();
-    } finally {
-      setIsSavingDistraction(false);
     }
   }
 
@@ -926,7 +857,7 @@ export function HudApp() {
               <HudActionButton
                 icon={<ExpandIcon />}
                 label="Toggle compact mode"
-                onClick={() => toggleHudMode('hud')}
+                onClick={() => toggleHudMode()}
               />
             </div>
             <div className="mt-auto">
@@ -949,12 +880,12 @@ export function HudApp() {
                 <HudActionButton
                   icon={<GhostIcon />}
                   label={hudTransparency === 'ghost' ? 'Use solid HUD' : 'Use translucent HUD'}
-                  onClick={() => toggleHudTransparency('hud')}
+                  onClick={() => toggleHudTransparency()}
                 />
                 <HudActionButton
                   icon={<MinimizeIcon />}
                   label="Minimize HUD"
-                  onClick={() => toggleHudMode('hud')}
+                  onClick={() => toggleHudMode()}
                 />
               </div>
             </WindowDragHandle>
@@ -997,7 +928,7 @@ export function HudApp() {
                             key={subtask.id}
                             onClick={() => {
                               if (subtask.lane !== 'done') {
-                                void markDone(subtask.id, 'hud');
+                                void markDone(subtask.id);
                               }
                             }}
                             className={cn(
@@ -1074,7 +1005,7 @@ export function HudApp() {
                   <div className="scrollbar-hidden mt-4 flex items-center gap-2 overflow-x-auto pb-1 pr-1">
                     <button
                       className="flex shrink-0 items-center gap-2 rounded-full border border-borderSoft/35 bg-panel/54 px-3 py-2 text-left transition hover:border-accent/40 hover:bg-accent/10"
-                      onClick={() => startSession(25, 'hud')}
+                      onClick={() => startSession(25)}
                       type="button"
                     >
                       <span className="text-sm font-medium text-text-primary">Pomodoro</span>
@@ -1082,7 +1013,7 @@ export function HudApp() {
                     </button>
                     <button
                       className="flex shrink-0 items-center gap-2 rounded-full border border-borderSoft/35 bg-panel/54 px-3 py-2 text-left transition hover:border-accent/40 hover:bg-accent/10"
-                      onClick={() => startSession(180, 'hud')}
+                      onClick={() => startSession(180)}
                       type="button"
                     >
                       <span className="text-sm font-medium text-text-primary">Long Block</span>
@@ -1090,7 +1021,7 @@ export function HudApp() {
                     </button>
                     <button
                       className="flex shrink-0 items-center gap-2 rounded-full border border-borderSoft/35 bg-panel/54 px-3 py-2 text-left transition hover:border-accent/40 hover:bg-accent/10"
-                      onClick={() => startSession(45, 'hud')}
+                      onClick={() => startSession(45)}
                       type="button"
                     >
                       <span className="text-sm font-medium text-text-primary">Standard</span>
@@ -1098,7 +1029,7 @@ export function HudApp() {
                     </button>
                     <button
                       className="flex shrink-0 items-center gap-2 rounded-full border border-accent/35 bg-accent/10 px-3 py-2 text-left transition hover:border-accent/50 hover:bg-accent/20"
-                      onClick={() => startSession(5, 'hud')}
+                      onClick={() => startSession(5)}
                       type="button"
                     >
                       <span className="text-sm font-medium text-accent">Quick break</span>
@@ -1110,7 +1041,7 @@ export function HudApp() {
                         onChange={(event) => setCustomTime(event.target.value.replace(/\D/g, ''))}
                         onKeyDown={(e) => {
                           if (e.key === 'Enter' && customTime) {
-                            startSession(parseInt(customTime, 10), 'hud');
+                            startSession(parseInt(customTime, 10));
                             setCustomTime('');
                           }
                         }}
@@ -1126,7 +1057,7 @@ export function HudApp() {
                         label="Start custom timer"
                         onClick={() => {
                           if (customTime) {
-                            startSession(parseInt(customTime, 10), 'hud');
+                            startSession(parseInt(customTime, 10));
                             setCustomTime('');
                           }
                         }}
@@ -1150,7 +1081,7 @@ export function HudApp() {
                           key={subtask.id}
                           onClick={() => {
                             if (subtask.lane !== 'done') {
-                              void markDone(subtask.id, 'hud');
+                              void markDone(subtask.id);
                             }
                           }}
                           className={cn(
@@ -1194,7 +1125,6 @@ export function HudApp() {
                       lane={hudTaskLane}
                       onCreated={(task) => handleHudTaskCreated(task)}
                       priority={hudTaskLane === 'now' ? 'high' : 'normal'}
-                      source="hud"
                       submitLabel="Add task"
                     />
                   </div>
@@ -1205,76 +1135,6 @@ export function HudApp() {
                       <p className="mt-2 text-sm leading-6 text-text-primary">{currentMission.next_action}</p>
                     </div>
                   ) : null}
-                </div>
-
-                <div className="surface-muted rounded-[24px] p-4">
-                  <div className="flex items-center justify-between gap-3">
-                    <div>
-                      <p className="text-[10px] uppercase tracking-[0.28em] text-text-muted">Distraction log</p>
-                      <p className="mt-2 text-sm text-text-secondary">Capture what pulled you away so the reports can spot patterns.</p>
-                    </div>
-                    <Badge tone="warning">Focus</Badge>
-                  </div>
-
-                  <Input
-                    className="mt-4"
-                    onChange={(event) => setDistractionTrigger(event.target.value)}
-                    onKeyDown={(event) => {
-                      if (event.key === 'Enter') {
-                        event.preventDefault();
-                        void logDistraction();
-                      }
-                    }}
-                    placeholder="What pulled you away?"
-                    value={distractionTrigger}
-                  />
-
-                  <div className="mt-4">
-                    <p className="text-[10px] uppercase tracking-[0.22em] text-text-muted">Type</p>
-                    <div className="mt-2 grid grid-cols-3 gap-2">
-                      {distractionCategoryOptions.map((option) => (
-                        <button
-                          key={option.value}
-                          className={cn(
-                            'rounded-[14px] border px-2 py-2 text-center text-[11px] font-medium transition',
-                            distractionCategory === option.value
-                              ? 'border-warning/45 bg-warning/12 text-text-primary'
-                              : 'border-borderSoft/35 bg-panel/54 text-text-secondary hover:border-borderStrong/40 hover:bg-panel/68',
-                          )}
-                          onClick={() => setDistractionCategory(option.value)}
-                          type="button"
-                        >
-                          {option.label}
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-
-                  <Textarea
-                    className="mt-4 min-h-[88px] resize-none"
-                    onChange={(event) => setDistractionNote(event.target.value)}
-                    placeholder="Optional: what should change next time?"
-                    rows={3}
-                    value={distractionNote}
-                  />
-
-                  <div className="mt-4 flex items-center justify-between gap-3">
-                    <p className="text-xs leading-5 text-text-muted">
-                      {currentMission
-                        ? `Linked to ${currentMission.title}.`
-                        : 'Logs without an active task are still included in the reports.'}
-                    </p>
-                    <Button
-                      disabled={isSavingDistraction || !distractionTrigger.trim()}
-                      onClick={() => {
-                        void logDistraction();
-                      }}
-                      size="sm"
-                      variant="secondary"
-                    >
-                      {isSavingDistraction ? 'Logging' : 'Log distraction'}
-                    </Button>
-                  </div>
                 </div>
 
 
@@ -1410,7 +1270,7 @@ export function HudApp() {
                             return;
                           }
 
-                          toggleHudMode('hud');
+                          toggleHudMode();
                         }}
                         title={currentMission?.title ?? 'No task selected'}
                         type="button"
@@ -1458,13 +1318,6 @@ export function HudApp() {
                       onClick={toggleCompactTaskComposer}
                       variant={showCompactTaskComposer ? 'primary' : 'ghost'}
                     />
-                    <HudActionButton
-                      className="h-9 w-9"
-                      icon={<DistractionIcon />}
-                      label={showCompactDistractionComposer ? 'Close distraction log' : 'Log distraction'}
-                      onClick={toggleCompactDistractionComposer}
-                      variant={showCompactDistractionComposer ? 'primary' : 'ghost'}
-                    />
                   </div>
 
                   <span className={cn('h-5 w-px shrink-0', compactDividerClass)} />
@@ -1505,7 +1358,7 @@ export function HudApp() {
                       className="h-9 w-9"
                       icon={<ExpandIcon />}
                       label="Open full HUD"
-                      onClick={() => toggleHudMode('hud')}
+                      onClick={() => toggleHudMode()}
                       variant="ghost"
                     />
                     <HudActionButton
@@ -1696,95 +1549,9 @@ export function HudApp() {
                           onCancel={() => setShowCompactTaskComposer(false)}
                           onCreated={(task) => handleHudTaskCreated(task, true)}
                           priority={hudTaskLane === 'now' ? 'high' : 'normal'}
-                          source="hud"
                           submitLabel="Add task"
                         />
                       </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            ) : null}
-            {showCompactDistractionComposer ? (
-              <div className="mt-3 min-h-0 flex-1 border-t border-borderSoft/28 pt-3">
-                <div className="surface-muted flex h-full min-h-0 flex-col rounded-[22px] p-3">
-                  <div className="flex items-center justify-between gap-3">
-                    <div>
-                      <p className="text-[10px] uppercase tracking-[0.24em] text-text-muted">Distraction log</p>
-                      <p className="mt-1 text-xs text-text-secondary">Log the interruption while it is fresh.</p>
-                    </div>
-                    <Badge tone="warning">Compact</Badge>
-                  </div>
-
-                  <div className="scrollbar-hidden mt-3 min-h-0 flex-1 overflow-y-auto pr-1">
-                    <div className="space-y-3">
-                      <Input
-                        onChange={(event) => setDistractionTrigger(event.target.value)}
-                        onKeyDown={(event) => {
-                          if (event.key === 'Enter') {
-                            event.preventDefault();
-                            void logDistraction();
-                          }
-                        }}
-                        placeholder="What pulled you away?"
-                        value={distractionTrigger}
-                      />
-
-                      <div>
-                        <p className="text-[10px] uppercase tracking-[0.22em] text-text-muted">Type</p>
-                        <div className="mt-2 grid grid-cols-3 gap-2">
-                          {distractionCategoryOptions.map((option) => (
-                            <button
-                              key={option.value}
-                              className={cn(
-                                'rounded-[14px] border px-2 py-2 text-center text-[11px] font-medium transition',
-                                distractionCategory === option.value
-                                  ? 'border-warning/45 bg-warning/12 text-text-primary'
-                                  : 'border-borderSoft/35 bg-panel/54 text-text-secondary hover:border-borderStrong/40 hover:bg-panel/68',
-                              )}
-                              onClick={() => setDistractionCategory(option.value)}
-                              type="button"
-                            >
-                              {option.label}
-                            </button>
-                          ))}
-                        </div>
-                      </div>
-
-                      <Textarea
-                        className="min-h-[88px] resize-none"
-                        onChange={(event) => setDistractionNote(event.target.value)}
-                        placeholder="Optional: what should change next time?"
-                        rows={3}
-                        value={distractionNote}
-                      />
-                    </div>
-                  </div>
-
-                  <div className="mt-3 flex shrink-0 flex-col gap-3 border-t border-borderSoft/24 pt-3 sm:flex-row sm:items-center sm:justify-between">
-                    <p className="text-xs leading-5 text-text-muted">
-                      {currentMission
-                        ? `Logged against ${currentMission.title}.`
-                        : 'This still counts toward your distraction reports.'}
-                    </p>
-                    <div className="flex items-center justify-end gap-2">
-                      <Button
-                        onClick={() => setShowCompactDistractionComposer(false)}
-                        size="sm"
-                        variant="ghost"
-                      >
-                        Close
-                      </Button>
-                      <Button
-                        disabled={isSavingDistraction || !distractionTrigger.trim()}
-                        onClick={() => {
-                          void logDistraction();
-                        }}
-                        size="sm"
-                        variant="secondary"
-                      >
-                        {isSavingDistraction ? 'Logging' : 'Log distraction'}
-                      </Button>
                     </div>
                   </div>
                 </div>

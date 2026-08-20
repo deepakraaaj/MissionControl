@@ -2,7 +2,6 @@ import { getSupabaseClient } from './auth';
 import type { Task } from '../features/tasks/task-types';
 import type { Mission } from '../features/missions/mission-types';
 import type { FocusSyncState } from '../features/focus/focus-store';
-import type { ActivityLogEntry } from '../features/activity/activity-repository';
 import type { WorkSession } from '../features/sessions/session-types';
 import type { Collaborator } from '../features/collaborators/collaborator-types';
 import { hydrateCollaboratorRecord } from '../features/collaborators/collaborator-helpers';
@@ -249,46 +248,6 @@ export async function upsertPreference(key: string, value: unknown): Promise<voi
   ) as any);
 
   if (error) throw error;
-}
-
-// Activity log queries
-export async function insertActivity(entry: Omit<ActivityLogEntry, 'created_at'>): Promise<void> {
-  const userId = await getUserId();
-  const client = getSupabaseClient();
-
-  const { error } = await (client.from('activity_log').insert({
-    id: entry.id,
-    user_id: userId,
-    action: entry.action,
-    source: entry.source,
-    task_id: entry.task_id,
-    details: entry.details,
-  }) as any);
-
-  if (error) throw error;
-}
-
-export async function selectRecentActivity(limit: number = 50): Promise<ActivityLogEntry[]> {
-  const userId = await getUserId();
-  const client = getSupabaseClient();
-
-  const { data, error } = await (client
-    .from('activity_log')
-    .select('*')
-    .eq('user_id', userId)
-    .order('created_at', { ascending: false })
-    .limit(limit) as any);
-
-  if (error) throw error;
-
-  return (data ?? []).map((row: any) => ({
-    id: row.id,
-    action: row.action,
-    source: row.source,
-    task_id: row.task_id,
-    details: row.details ?? {},
-    created_at: row.created_at,
-  }));
 }
 
 // Work session queries

@@ -2629,7 +2629,7 @@ export function MainApp() {
     }
 
     if (currentMissionId !== activeSession.task_id) {
-      setCurrentMission(activeSession.task_id, 'system');
+      setCurrentMission(activeSession.task_id);
     }
   }, [activeSession, currentMissionId, setCurrentMission]);
 
@@ -2715,10 +2715,10 @@ export function MainApp() {
 
   function handleStartSession(task: Task, nextMinutes = minutes, nextPresetId = presetId) {
     selectTask(task.id);
-    setCurrentMission(task.id, 'main');
+    setCurrentMission(task.id);
 
     if (task.lane !== 'now' && task.lane !== 'done') {
-      void moveTaskToLane(task.id, 'now', 'main');
+      void moveTaskToLane(task.id, 'now');
     }
 
     startSession({
@@ -2727,22 +2727,22 @@ export function MainApp() {
       minutes: nextMinutes,
       presetId: nextPresetId,
     });
-    startFocusSession(nextMinutes, 'main');
+    startFocusSession(nextMinutes);
   }
 
   function handlePause(kind: 'pause' | 'break' | 'distraction', detail = '') {
     pauseActiveSession(kind, detail);
-    pauseFocusSession('main');
+    pauseFocusSession();
   }
 
   function handleResume(nextMinutes: number) {
     resumeActiveSession(nextMinutes);
-    startFocusSession(nextMinutes, 'main');
+    startFocusSession(nextMinutes);
   }
 
   function handleFinishSession() {
     completeActiveSession();
-    resetFocusSession('main');
+    resetFocusSession();
   }
 
   function clearBoardDragState() {
@@ -2789,7 +2789,7 @@ export function MainApp() {
     }
 
     dropHandledRef.current = true;
-    void moveTaskToLane(task.id, lane, 'main');
+    void moveTaskToLane(task.id, lane);
 
     window.requestAnimationFrame(() => {
       window.requestAnimationFrame(() => {
@@ -2809,14 +2809,11 @@ export function MainApp() {
       addCapture(captureState.kind, captureState.value);
 
       if (captureState.kind === 'follow-up') {
-        await createTask(
-          {
-            title: captureState.value,
-            lane: 'inbox',
-            estimated_minutes: 15,
-          },
-          'main',
-        );
+        await createTask({
+          title: captureState.value,
+          lane: 'inbox',
+          estimated_minutes: 15,
+        });
       }
 
       if (captureState.kind === 'distraction' && activeSession.status === 'running') {
@@ -3467,7 +3464,6 @@ export function MainApp() {
                       setTaskComposerOpen(false);
                       setActiveView('tasks');
                     }}
-                    source="main"
                     submitLabel="Save task"
                   />
                 </div>
@@ -3481,7 +3477,6 @@ export function MainApp() {
                       setTaskComposerOpen(false);
                       setActiveView('tasks');
                     }}
-                    source="main"
                     submitLabel="Save task"
                   />
                 </Card>
@@ -3569,7 +3564,7 @@ export function MainApp() {
                               key={task.id}
                               onDragEnd={handleTaskDragEnd}
                               onDragStart={(event) => handleTaskDragStart(event, task.id)}
-                              onRestore={() => void moveTaskToLane(task.id, 'inbox', 'main')}
+                              onRestore={() => void moveTaskToLane(task.id, 'inbox')}
                               onSelect={() => {
                                 selectTask(task.id);
                                 setDetailTaskId(task.id);
@@ -4207,7 +4202,7 @@ export function MainApp() {
                       active={hudTransparency === 'standard'}
                       onClick={() => {
                         if (hudTransparency !== 'standard') {
-                          toggleHudTransparency('main');
+                          toggleHudTransparency();
                         }
                       }}
                     >
@@ -4217,7 +4212,7 @@ export function MainApp() {
                       active={hudTransparency === 'ghost'}
                       onClick={() => {
                         if (hudTransparency !== 'ghost') {
-                          toggleHudTransparency('main');
+                          toggleHudTransparency();
                         }
                       }}
                     >
