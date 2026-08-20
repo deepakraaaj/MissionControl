@@ -1,9 +1,9 @@
-import { useState } from 'react';
-import { ExternalLink, Globe, Code2, Palette, FileText, Plus, Trash2, Folder, Link2 } from 'lucide-react';
+import { useMemo, useState } from 'react';
+import { ExternalLink, Globe, Code2, Palette, FileText, Pencil, Plus, Trash2, Folder, Link2 } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 import { useTeamStore } from './team-store';
 import { DiscussButton } from './DiscussButton';
-import type { WorkLinkCategory } from './team-types';
+import type { WorkLink, WorkLinkCategory } from './team-types';
 import { confirmDialog } from '../../components/ui/native-dialog';
 
 interface WorkLinksViewProps {
@@ -21,33 +21,65 @@ const CATEGORY_CONFIG: Record<WorkLinkCategory, { label: string; icon: LucideIco
 export function WorkLinksView({ missionId }: WorkLinksViewProps) {
   const workLinks = useTeamStore((s) => s.workLinks);
   const addWorkLink = useTeamStore((s) => s.addWorkLink);
+  const updateWorkLink = useTeamStore((s) => s.updateWorkLink);
   const deleteWorkLink = useTeamStore((s) => s.deleteWorkLink);
   const activePersona = useTeamStore((s) => s.activePersona);
-  const missionLinks = workLinks.filter((w) => w.missionId === missionId);
+  const missionLinks = useMemo(
+    () => workLinks.filter((w) => w.missionId === missionId),
+    [missionId, workLinks],
+  );
+
+  // One group per category, in the order CATEGORY_CONFIG declares, skipping
+  // categories this project has no links for.
+  const groups = useMemo(
+    () =>
+      (Object.keys(CATEGORY_CONFIG) as WorkLinkCategory[])
+        .map((key) => ({ key, links: missionLinks.filter((link) => link.category === key) }))
+        .filter((group) => group.links.length > 0),
+    [missionLinks],
+  );
 
   const [isAdding, setIsAdding] = useState(false);
+  /** Link being edited; null means the form is in "add" mode. */
+  const [editingId, setEditingId] = useState<string | null>(null);
   const [title, setTitle] = useState('');
   const [url, setUrl] = useState('');
   const [category, setCategory] = useState<WorkLinkCategory>('demo');
   const [description, setDescription] = useState('');
 
+  const resetForm = () => {
+    setEditingId(null);
+    setTitle('');
+    setUrl('');
+    setDescription('');
+    setCategory('demo');
+    setIsAdding(false);
+  };
+
+  const startEdit = (link: WorkLink) => {
+    setEditingId(link.id);
+    setTitle(link.title);
+    setUrl(link.url);
+    setCategory(link.category);
+    setDescription(link.description ?? '');
+    setIsAdding(true);
+  };
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!title.trim() || !url.trim()) return;
 
-    addWorkLink({
-      missionId,
+    const fields = {
       title: title.trim(),
       url: url.trim().startsWith('http') ? url.trim() : `https://${url.trim()}`,
       category,
       description: description.trim(),
-      addedBy: activePersona.name,
-    });
+    };
 
-    setTitle('');
-    setUrl('');
-    setDescription('');
-    setIsAdding(false);
+    if (editingId) updateWorkLink(editingId, fields);
+    else addWorkLink({ missionId, ...fields, addedBy: activePersona.name });
+
+    resetForm();
   };
 
   return (
@@ -69,7 +101,7 @@ export function WorkLinksView({ missionId }: WorkLinksViewProps) {
 
         <button
           type="button"
-          onClick={() => setIsAdding(!isAdding)}
+          onClick={() => (isAdding ? resetForm() : setIsAdding(true))}
           className="flex items-center gap-1.5 px-3 py-1.5 bg-accent/20 hover:bg-accent/30 text-accent text-xs font-semibold rounded-xl border border-accent/40 transition-colors"
         >
           <Plus className="w-3.5 h-3.5" />
@@ -136,65 +168,92 @@ export function WorkLinksView({ missionId }: WorkLinksViewProps) {
             type="submit"
             className="w-full py-2 bg-accent hover:bg-accentSoft text-[rgb(var(--accent-contrast))] font-bold text-xs rounded-xl shadow-lg transition-colors"
           >
-            Save Link
+            {editingId ? 'Update Link' : 'Save Link'}
           </button>
         </form>
       )}
 
-      {/* Links Grid */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
-        {missionLinks.map((link) => {
-          const cfg = CATEGORY_CONFIG[link.category] || CATEGORY_CONFIG.demo;
-          const IconComp = cfg.icon;
+      {/* Links, grouped by category */}
+      {groups.map((group) => {
+        const cfg = CATEGORY_CONFIG[group.key];
+        const IconComp = cfg.icon;
 
-          return (
-            <div
-              key={link.id}
-              className="p-4 bg-slate-900/80 hover:bg-slate-900 border border-slate-800 hover:border-slate-700 rounded-2xl transition-all shadow-md flex items-start justify-between gap-3 group"
-            >
-              <div className="flex items-start gap-3 min-w-0">
-                <div className={`p-2 rounded-xl border ${cfg.color} ${cfg.border} flex-shrink-0 mt-0.5`}>
-                  <IconComp className="w-4 h-4" />
-                </div>
-                <div className="min-w-0">
-                  <span className="text-[10px] font-mono uppercase tracking-wider text-slate-400">
-                    {cfg.label}
-                  </span>
-                  <h4 className="text-xs font-bold text-white truncate group-hover:text-accent transition-colors">
-                    {link.title}
-                  </h4>
-                  {link.description && (
-                    <p className="text-[11px] text-slate-400 mt-0.5 line-clamp-2">
-                      {link.description}
-                    </p>
-                  )}
-                  <a
-                    href={link.url}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="inline-flex items-center gap-1 mt-2 text-[11px] font-semibold text-accent hover:underline"
-                  >
-                    Open Link <ExternalLink className="w-3 h-3" />
-                  </a>
-                </div>
-              </div>
-
-              <DiscussButton
-                className="opacity-100 lg:opacity-0 lg:group-hover:opacity-100"
-                item={{ kind: 'link', id: link.id, label: link.title, detail: link.category }}
-              />
-              <button
-                type="button"
-                onClick={() => { void confirmDialog(`Delete link “${link.title}”?`, { title: 'Delete link', confirmLabel: 'Delete', danger: true }).then((ok) => { if (ok) deleteWorkLink(link.id); }); }}
-                className="p-1.5 text-slate-500 opacity-100 transition-opacity hover:text-rose-400 lg:opacity-0 lg:group-hover:opacity-100"
-                title="Delete Link"
-              >
-                <Trash2 className="w-3.5 h-3.5" />
-              </button>
+        return (
+          <section key={group.key} className="space-y-2.5">
+            <div className="flex items-center gap-2 px-0.5">
+              <span className={`p-1.5 rounded-lg border ${cfg.color} ${cfg.border}`}>
+                <IconComp className="w-3.5 h-3.5" />
+              </span>
+              <h4 className="text-[11px] font-bold uppercase tracking-wider text-slate-300">
+                {cfg.label}
+              </h4>
+              <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-slate-800 text-slate-400 font-mono">
+                {group.links.length}
+              </span>
+              <span className="h-px flex-1 bg-slate-800" />
             </div>
-          );
-        })}
-      </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+              {group.links.map((link) => (
+                <div
+                  key={link.id}
+                  className="p-4 bg-slate-900/80 hover:bg-slate-900 border border-slate-800 hover:border-slate-700 rounded-2xl transition-all shadow-md flex items-start justify-between gap-3 group"
+                >
+                  <div className="flex items-start gap-3 min-w-0">
+                    <div className={`p-2 rounded-xl border ${cfg.color} ${cfg.border} flex-shrink-0 mt-0.5`}>
+                      <IconComp className="w-4 h-4" />
+                    </div>
+                    <div className="min-w-0">
+                      <h4 className="text-xs font-bold text-white truncate group-hover:text-accent transition-colors">
+                        {link.title}
+                      </h4>
+                      {link.description && (
+                        <p className="text-[11px] text-slate-400 mt-0.5 line-clamp-2">
+                          {link.description}
+                        </p>
+                      )}
+                      <a
+                        href={link.url}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="inline-flex items-center gap-1 mt-2 text-[11px] font-semibold text-accent hover:underline"
+                      >
+                        Open Link <ExternalLink className="w-3 h-3" />
+                      </a>
+                    </div>
+                  </div>
+
+                  <div className="flex shrink-0 items-center gap-0.5">
+                    <DiscussButton
+                      className="opacity-100 lg:opacity-0 lg:group-hover:opacity-100"
+                      item={{ kind: 'link', id: link.id, label: link.title, detail: link.category }}
+                    />
+                    <button
+                      type="button"
+                      onClick={() => startEdit(link)}
+                      className="p-1.5 text-slate-500 opacity-100 transition-opacity hover:text-accent lg:opacity-0 lg:group-hover:opacity-100"
+                      title="Edit Link"
+                      aria-label={`Edit ${link.title}`}
+                    >
+                      <Pencil className="w-3.5 h-3.5" />
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => { void confirmDialog(`Delete link “${link.title}”?`, { title: 'Delete link', confirmLabel: 'Delete', danger: true }).then((ok) => { if (ok) deleteWorkLink(link.id); }); }}
+                      className="p-1.5 text-slate-500 opacity-100 transition-opacity hover:text-rose-400 lg:opacity-0 lg:group-hover:opacity-100"
+                      title="Delete Link"
+                      aria-label={`Delete ${link.title}`}
+                    >
+                      <Trash2 className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </section>
+        );
+      })}
+
     </div>
   );
 }

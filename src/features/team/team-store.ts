@@ -101,6 +101,7 @@ interface TeamState {
 
   // Work Links Actions
   addWorkLink: (link: Omit<WorkLink, 'id' | 'createdAt'>) => void;
+  updateWorkLink: (id: string, updates: Partial<Omit<WorkLink, 'id' | 'missionId' | 'createdAt'>>) => void;
   deleteWorkLink: (id: string) => void;
 
   // MDM Problem Bank Actions
@@ -361,6 +362,12 @@ export const useTeamStore = create<TeamState>()(
               kind: 'link', id: newLink.id, label: newLink.title, detail: newLink.category,
             }),
           ],
+        }));
+      },
+
+      updateWorkLink: (id, updates) => {
+        set((state) => ({
+          workLinks: state.workLinks.map((w) => (w.id === id ? { ...w, ...updates } : w)),
         }));
       },
 
