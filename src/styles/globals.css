@@ -342,10 +342,12 @@ html:not([data-theme]) .calendar-panel,
     }
   }
 
-  /* Better system font support on Android */
+  /* Keep a system fallback for Android, but never ahead of the brand face:
+     `system-ui` is supported everywhere, so listing it first hid Space Grotesk
+     on every platform. */
   @supports (font-family: system-ui) {
     body {
-      font-family: system-ui, 'Space Grotesk', 'Segoe UI Variable', sans-serif;
+      font-family: 'Space Grotesk', system-ui, 'Segoe UI Variable', sans-serif;
     }
   }
 

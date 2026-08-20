@@ -22,7 +22,7 @@ import { Button } from '../../components/ui/button';
 import { Card } from '../../components/ui/card';
 import { Input, Textarea } from '../../components/ui/input';
 import { AnimatedLoading } from '../../components/animated-loading';
-import { ProfileSettingsCard } from '../../features/auth/ProfileSettingsCard';
+import { ProfileSettingsCard, getInitials, getUserDisplayName } from '../../features/auth/ProfileSettingsCard';
 import { AiProviderCard } from '../../features/settings/AiProviderCard';
 import { useAuthStore } from '../../features/auth/auth-store';
 import { useSyncStore } from '../../features/sync/sync-store';
@@ -877,7 +877,9 @@ function SidebarContent({
   const isTeam = workspaceMode === 'team' && teamUnlocked;
 
   return (
-    <div className="flex h-full flex-col">
+    // min-h-0 + flex-1 rather than h-full: the profile card sits below this in
+    // both shells, and h-full would push it past the bottom edge.
+    <div className="flex min-h-0 flex-1 flex-col">
       {!compact ? (
         <button
           type="button"
@@ -1959,9 +1961,38 @@ function SidebarLiveStatus({ activeSession }: { activeSession: WorkSession | nul
   );
 }
 
-function DrawerProfile({ onOpen }: { onOpen: () => void }) {
-  const persona = useTeamStore((state) => state.activePersona);
-  const initials = persona.initials || persona.name.slice(0, 2).toUpperCase();
+/**
+ * Profile + settings entry point, shared by the mobile drawer and the desktop
+ * sidebar. Identity comes from the signed-in Supabase user rather than a team
+ * persona, so it reads the same in personal and team mode.
+ */
+function SidebarProfile({ onOpen, collapsed = false }: { onOpen: () => void; collapsed?: boolean }) {
+  const session = useAuthStore((state) => state.session);
+  const user = session?.user ?? null;
+  const name = getUserDisplayName(user?.user_metadata, user?.email);
+  const initials = getInitials(name, user?.email);
+
+  const avatar = (
+    <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-accent/25 bg-accent/12 text-xs font-bold text-accent">
+      {initials}
+    </span>
+  );
+
+  if (collapsed) {
+    return (
+      <div className="mt-auto border-t border-borderSoft/20 pt-4">
+        <button
+          type="button"
+          onClick={onOpen}
+          className="flex w-full justify-center rounded-2xl p-1 transition-opacity hover:opacity-80"
+          aria-label="Open profile settings"
+          title={`${name} · Settings`}
+        >
+          {avatar}
+        </button>
+      </div>
+    );
+  }
 
   return (
     <button
@@ -1970,12 +2001,10 @@ function DrawerProfile({ onOpen }: { onOpen: () => void }) {
       className="relative mt-5 flex w-full items-center gap-3 rounded-2xl border border-borderSoft/25 bg-panel/55 p-3 text-left transition-colors hover:border-accent/30 hover:bg-panel"
       aria-label="Open profile settings"
     >
-      <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-accent/25 bg-accent/12 text-xs font-bold text-accent">
-        {initials}
-      </span>
+      {avatar}
       <span className="min-w-0 flex-1">
-        <span className="block truncate text-sm font-semibold text-text-primary">{persona.name}</span>
-        <span className="mt-0.5 block truncate text-[11px] text-text-muted">{persona.email || persona.role}</span>
+        <span className="block truncate text-sm font-semibold text-text-primary">{name}</span>
+        <span className="mt-0.5 block truncate text-[11px] text-text-muted">{user?.email ?? 'Signed out'}</span>
       </span>
       <Settings className="h-4 w-4 shrink-0 text-text-muted" aria-hidden="true" />
     </button>
@@ -4414,7 +4443,7 @@ export function MainApp() {
               />}
             </div>
 
-            {!mobileChatPickerOpen ? <DrawerProfile onOpen={() => { setMobileNavOpen(false); setActiveView('settings'); }} /> : null}
+            {!mobileChatPickerOpen ? <SidebarProfile onOpen={() => { setMobileNavOpen(false); setActiveView('settings'); }} /> : null}
           </aside>
         </div>
       ) : null}
@@ -4441,6 +4470,7 @@ export function MainApp() {
             onViewSelect={(view) => setActiveView(view)}
             pinnedAppIds={sidebarPinnedApps}
           />
+          <SidebarProfile collapsed={sidebarCollapsed} onOpen={() => setActiveView('settings')} />
         </aside>
 
         <div className="relative z-10 flex min-w-0 flex-1 flex-col">

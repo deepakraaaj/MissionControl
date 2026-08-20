@@ -247,7 +247,7 @@ function WorkspaceStat({
   );
 }
 
-function getUserDisplayName(
+export function getUserDisplayName(
   metadata: Record<string, unknown> | undefined,
   email: string | undefined,
 ) {
@@ -266,7 +266,7 @@ function getUserDisplayName(
   return 'Mission Operator';
 }
 
-function getInitials(name: string, email: string | undefined) {
+export function getInitials(name: string, email: string | undefined) {
   const source = name.trim() || email?.split('@')[0] || 'MC';
   const parts = source.split(/\s+/).filter(Boolean);
   const initials = parts.slice(0, 2).map((part) => part[0]?.toUpperCase() ?? '').join('');
