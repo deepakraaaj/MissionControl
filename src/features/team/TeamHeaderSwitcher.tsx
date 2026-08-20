@@ -60,17 +60,59 @@ export function TeamHeaderSwitcher({ onSwitchMode }: TeamHeaderSwitcherProps) {
   const switchPersonal = () => { setWorkspaceMode('personal'); onSwitchMode?.('personal'); };
 
   return <>
-    <div className="flex items-center gap-2">
-      {teamActive && activeRoom && <button type="button" onClick={openTeamRooms} className="flex items-center gap-2 rounded-2xl border border-borderSoft/35 bg-panel/65 px-3 py-1.5 text-xs text-text-secondary hover:border-amber-500/35">
-        <div className="flex h-7 w-7 items-center justify-center rounded-lg border border-emerald-500/35 bg-emerald-500/15 text-[10px] font-bold text-emerald-500">{initials}</div>
-        <div className="hidden text-left md:block"><div className="max-w-[145px] truncate text-[9px] font-semibold uppercase tracking-wider text-amber-500">{activeRoom.name}</div><div className="max-w-[145px] truncate text-[11px] font-bold text-text-primary">{displayName} · {activeRoom.role}</div></div><ChevronDown className="h-3 w-3 text-text-muted" />
-      </button>}
+    <div className="flex items-center gap-1.5 shrink-0 sm:gap-2">
+      {teamActive && activeRoom && (
+        <button
+          type="button"
+          onClick={openTeamRooms}
+          aria-label={`Current room: ${activeRoom.name}`}
+          className="flex items-center gap-1.5 rounded-xl border border-borderSoft/35 bg-panel/65 px-1.5 py-1 text-xs text-text-secondary hover:border-amber-500/35 sm:gap-2 sm:rounded-2xl sm:px-3 sm:py-1.5"
+        >
+          <div className="flex h-6 w-6 items-center justify-center rounded-lg border border-emerald-500/35 bg-emerald-500/15 text-[10px] font-bold text-emerald-500 sm:h-7 sm:w-7">
+            {initials}
+          </div>
+          <div className="hidden text-left md:block">
+            <div className="max-w-[145px] truncate text-[9px] font-semibold uppercase tracking-wider text-amber-500">{activeRoom.name}</div>
+            <div className="max-w-[145px] truncate text-[11px] font-bold text-text-primary">{displayName} · {activeRoom.role}</div>
+          </div>
+          <ChevronDown className="h-3 w-3 shrink-0 text-text-muted" />
+        </button>
+      )}
 
-      {workspaceMode === 'team' && !teamActive && <button type="button" onClick={openTeamRooms} className="flex items-center gap-1.5 rounded-xl border border-amber-500/25 px-3 py-2 text-xs text-amber-500"><Lock className="h-3.5 w-3.5" />Choose room</button>}
+      {workspaceMode === 'team' && !teamActive && (
+        <button
+          type="button"
+          onClick={openTeamRooms}
+          className="flex items-center gap-1.5 rounded-xl border border-amber-500/25 px-2.5 py-1.5 text-xs text-amber-500 sm:px-3 sm:py-2"
+        >
+          <Lock className="h-3.5 w-3.5" />
+          <span className="hidden sm:inline">Choose room</span>
+        </button>
+      )}
 
-      <div className="flex items-center rounded-2xl border border-borderSoft/30 bg-panel/55 p-1">
-        <button type="button" onClick={switchPersonal} aria-pressed={!teamActive} className={`flex items-center gap-1.5 rounded-xl px-3 py-1.5 text-xs font-semibold transition ${!teamActive ? 'bg-panel2 text-text-primary shadow-sm' : 'text-text-muted hover:text-text-primary'}`}><User className="h-3.5 w-3.5" /><span className="hidden sm:inline">Personal</span></button>
-        <button type="button" onClick={() => void goToTeam()} disabled={switching} aria-busy={switching} aria-pressed={teamActive} className={`flex items-center gap-1.5 rounded-xl px-3 py-1.5 text-xs font-semibold transition disabled:opacity-60 ${teamActive ? 'bg-panel2 text-text-primary shadow-sm' : 'text-text-muted hover:text-text-primary'}`}><Users className="h-3.5 w-3.5 text-amber-400" /><span>Team Hub</span></button>
+      <div className="flex items-center rounded-xl border border-borderSoft/30 bg-panel/55 p-0.5 sm:rounded-2xl sm:p-1">
+        <button
+          type="button"
+          onClick={switchPersonal}
+          aria-label="Switch to Personal workspace"
+          aria-pressed={!teamActive}
+          className={`flex items-center gap-1.5 rounded-lg px-2 py-1 text-xs font-semibold transition sm:rounded-xl sm:px-3 sm:py-1.5 ${!teamActive ? 'bg-panel2 text-text-primary shadow-sm' : 'text-text-muted hover:text-text-primary'}`}
+        >
+          <User className="h-3.5 w-3.5" />
+          <span className="hidden sm:inline">Personal</span>
+        </button>
+        <button
+          type="button"
+          onClick={() => void goToTeam()}
+          disabled={switching}
+          aria-busy={switching}
+          aria-label="Switch to Team Hub workspace"
+          aria-pressed={teamActive}
+          className={`flex items-center gap-1.5 rounded-lg px-2 py-1 text-xs font-semibold transition disabled:opacity-60 sm:rounded-xl sm:px-3 sm:py-1.5 ${teamActive ? 'bg-panel2 text-text-primary shadow-sm' : 'text-text-muted hover:text-text-primary'}`}
+        >
+          <Users className="h-3.5 w-3.5 text-amber-400" />
+          <span className="hidden sm:inline">Team Hub</span>
+        </button>
       </div>
     </div>
     <TeamUnlockModal isOpen={showRoomModal} onClose={() => setShowRoomModal(false)} onSuccess={() => { setWorkspaceMode('team'); onSwitchMode?.('team'); }} />

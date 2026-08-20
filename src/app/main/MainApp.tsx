@@ -4469,17 +4469,20 @@ export function MainApp() {
         </aside>
 
         <div className="relative z-10 flex min-w-0 flex-1 flex-col">
-          <header className="flex items-center justify-between gap-3 border-b border-borderSoft/24 px-3 py-3 sm:gap-4 sm:px-6 sm:py-3">
-            <div className="flex min-w-0 flex-1 items-center gap-2 sm:gap-3">
+          <header className="flex items-center justify-between gap-2 border-b border-borderSoft/24 px-2.5 py-2.5 sm:gap-4 sm:px-6 sm:py-3">
+            <div className="flex min-w-0 flex-1 items-center gap-1.5 sm:gap-3">
               <Button
                 onClick={() => setMobileNavOpen(true)}
                 size="sm"
                 type="button"
                 variant="secondary"
                 aria-label="Open menu"
-                className="lg:hidden h-9 w-9 shrink-0 p-0"
+                className={cn(
+                  "lg:hidden h-8 w-8 sm:h-9 sm:w-9 shrink-0 p-0",
+                  workspaceMode === 'team' && "hidden sm:flex"
+                )}
               >
-                <Menu className="h-5 w-5" />
+                <Menu className="h-4 w-4 sm:h-5 sm:w-5" />
               </Button>
               {workspaceMode !== 'team' && <h2 className="truncate text-lg font-semibold text-text-primary sm:text-2xl">{viewCopy}</h2>}
               {/* Mission hub back button + tab strip portal in here (see MissionHubNavSlotContext) */}

@@ -351,28 +351,28 @@ export function UnifiedMissionHub({ mission, onBack, initialTab = 'overview' }: 
   ];
 
   const navBar = (
-    <div className="flex h-full min-w-0 flex-1 items-stretch gap-2 sm:gap-5">
+    <div className="flex h-full min-w-0 flex-1 items-center gap-1.5 sm:gap-4">
       <button
         type="button"
         onClick={onBack}
         aria-label="Back to projects"
-        className="group my-auto flex h-8 shrink-0 cursor-pointer items-center gap-1.5 rounded-lg px-2 text-[13px] font-medium text-text-secondary transition-colors hover:bg-panel2 hover:text-text-primary"
+        className="group my-auto flex h-8 shrink-0 cursor-pointer items-center gap-1 rounded-lg px-1.5 text-[12px] font-medium text-text-secondary transition-colors hover:bg-panel2 hover:text-text-primary sm:gap-1.5 sm:px-2 sm:text-[13px]"
       >
         <ArrowLeft className="h-4 w-4 transition-transform group-hover:-translate-x-0.5" />
         <span className="hidden whitespace-nowrap sm:inline">Back to projects</span>
       </button>
 
-      <div className="my-auto h-5 w-px shrink-0 bg-borderSoft" />
+      <div className="my-auto h-4 w-px shrink-0 bg-borderSoft sm:h-5" />
 
       <button
         type="button"
         onClick={() => setProjectSectionsOpen(true)}
         aria-haspopup="dialog"
         aria-expanded={projectSectionsOpen}
-        className="my-auto flex h-9 min-w-0 flex-1 items-center justify-between gap-2 rounded-xl border border-borderSoft/70 bg-panel px-3 text-sm font-semibold text-text-primary sm:hidden"
+        className="my-auto flex h-8 min-w-[85px] max-w-[140px] flex-1 items-center justify-between gap-1.5 rounded-lg border border-borderSoft/70 bg-panel px-2.5 text-xs font-semibold text-text-primary sm:hidden"
       >
-        <span className="truncate">{activeTab === 'chat' ? 'Chat' : tabs.find((tab) => tab.key === activeTab)?.label ?? 'Project sections'}</span>
-        <ChevronDown className="h-4 w-4 shrink-0 text-text-muted" />
+        <span className="truncate">{activeTab === 'chat' ? 'Chat' : tabs.find((tab) => tab.key === activeTab)?.label ?? 'Section'}</span>
+        <ChevronDown className="h-3.5 w-3.5 shrink-0 text-text-muted" />
       </button>
 
       <nav aria-label="Project sections" className="hidden h-full min-w-0 flex-1 items-stretch gap-6 overflow-x-auto scrollbar-none sm:flex">

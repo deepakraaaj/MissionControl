@@ -7,6 +7,12 @@ on:
   push:
     tags:
       - 'v*'
+  workflow_dispatch:
+    inputs:
+      tag_name:
+        description: 'Release tag (e.g. v0.7.1). Defaults to version in package.json'
+        required: false
+        type: string
 
 concurrency:
   group: release-${{ github.ref }}
@@ -40,7 +46,9 @@ jobs:
             platform: ubuntu-22.04
             build_command: bash scripts/build-android-release.sh
             artifact_name: release-android-apk
-            artifact_path: src-tauri/gen/android/app/build/outputs/apk/universal/release/*.apk
+            artifact_path: |
+              src-tauri/gen/android/app/build/outputs/apk/**/release/*.apk
+              src-tauri/gen/android/app/build/outputs/bundle/**/*.aab
 
     steps:
       - uses: actions/checkout@v4
@@ -79,6 +87,8 @@ jobs:
         run: |
           # NDK 26.1.10909125 - verified compatible with Tauri 2.x and Android Gradle plugin 8.x
           echo "ANDROID_NDK_HOME=${ANDROID_SDK_ROOT}/ndk/26.1.10909125" >> $GITHUB_ENV
+          echo "NDK_HOME=${ANDROID_SDK_ROOT}/ndk/26.1.10909125" >> $GITHUB_ENV
+          echo "ANDROID_NDK_ROOT=${ANDROID_SDK_ROOT}/ndk/26.1.10909125" >> $GITHUB_ENV
           rustup target add aarch64-linux-android armv7-linux-androideabi x86_64-linux-android i686-linux-android
 
       - name: Install Rust stable
@@ -99,12 +109,16 @@ jobs:
         if: matrix.name == 'android-apk'
         run: |
           mkdir -p src-tauri/gen/android
-          echo "${{ secrets.ANDROID_KEY_BASE64 }}" | base64 -d > src-tauri/gen/android/android-upload-keystore.jks
-          cat > src-tauri/gen/android/keystore.properties <<EOF
+          if [ -n "${{ secrets.ANDROID_KEY_BASE64 }}" ]; then
+            echo "${{ secrets.ANDROID_KEY_BASE64 }}" | base64 -d > src-tauri/gen/android/android-upload-keystore.jks
+            cat > src-tauri/gen/android/keystore.properties <<EOF
           password=${{ secrets.ANDROID_KEY_PASSWORD }}
           keyAlias=${{ secrets.ANDROID_KEY_ALIAS }}
           storeFile=android-upload-keystore.jks
           EOF
+          else
+            echo "::warning title=Android Signing::ANDROID_KEY_BASE64 is not set. Android release signing may fail if keystore is required."
+          fi
 
       - name: Build desktop bundle
         shell: bash
@@ -145,6 +159,8 @@ jobs:
     runs-on: ubuntu-22.04
 
     steps:
+      - uses: actions/checkout@v4
+
       - name: Download release assets
         uses: actions/download-artifact@v4
         with:
@@ -166,7 +182,16 @@ jobs:
             exit 1
           fi
 
-          tag="${GITHUB_REF_NAME}"
+          tag="${{ inputs.tag_name }}"
+          if [ -z "$tag" ]; then
+            if [[ "$GITHUB_REF" == refs/tags/* ]]; then
+              tag="${GITHUB_REF_NAME}"
+            else
+              pkg_ver=$(node -p "require('./package.json').version")
+              tag="v${pkg_ver}"
+            fi
+          fi
+
           title="SynCatch ${tag#v}"
 
           if gh release view "$tag" >/dev/null 2>&1; then
