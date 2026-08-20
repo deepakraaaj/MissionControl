@@ -7,6 +7,7 @@ import {
 import '@xyflow/react/dist/style.css';
 import { useTeamStore } from './team-store';
 import type { DiagramNode, VisualDiagram } from './team-types';
+import { confirmDialog } from '../../components/ui/native-dialog';
 
 interface VisualCanvasViewProps { missionId: string; }
 type FlowData = { label: string; sublabel?: string; type: string };
@@ -88,16 +89,18 @@ function FlowEditor({ diagram, onChange }: { diagram: VisualDiagram; onChange: (
   }, [fullscreen]);
   useEffect(() => { setNodes(toFlowNodes(diagram.nodes)); setEdges(diagram.edges.map((edge) => ({ id: edge.id, source: edge.from, target: edge.to, label: edge.label, animated: edge.dashed }))); }, [diagram.id, setEdges, setNodes]);
   const persistNodes = useCallback((next: Node<FlowData>[]) => { setNodes(next); onChange(next, edges); }, [edges, onChange, setNodes]);
-  const handleNodesChange = useCallback((changes: Parameters<typeof onNodesChange>[0]) => {
+  const handleNodesChange = useCallback(async (changes: Parameters<typeof onNodesChange>[0]) => {
+    const removed = changes.some((change) => change.type === 'remove');
+    if (removed && !await confirmDialog('Connected lines may also be removed.', { title: 'Delete diagram node?', confirmLabel: 'Delete', danger: true })) return;
     onNodesChange(changes);
     const moved = changes.some((change) => change.type === 'position' && change.dragging === false);
-    const removed = changes.some((change) => change.type === 'remove');
     if (!moved && !removed) return;
     // Read after the state update lands so removals are reflected.
     window.setTimeout(() => setNodes((current) => { onChange(current, edges); return current; }), 0);
   }, [edges, onChange, onNodesChange, setNodes]);
 
-  const handleEdgesChange = useCallback((changes: Parameters<typeof onEdgesChange>[0]) => {
+  const handleEdgesChange = useCallback(async (changes: Parameters<typeof onEdgesChange>[0]) => {
+    if (changes.some((change) => change.type === 'remove') && !await confirmDialog('Delete the selected connection?', { title: 'Delete connection', confirmLabel: 'Delete', danger: true })) return;
     onEdgesChange(changes);
     if (!changes.some((change) => change.type === 'remove')) return;
     window.setTimeout(() => setEdges((current) => { onChange(nodes, current); return current; }), 0);

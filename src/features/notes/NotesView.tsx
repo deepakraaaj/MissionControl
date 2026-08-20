@@ -9,6 +9,7 @@ import { Input } from '../../components/ui/input';
 import { RichTextEditor } from '../../components/ui/rich-text-editor';
 import { RichTextContent, isHtmlContent } from '../../components/ui/rich-text-content';
 import { SaveStatus } from '../../components/ui/save-status';
+import { confirmDialog } from '../../components/ui/native-dialog';
 import { useAutoSave } from '../../hooks/use-autosave';
 import { cn } from '../../lib/cn';
 import { formatDayDateWithRelative } from '../../lib/date';
@@ -690,7 +691,7 @@ function CategoryManagerModal({
                     <button
                       type="button"
                       onClick={async () => {
-                        if (window.confirm(`Delete "${category.label}"? Notes in this category move to General.`)) {
+                        if (await confirmDialog(`Notes in “${category.label}” will move to General.`, { title: `Delete ${category.label}?`, confirmLabel: 'Delete', danger: true })) {
                           await onDelete(category.id);
                           if (editingId === category.id) resetForm();
                         }
@@ -872,7 +873,7 @@ export function NotesView({ openNoteId = null }: { openNoteId?: string | null })
   const handleDelete = async (noteId: string) => {
     try {
       setOperationError(null);
-      if (window.confirm('Delete this note?')) {
+      if (await confirmDialog('Delete this note?', { title: 'Delete note', confirmLabel: 'Delete', danger: true })) {
         await deleteNote(noteId);
       }
     } catch (err) {

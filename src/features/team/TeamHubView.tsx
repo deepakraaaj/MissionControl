@@ -100,8 +100,10 @@ export function TeamHubView() {
       iconName: 'Target',
       color: newColor,
       objective: newObjective.trim(),
-      why_it_matters: 'Critical milestone for commercial validation and partner revenue.',
-      definition_of_success: '3 paying pilot venues live and active.',
+      why_it_matters: '',
+      definition_of_success: '',
+      customer_segment: '',
+      revenue_model: '',
       status: 'active',
       is_pinned: false,
       target_date: newTargetDate || new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
@@ -153,10 +155,11 @@ export function TeamHubView() {
 
   // If viewing a single venture's deep Unified Hub
   if (activeVentureDetail) {
+    const currentMission = teamMissions.find((mission) => mission.id === activeVentureDetail.id) ?? activeVentureDetail;
     return (
       <UnifiedMissionHub
-        mission={activeVentureDetail}
-        initialTab={openDetailInChat ? 'chat' : 'tasks'}
+        mission={currentMission}
+        initialTab={openDetailInChat ? 'chat' : 'overview'}
         onBack={() => { setActiveVentureDetail(null); setOpenDetailInChat(false); }}
       />
     );

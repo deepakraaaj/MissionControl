@@ -90,6 +90,15 @@ export interface ProblemItem {
   loggedBy: string;
   createdAt: string;
   solvedNotes?: string;
+  /** Verbatim signal, metric, screenshot reference, or repeated observation. */
+  evidence?: string;
+  /** Business or user consequence if this remains unresolved. */
+  impact?: string;
+  /** Smallest action that can validate or reduce the problem. */
+  nextAction?: string;
+  owner?: string;
+  dueDate?: string;
+  occurrenceCount?: number;
 }
 
 export interface DiagramNode {

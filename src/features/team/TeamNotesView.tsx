@@ -8,6 +8,7 @@ import { CategoryChip, NoteCard, NoteEditorModal, NoteViewerModal } from '../not
 import type { Note, NoteCategory } from '../notes/note-types';
 import { useTeamStore } from './team-store';
 import type { TeamNote } from './team-types';
+import { confirmDialog } from '../../components/ui/native-dialog';
 
 interface TeamNotesViewProps {
   filterMissionId?: string;
@@ -223,7 +224,7 @@ export function TeamNotesView({ filterMissionId }: TeamNotesViewProps) {
                   setViewingId(null);
                   setEditingId(target.id);
                 }}
-                onDelete={(id) => deleteTeamNote(id)}
+                onDelete={(id) => { const note = notes.find((item) => item.id === id); void confirmDialog(`Delete note “${note?.title || 'Untitled'}”?`, { title: 'Delete note', confirmLabel: 'Delete', danger: true }).then((ok) => { if (ok) deleteTeamNote(id); }); }}
                 onTogglePin={togglePin}
               />
             ))}

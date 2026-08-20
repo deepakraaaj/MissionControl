@@ -4,6 +4,7 @@ import { cn } from '../../lib/cn';
 import { Button } from '../../components/ui/button';
 import { useAssistantStore, getActiveProviderLabel } from './assistant-store';
 import { useSettingsStore } from '../settings/settings-store';
+import { confirmDialog } from '../../components/ui/native-dialog';
 
 const SUGGESTIONS = [
   'What did I do today?',
@@ -153,7 +154,7 @@ export function ChatPanel({ compact = false }: { compact?: boolean }) {
           {messages.length > 0 && !compact && (
             <button
               type="button"
-              onClick={clear}
+              onClick={() => { void confirmDialog('Clear this entire conversation?', { title: 'Clear conversation', confirmLabel: 'Clear', danger: true }).then((ok) => { if (ok) clear(); }); }}
               className="flex shrink-0 items-center gap-1.5 text-[11px] font-medium text-text-muted/60 transition-colors hover:text-danger"
             >
               <Trash2 className="h-3 w-3" /> Clear conversation

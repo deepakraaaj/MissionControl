@@ -15,6 +15,7 @@ import { useJournalStore } from './journal-store';
 import { useMissionStore } from '../missions/mission-store';
 import { JOURNAL_KIND_META, toLocalDateString, getJournalKindMeta } from './journal-helpers';
 import type { JournalEntry, JournalDay, JournalEntryKind } from './journal-types';
+import { confirmDialog } from '../../components/ui/native-dialog';
 
 function useDebouncedCallback<T extends (...args: any[]) => any>(callback: T, delay: number) {
   const timeoutRef = useRef<NodeJS.Timeout | null>(null);
@@ -615,7 +616,7 @@ export function JournalView({ focusedEntryId = null }: { focusedEntryId?: string
   const handleDeleteEntry = async (entryId: string) => {
     try {
       setOperationError(null);
-      if (window.confirm('Remove this entry?')) {
+      if (await confirmDialog('Remove this journal entry?', { title: 'Remove entry', confirmLabel: 'Remove', danger: true })) {
         await deleteEntry(entryId);
       }
     } catch (error) {

@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
+import { promptDialog } from './native-dialog';
 import { useEditor, useEditorState, EditorContent, type Editor } from '@tiptap/react';
 import StarterKit from '@tiptap/starter-kit';
 import Image from '@tiptap/extension-image';
@@ -106,18 +107,15 @@ function Toolbar({ editor }: { editor: Editor }) {
 
   const addLink = useCallback(() => {
     const previous = editor.getAttributes('link').href as string | undefined;
-    const url = window.prompt('Link URL', previous ?? '');
-    if (url === null) return;
-    if (url === '') {
-      editor.chain().focus().extendMarkRange('link').unsetLink().run();
-      return;
-    }
-    editor.chain().focus().extendMarkRange('link').setLink({ href: url }).run();
+    void promptDialog('Paste the destination URL.', previous ?? '', { title: 'Add link', confirmLabel: 'Apply link' }).then((url) => {
+      if (url === null) return;
+      if (url === '') editor.chain().focus().extendMarkRange('link').unsetLink().run();
+      else editor.chain().focus().extendMarkRange('link').setLink({ href: url }).run();
+    });
   }, [editor]);
 
   const addImageUrl = useCallback(() => {
-    const url = window.prompt('Image URL (or use the upload button)');
-    if (url) insertImage(url);
+    void promptDialog('Paste an image URL, or cancel and use the upload button.', '', { title: 'Insert image', confirmLabel: 'Insert' }).then((url) => { if (url) insertImage(url); });
   }, [insertImage]);
 
   return (

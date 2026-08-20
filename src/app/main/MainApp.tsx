@@ -5,6 +5,7 @@ import { MissionHubNavSlotContext } from "../../features/team/mission-hub-nav-sl
 import { TeamHubView } from "../../features/team/TeamHubView";
 import { TeamTasksView } from "../../features/team/TeamTasksView";
 import { useTeamStore } from "../../features/team/team-store";
+import { confirmDialog } from "../../components/ui/native-dialog";
 import {
   type DragEvent as ReactDragEvent,
   type ReactNode,
@@ -3203,9 +3204,7 @@ export function MainApp() {
               variant="ghost" 
               onClick={(e) => {
                 e.stopPropagation();
-                if (confirm('Delete this mission and all its associations?')) {
-                  void deleteMission(mission.id);
-                }
+                void confirmDialog('This mission and all its associations will be permanently removed.', { title: 'Delete mission?', confirmLabel: 'Delete mission', danger: true }).then((ok) => { if (ok) void deleteMission(mission.id); });
               }} 
               className="h-8 gap-1.5 px-2 text-xs text-danger opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity sm:text-sm"
             >
@@ -4288,10 +4287,10 @@ export function MainApp() {
                   {useAuthStore.getState().localMode ? (
                     <Button
                       onClick={() => {
-                        if (confirm('Switch to Cloud mode? You will be taken to the login screen.')) {
+                        void confirmDialog('You will be taken to the login screen.', { title: 'Switch to Cloud mode?', confirmLabel: 'Continue' }).then((ok) => { if (ok) {
                           useAuthStore.getState().setLocalMode(false);
                           window.location.reload();
-                        }
+                        }});
                       }}
                       size="sm"
                       type="button"
@@ -4496,7 +4495,7 @@ export function MainApp() {
           <div className="relative min-h-0 flex-1 overflow-hidden lg:flex">
             <main
               className={cn(
-                'main-scroll-region absolute inset-0 overflow-y-scroll px-3 py-4 pb-32 sm:px-6 sm:py-6 lg:relative lg:inset-auto lg:h-full lg:min-w-0 lg:flex-1 lg:pb-6',
+                'main-scroll-region absolute inset-0 overflow-x-hidden overflow-y-scroll px-3 py-4 pb-32 sm:px-6 sm:py-6 lg:relative lg:inset-auto lg:h-full lg:min-w-0 lg:flex-1 lg:pb-6',
                 workspaceMode === 'team' && 'py-0 pb-[var(--mobile-nav-height)] sm:py-0 lg:pb-6',
                 workspaceMode === 'team' && teamUnlocked ? 'team-workspace' : null,
               )}

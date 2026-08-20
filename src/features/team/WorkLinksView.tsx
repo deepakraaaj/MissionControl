@@ -4,6 +4,7 @@ import type { LucideIcon } from 'lucide-react';
 import { useTeamStore } from './team-store';
 import { DiscussButton } from './DiscussButton';
 import type { WorkLinkCategory } from './team-types';
+import { confirmDialog } from '../../components/ui/native-dialog';
 
 interface WorkLinksViewProps {
   missionId: string;
@@ -184,7 +185,7 @@ export function WorkLinksView({ missionId }: WorkLinksViewProps) {
               />
               <button
                 type="button"
-                onClick={() => deleteWorkLink(link.id)}
+                onClick={() => { void confirmDialog(`Delete link “${link.title}”?`, { title: 'Delete link', confirmLabel: 'Delete', danger: true }).then((ok) => { if (ok) deleteWorkLink(link.id); }); }}
                 className="p-1.5 text-slate-500 opacity-100 transition-opacity hover:text-rose-400 lg:opacity-0 lg:group-hover:opacity-100"
                 title="Delete Link"
               >

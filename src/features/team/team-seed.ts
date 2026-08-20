@@ -48,6 +48,8 @@ export interface TeamMissionItem {
   objective: string;
   why_it_matters: string;
   definition_of_success: string;
+  customer_segment?: string;
+  revenue_model?: string;
   status: 'active' | 'on_hold' | 'completed';
   is_pinned: boolean;
   target_date: string;
@@ -64,6 +66,8 @@ export const INITIAL_TEAM_MISSIONS: TeamMissionItem[] = [
     objective: 'Eliminate no-shows and automate upfront player split payments for 5 local turfs',
     why_it_matters: 'Turf owners lose 20-30% of revenue from weekend no-shows and WhatsApp chaos',
     definition_of_success: '3 paying venues live on the platform with 50+ weekly online bookings',
+    customer_segment: 'Independent turf and sports-arena owners managing bookings through calls and WhatsApp',
+    revenue_model: 'Monthly venue subscription, plus a small fee on completed bookings. Premium split-payments, scoreboards, and retention tools expand revenue per venue.',
     status: 'active',
     is_pinned: true,
     target_date: '2026-09-15',
@@ -78,6 +82,8 @@ export const INITIAL_TEAM_MISSIONS: TeamMissionItem[] = [
     objective: 'Automate WhatsApp fee renewals and member QR check-ins for boutique gyms',
     why_it_matters: 'Manual fee chasing causes 15% revenue leakage and awkward member conversations',
     definition_of_success: '2 gyms using automated QR check-in & UPI fee renewal reminders',
+    customer_segment: 'Boutique gym owners who manually manage attendance, renewals, and member follow-ups',
+    revenue_model: 'Recurring software subscription per gym, supported by paid onboarding and premium member-engagement or payment automation add-ons.',
     status: 'active',
     is_pinned: true,
     target_date: '2026-09-20',
@@ -92,6 +98,8 @@ export const INITIAL_TEAM_MISSIONS: TeamMissionItem[] = [
     objective: 'Help cafes and boutiques fill empty tables/hours with 2-hour flash vouchers',
     why_it_matters: 'Off-peak hours (2-5 PM) are pure loss for local retail with fixed overheads',
     definition_of_success: '10 cafes publishing weekly flash vouchers with 100+ QR redemptions',
+    customer_segment: 'Local cafes, restaurants, and retailers with unused off-peak capacity',
+    revenue_model: 'Merchant subscription for campaign tools, with a performance fee on redeemed offers and paid placement for higher local visibility.',
     status: 'active',
     is_pinned: false,
     target_date: '2026-09-30',
@@ -106,6 +114,8 @@ export const INITIAL_TEAM_MISSIONS: TeamMissionItem[] = [
     objective: 'Enable temporary festive vendors to gain instant local discovery and pre-orders',
     why_it_matters: 'Pop-ups run for only 2-4 weeks and have zero digital marketing presence',
     definition_of_success: '20 seasonal stalls mapped with 500+ customer route navigations',
+    customer_segment: 'Short-lived festive vendors, pop-up operators, and local event organizers',
+    revenue_model: 'Vendor listing plans, promoted placement, and a transaction fee on pre-orders, with event-organizer packages as an expansion path.',
     status: 'active',
     is_pinned: false,
     target_date: '2026-10-15',

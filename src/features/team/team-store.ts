@@ -85,6 +85,8 @@ interface TeamState {
   channelReads: Record<string, string>;
   /** Channel currently on screen; notifications skip it. */
   activeChatChannel: string | null;
+  backendSyncStatus: 'offline' | 'loading' | 'syncing' | 'synced' | 'error';
+  backendSyncError: string | null;
 
   // Auth & Workspace Switching
   setWorkspaceMode: (mode: 'personal' | 'team') => void;
@@ -115,6 +117,7 @@ interface TeamState {
 
   // MDM Problem Bank Actions
   addProblem: (problem: Omit<ProblemItem, 'id' | 'createdAt'>) => ProblemItem;
+  updateProblem: (id: string, updates: Partial<ProblemItem>) => void;
   updateProblemStatus: (id: string, status: 'open' | 'investigating' | 'solved') => void;
   deleteProblem: (id: string) => void;
 
@@ -195,6 +198,8 @@ export const useTeamStore = create<TeamState>()(
       chatDraftRef: null,
       channelReads: {},
       activeChatChannel: null,
+      backendSyncStatus: 'offline',
+      backendSyncError: null,
 
       setWorkspaceMode: (mode) => set({ workspaceMode: mode }),
 
@@ -387,6 +392,10 @@ export const useTeamStore = create<TeamState>()(
           ],
         }));
         return newProb;
+      },
+
+      updateProblem: (id, updates) => {
+        set((state) => ({ problems: state.problems.map((problem) => problem.id === id ? { ...problem, ...updates } : problem) }));
       },
 
       updateProblemStatus: (id, status) => {

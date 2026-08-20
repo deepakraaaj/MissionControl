@@ -4,6 +4,7 @@ import { Button } from '../../components/ui/button';
 import { DatePicker } from '../../components/ui/date-picker';
 import { Input, Textarea } from '../../components/ui/input';
 import { MissionIcon } from '../../components/ui/mission-icon';
+import { confirmDialog } from '../../components/ui/native-dialog';
 import { cn } from '../../lib/cn';
 import { useMissionStore } from '../missions/mission-store';
 import { getSubtasks, humanizeEnergy, humanizeLane, humanizePriority } from './task-helpers';
@@ -528,7 +529,7 @@ export function TaskDetailPanel({ task, allTasks, onClose, onOpenTask }: TaskDet
                 key={sub.id}
                 subtask={sub}
                 onMarkDone={() => void markDone(sub.id)}
-                onDelete={() => void deleteTask(sub.id)}
+                onDelete={() => { void confirmDialog(`Delete subtask “${sub.title}”?`, { title: 'Delete subtask', confirmLabel: 'Delete', danger: true }).then((ok) => { if (ok) void deleteTask(sub.id); }); }}
               />
             ))}
             <AddSubtaskRow onAdd={handleAddSubtask} />

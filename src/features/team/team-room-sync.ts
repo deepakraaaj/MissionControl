@@ -14,7 +14,7 @@ const EMPTY_ROOM_STATE: SharedTeamState = {
   problems: [], diagrams: [], teamNotes: [], teamTasks: [], chatMessages: [],
 };
 const KUMBAKONAM_PROJECT: SharedTeamState['teamMissions'][number] = {
-  id: 'm-turf-booking-app', title: 'Turf booking app', description: 'Shared turf booking, team roster, and live scorebook for Kumbakonam.', iconName: 'Activity', color: 'emerald', objective: 'Let the team discover open turf slots, book together, and track every match score.', why_it_matters: 'Remove WhatsApp back-and-forth and make every booking visible to the whole team.', definition_of_success: 'Every turf slot, booking, and match score is recorded in one shared room workspace.', status: 'active', is_pinned: true, target_date: '2026-09-30', tags: ['Turf', 'Booking', 'Team scorebook'],
+  id: 'm-turf-booking-app', title: 'Turf booking app', description: 'Shared turf booking, team roster, and live scorebook for Kumbakonam.', iconName: 'Activity', color: 'emerald', objective: 'Let the team discover open turf slots, book together, and track every match score.', why_it_matters: 'Remove WhatsApp back-and-forth and make every booking visible to the whole team.', definition_of_success: 'Every turf slot, booking, and match score is recorded in one shared room workspace.', customer_segment: 'Independent turf and sports-arena owners managing bookings through calls and WhatsApp', revenue_model: 'Monthly venue subscription, plus a small fee on completed bookings. Premium split-payments, scoreboards, and retention tools expand revenue per venue.', status: 'active', is_pinned: true, target_date: '2026-09-30', tags: ['Turf', 'Booking', 'Team scorebook'],
 };
 const KUMBAKONAM_CONTENT: Pick<SharedTeamState, 'leads' | 'workflows' | 'workLinks' | 'problems' | 'diagrams' | 'teamNotes' | 'teamTasks' | 'chatMessages'> = {
   chatMessages: [],
@@ -45,17 +45,26 @@ const applySharedState = (data: unknown) => {
 };
 
 const save = async (roomId: string) => {
-  const client = getSupabaseClient();
-  const { data: authData } = await client.auth.getUser();
-  if (!authData.user || roomId !== currentRoomId) return;
-  const { error } = await client.from('team_room_state').upsert({
-    room_id: roomId, data: snapshot(), updated_by: authData.user.id, updated_at: new Date().toISOString(),
-  }, { onConflict: 'room_id' });
-  if (error) console.error('Team room sync failed:', error.message);
+  useTeamStore.setState({ backendSyncStatus: 'syncing', backendSyncError: null });
+  try {
+    const client = getSupabaseClient();
+    const { data: authData } = await client.auth.getUser();
+    if (!authData.user || roomId !== currentRoomId) throw new Error('Your team session is no longer active.');
+    const { error } = await client.from('team_room_state').upsert({
+      room_id: roomId, data: snapshot(), updated_by: authData.user.id, updated_at: new Date().toISOString(),
+    }, { onConflict: 'room_id' });
+    if (error) throw error;
+    useTeamStore.setState({ backendSyncStatus: 'synced', backendSyncError: null });
+  } catch (error) {
+    const message = error instanceof Error ? error.message : 'Could not save the team workspace.';
+    console.error('Team room sync failed:', message);
+    useTeamStore.setState({ backendSyncStatus: 'error', backendSyncError: message });
+  }
 };
 
 export async function connectTeamRoomSync(roomId: string, roomName?: string): Promise<void> {
   disconnectTeamRoomSync();
+  useTeamStore.setState({ backendSyncStatus: 'loading', backendSyncError: null });
   currentRoomId = roomId;
   const client = getSupabaseClient();
   const { data, error } = await client.from('team_room_state').select('data').eq('room_id', roomId).maybeSingle();
@@ -69,9 +78,11 @@ export async function connectTeamRoomSync(roomId: string, roomName?: string): Pr
     : existing;
   applySharedState(merged);
   if (merged !== existing) await save(roomId);
+  else useTeamStore.setState({ backendSyncStatus: 'synced', backendSyncError: null });
 
-  unsubscribeStore = useTeamStore.subscribe(() => {
+  unsubscribeStore = useTeamStore.subscribe((state, previousState) => {
     if (applyingRemoteState || !currentRoomId) return;
+    if (!DATA_KEYS.some((key) => state[key] !== previousState[key])) return;
     if (saveTimer) window.clearTimeout(saveTimer);
     const targetRoom = currentRoomId;
     saveTimer = window.setTimeout(() => void save(targetRoom), 700);
@@ -91,4 +102,5 @@ export function disconnectTeamRoomSync(): void {
   if (realtimeChannel) void getSupabaseClient().removeChannel(realtimeChannel);
   realtimeChannel = null;
   currentRoomId = null;
+  useTeamStore.setState({ backendSyncStatus: 'offline', backendSyncError: null });
 }

@@ -10,6 +10,7 @@ import {
 import { useTeamStore } from './team-store';
 import { DiscussButton } from './DiscussButton';
 import type { TeamRole, TeamTask } from './team-types';
+import { confirmDialog } from '../../components/ui/native-dialog';
 
 interface TeamTasksViewProps {
   filterMissionId?: string;
@@ -356,7 +357,7 @@ export function TeamTasksView({ filterMissionId }: TeamTasksViewProps) {
                               />
                               <button
                                 type="button"
-                                onClick={() => deleteTeamTask(task.id)}
+                                onClick={() => { void confirmDialog(`Delete task “${task.title}”?`, { title: 'Delete task', confirmLabel: 'Delete', danger: true }).then((ok) => { if (ok) deleteTeamTask(task.id); }); }}
                                 className="shrink-0 rounded-md p-1 text-text-muted opacity-100 transition hover:bg-rose-500/10 hover:text-rose-500 xl:opacity-0 xl:group-hover:opacity-100"
                                 title="Delete task"
                               >

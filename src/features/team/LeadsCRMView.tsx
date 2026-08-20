@@ -15,6 +15,7 @@ import {
 import { useTeamStore } from './team-store';
 import { DiscussButton } from './DiscussButton';
 import type { Lead, LeadCategory, LeadStatus } from './team-types';
+import { confirmDialog } from '../../components/ui/native-dialog';
 
 interface LeadsCRMViewProps {
   missionId?: string;
@@ -136,15 +137,15 @@ export function LeadsCRMView({ missionId }: LeadsCRMViewProps) {
   };
 
   return (
-    <div className="space-y-4">
+    <div className="w-full min-w-0 space-y-4 overflow-x-hidden">
       {/* Top Filter Bar */}
-      <div className="flex flex-wrap items-center justify-between gap-3 p-4 bg-slate-900/80 rounded-2xl border border-slate-800 space-y-2 sm:space-y-0">
-        <div className="flex flex-wrap items-center gap-2">
+      <div className="flex w-full min-w-0 flex-wrap items-center justify-between gap-3 overflow-hidden rounded-2xl border border-slate-800 bg-slate-900/80 p-3 sm:space-y-0 sm:p-4">
+        <div className="flex w-full min-w-0 flex-wrap items-center gap-2">
           {!missionId && (
             <select
               value={selectedMissionFilter}
               onChange={(e) => setSelectedMissionFilter(e.target.value)}
-              className="px-3 py-1.5 bg-slate-950 border border-slate-800 rounded-xl text-xs text-slate-200 focus:outline-none focus:border-emerald-500 font-medium cursor-pointer"
+              className="h-10 min-h-0 max-w-full shrink-0 cursor-pointer rounded-xl border border-slate-800 bg-slate-950 px-3 py-1.5 text-xs font-medium text-slate-200 focus:border-emerald-500 focus:outline-none"
             >
               <option value="all">All projects</option>
               {teamMissions.map((m) => (
@@ -155,11 +156,24 @@ export function LeadsCRMView({ missionId }: LeadsCRMViewProps) {
             </select>
           )}
 
-          <div className="flex items-center gap-1 overflow-x-auto pb-1 sm:pb-0 scrollbar-none">
+          <select
+            value={filterStatus}
+            onChange={(event) => setFilterStatus(event.target.value)}
+            aria-label="Filter leads by stage"
+            className="h-10 min-h-0 min-w-0 flex-1 cursor-pointer rounded-xl border border-borderSoft/35 bg-panel2/55 px-3 text-xs font-medium text-text-primary outline-none focus:border-emerald-500 sm:hidden"
+          >
+            <option value="all">All stages ({leads.filter((lead) => (missionId ? lead.missionId === missionId : true)).length})</option>
+            {(['active_pilot', 'meeting_set', 'contacted', 'new', 'paid_client'] as LeadStatus[]).map((status) => {
+              const count = leads.filter((lead) => (missionId ? lead.missionId === missionId : true) && lead.status === status).length;
+              return <option key={status} value={status}>{STATUS_CONFIG[status].label} ({count})</option>;
+            })}
+          </select>
+
+          <div className="hidden min-w-0 items-center gap-1 overflow-x-auto overscroll-x-contain pb-1 scrollbar-none sm:flex sm:w-auto sm:flex-1 sm:pb-0">
             <button
               type="button"
               onClick={() => setFilterStatus('all')}
-              className={`px-3 py-1.5 rounded-xl text-xs font-medium transition-all cursor-pointer ${
+              className={`shrink-0 whitespace-nowrap px-3 py-1.5 rounded-xl text-xs font-medium transition-all cursor-pointer ${
                 filterStatus === 'all'
                   ? 'bg-slate-800 text-white font-bold'
                   : 'text-slate-400 hover:text-slate-200'
@@ -177,7 +191,7 @@ export function LeadsCRMView({ missionId }: LeadsCRMViewProps) {
                   key={st}
                   type="button"
                   onClick={() => setFilterStatus(st)}
-                  className={`px-2.5 py-1.5 rounded-xl text-xs font-medium transition-all border cursor-pointer whitespace-nowrap ${
+                  className={`shrink-0 px-2.5 py-1.5 rounded-xl text-xs font-medium transition-all border cursor-pointer whitespace-nowrap ${
                     filterStatus === st
                       ? `${cfg.bg} ${cfg.text} ${cfg.border} font-bold`
                       : 'border-transparent text-slate-400 hover:text-slate-200'
@@ -190,7 +204,7 @@ export function LeadsCRMView({ missionId }: LeadsCRMViewProps) {
           </div>
         </div>
 
-        <div className="flex w-full items-center gap-2 sm:w-auto">
+        <div className="flex w-full min-w-0 items-center gap-2 sm:w-auto">
           <label className="relative min-w-0 flex-1 sm:w-72">
             <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-text-muted" />
             <input value={searchQuery} onChange={(event) => setSearchQuery(event.target.value)} placeholder="Search business, owner, phone, location…" className="w-full rounded-xl border border-borderSoft/40 bg-panel2/55 py-2 pl-9 pr-9 text-sm text-text-primary outline-none placeholder:text-text-muted focus:border-emerald-500" />
@@ -392,7 +406,7 @@ export function LeadsCRMView({ missionId }: LeadsCRMViewProps) {
                         {lead.nextFollowUp ? <span className="flex items-center gap-1.5 text-sm text-text-secondary"><Clock className="h-3.5 w-3.5 text-amber-500" />{lead.nextFollowUp}</span> : <span className="text-sm text-text-muted">Not scheduled</span>}
                       </td>
                       <td className="px-4 py-4 text-right align-top text-sm font-semibold text-text-primary">{lead.monthlyValue ? `₹${lead.monthlyValue.toLocaleString()}/mo` : '—'}</td>
-                      <td className="px-4 py-4 align-top"><div className="flex justify-end gap-1"><button type="button" onClick={() => openEditor(lead)} className="flex items-center gap-1 rounded-lg px-2.5 py-1.5 text-xs font-semibold text-blue-500 hover:bg-blue-500/10" aria-label={`Edit ${lead.businessName}`}><Pencil className="h-3.5 w-3.5" />Edit</button><DiscussButton item={{ kind: 'lead', id: lead.id, label: lead.businessName, detail: lead.status }} /><button type="button" onClick={() => deleteLead(lead.id)} className="rounded-lg p-1.5 text-text-muted hover:bg-rose-500/10 hover:text-rose-500" aria-label={`Delete ${lead.businessName}`}><Trash2 className="h-4 w-4" /></button></div></td>
+                      <td className="px-4 py-4 align-top"><div className="flex justify-end gap-1"><button type="button" onClick={() => openEditor(lead)} className="flex items-center gap-1 rounded-lg px-2.5 py-1.5 text-xs font-semibold text-blue-500 hover:bg-blue-500/10" aria-label={`Edit ${lead.businessName}`}><Pencil className="h-3.5 w-3.5" />Edit</button><DiscussButton item={{ kind: 'lead', id: lead.id, label: lead.businessName, detail: lead.status }} /><button type="button" onClick={() => { void confirmDialog(`Delete lead “${lead.businessName}”?`, { title: 'Delete lead', confirmLabel: 'Delete', danger: true }).then((ok) => { if (ok) deleteLead(lead.id); }); }} className="rounded-lg p-1.5 text-text-muted hover:bg-rose-500/10 hover:text-rose-500" aria-label={`Delete ${lead.businessName}`}><Trash2 className="h-4 w-4" /></button></div></td>
                     </tr>
                   );
                 })}
@@ -401,34 +415,35 @@ export function LeadsCRMView({ missionId }: LeadsCRMViewProps) {
           </div>
         </div>
 
-        <div className="grid grid-cols-1 gap-3 md:hidden">
+        <div className="grid w-full min-w-0 grid-cols-1 gap-3 overflow-hidden md:hidden">
           {activeLeads.map((lead) => {
             const cfg = STATUS_CONFIG[lead.status];
             return (
               <div
                 key={lead.id}
-                className="p-4 bg-slate-900/80 hover:bg-slate-900 border border-slate-800 hover:border-slate-700 rounded-2xl transition-all space-y-3 shadow-sm"
+                className="min-w-0 space-y-3 overflow-hidden rounded-2xl border border-borderSoft/35 bg-panel/70 p-3.5 shadow-sm transition-colors hover:border-borderSoft/60 hover:bg-panel"
               >
                 {/* Header */}
                 <div className="flex items-start justify-between gap-2">
-                  <div className="space-y-0.5 min-w-0">
-                    <div className="flex items-center gap-1.5 flex-wrap">
-                      <span className="text-[10px] px-2 py-0.2 rounded-full bg-slate-800 text-slate-300 font-mono">
+                  <div className="min-w-0 space-y-1">
+                    <div className="flex flex-wrap items-center gap-1.5">
+                      <span className="rounded-full bg-panel2 px-2 py-0.5 text-[10px] font-medium text-text-secondary">
                         {lead.category}
                       </span>
                       {!missionId && (
-                        <span className="text-[10px] text-slate-400 font-mono truncate">
+                        <span className="max-w-[140px] truncate text-[10px] text-text-muted">
                           {getMissionName(lead.missionId)}
                         </span>
                       )}
                     </div>
-                    <h4 className="text-sm font-bold text-white truncate">{lead.businessName}</h4>
+                    <h4 className="truncate text-[15px] font-bold text-text-primary">{lead.businessName}</h4>
                   </div>
 
                   <select
                     value={lead.status}
                     onChange={(e) => updateLeadStatus(lead.id, e.target.value as LeadStatus)}
-                    className={`text-[11px] font-bold px-2.5 py-1 rounded-xl border font-mono uppercase focus:outline-none cursor-pointer ${cfg.bg} ${cfg.text} ${cfg.border}`}
+                    aria-label={`Stage for ${lead.businessName}`}
+                    className={`h-10 min-h-0 w-[114px] shrink-0 cursor-pointer rounded-xl border px-2.5 py-1 text-[11px] font-bold uppercase focus:outline-none ${cfg.bg} ${cfg.text} ${cfg.border}`}
                   >
                     <option value="new">New Lead</option>
                     <option value="contacted">Contacted</option>
@@ -440,21 +455,21 @@ export function LeadsCRMView({ missionId }: LeadsCRMViewProps) {
                 </div>
 
                 {/* Contact & Location Info */}
-                <div className="grid grid-cols-2 gap-2 text-[11px] text-slate-400 font-mono">
-                  <div className="flex items-center gap-1.5 truncate">
-                    <User className="w-3 h-3 text-slate-500 flex-shrink-0" />
-                    <span className="truncate text-slate-300">{lead.ownerName}</span>
+                <div className="grid grid-cols-2 gap-x-3 gap-y-2 text-xs text-text-secondary">
+                  <div className="flex min-w-0 items-center gap-1.5">
+                    <User className="h-3.5 w-3.5 shrink-0 text-text-muted" />
+                    <span className="truncate">{lead.ownerName}</span>
                   </div>
 
-                  <div className="flex items-center gap-1.5 truncate">
-                    <Phone className="w-3 h-3 text-emerald-400 flex-shrink-0" />
-                    <a href={`tel:${lead.phone}`} className="text-emerald-400 hover:underline truncate">
-                      {lead.phone}
+                  <div className="flex min-w-0 items-center gap-1.5">
+                    <Phone className="h-3.5 w-3.5 shrink-0 text-emerald-500" />
+                    <a href={`tel:${lead.phone}`} className="truncate font-medium text-emerald-600 hover:underline">
+                      {lead.phone || 'No phone'}
                     </a>
                   </div>
 
-                  <a href={getLocationHref(lead)} target="_blank" rel="noreferrer" className="flex items-center gap-1.5 truncate col-span-2 text-blue-400 hover:underline">
-                    <MapPin className="w-3 h-3 text-slate-500 flex-shrink-0" />
+                  <a href={getLocationHref(lead)} target="_blank" rel="noreferrer" className="col-span-2 flex min-w-0 items-center gap-1.5 text-blue-500 hover:underline">
+                    <MapPin className="h-3.5 w-3.5 shrink-0 text-text-muted" />
                     <span className="truncate">{lead.location}</span>
                     <ExternalLink className="h-3 w-3 shrink-0" />
                   </a>
@@ -462,33 +477,33 @@ export function LeadsCRMView({ missionId }: LeadsCRMViewProps) {
 
                 {/* Notes */}
                 {lead.notes && (
-                  <p className="text-xs text-slate-300 p-2.5 bg-slate-950/60 rounded-xl border border-slate-800/80 leading-relaxed">
+                  <p className="rounded-xl border border-borderSoft/30 bg-panel2/55 p-2.5 text-xs leading-relaxed text-text-secondary">
                     {lead.notes}
                   </p>
                 )}
 
                 {/* Footer Info */}
-                <div className="flex items-center justify-between pt-2 border-t border-slate-800/80 text-[10px] text-slate-500 font-mono">
-                  {lead.nextFollowUp && (
-                    <span className="flex items-center gap-1 text-amber-400">
-                      <Clock className="w-3 h-3" /> Follow-up: {lead.nextFollowUp}
-                    </span>
-                  )}
-                  {lead.monthlyValue ? (
-                    <span className="text-emerald-400 font-bold">
-                      ₹{lead.monthlyValue}/mo
-                    </span>
-                  ) : null}
-
-                  <button type="button" onClick={() => openEditor(lead)} className="ml-auto flex items-center gap-1 rounded-lg px-2 py-1 text-blue-400 hover:bg-blue-500/10"><Pencil className="h-3.5 w-3.5" />Edit</button>
+                <div className="grid grid-cols-[minmax(0,1fr)_auto] items-end gap-3 border-t border-borderSoft/30 pt-3">
+                  <div className="min-w-0">
+                    {lead.nextFollowUp ? (
+                      <div className="flex min-w-0 items-center gap-2">
+                        <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-amber-500/10 text-amber-500"><Clock className="h-3.5 w-3.5" /></span>
+                        <span className="min-w-0"><span className="block text-[9px] font-semibold uppercase tracking-wider text-text-muted">Next follow-up</span><span className="block truncate text-xs font-medium text-text-primary">{lead.nextFollowUp}</span></span>
+                      </div>
+                    ) : <span className="text-xs text-text-muted">No follow-up scheduled</span>}
+                  </div>
+                  <div className="flex items-center gap-1">
+                    {lead.monthlyValue ? <span className="mr-1 whitespace-nowrap text-xs font-bold text-emerald-600">₹{lead.monthlyValue.toLocaleString()}/mo</span> : null}
+                    <button type="button" onClick={() => openEditor(lead)} className="flex h-9 min-h-0 w-9 min-w-0 items-center justify-center rounded-lg text-blue-500 hover:bg-blue-500/10" aria-label={`Edit ${lead.businessName}`}><Pencil className="h-4 w-4" /></button>
                   <button
                     type="button"
-                    onClick={() => deleteLead(lead.id)}
-                    className="p-1 text-slate-600 hover:text-rose-400 hover:bg-slate-800 rounded-lg transition-colors cursor-pointer"
-                    title="Delete lead"
+                    onClick={() => { void confirmDialog(`Delete lead “${lead.businessName}”?`, { title: 'Delete lead', confirmLabel: 'Delete', danger: true }).then((ok) => { if (ok) deleteLead(lead.id); }); }}
+                    className="flex h-9 min-h-0 w-9 min-w-0 items-center justify-center rounded-lg text-text-muted transition-colors hover:bg-rose-500/10 hover:text-rose-500"
+                    aria-label={`Delete ${lead.businessName}`}
                   >
-                    <Trash2 className="w-3.5 h-3.5" />
+                    <Trash2 className="h-4 w-4" />
                   </button>
+                  </div>
                 </div>
               </div>
             );

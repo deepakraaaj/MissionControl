@@ -16,6 +16,7 @@ import { useNoteStore } from '../notes/note-store';
 import { getCategoryById, NoteCategoryIcon, getNoteColorStyle, getNoteDisplayTitle } from '../notes/note-helpers';
 const NoteEditorModal = lazy(() => import('../notes/NotesView').then((m) => ({ default: m.NoteEditorModal })));
 import { RichTextContent } from '../../components/ui/rich-text-content';
+import { confirmDialog } from '../../components/ui/native-dialog';
 import type { Note } from '../notes/note-types';
 import { AssigneeSelect } from '../collaborators/AssigneeSelect';
 import { getChallengeStreak, useChallengeStore } from '../challenges/challenge-store';
@@ -389,8 +390,8 @@ export function MissionDetailPanel({
 
                             <button
                               type="button"
-                              onClick={() => {
-                                if (confirm(`Delete task "${task.title}"?`)) {
+                              onClick={async () => {
+                                if (await confirmDialog(`Delete task “${task.title}”?`, { title: 'Delete task', confirmLabel: 'Delete', danger: true })) {
                                   void deleteTask(task.id);
                                 }
                               }}
@@ -482,8 +483,8 @@ export function MissionDetailPanel({
                       </button>
                       <button
                         type="button"
-                        onClick={() => {
-                          if (confirm('Delete this note?')) {
+                        onClick={async () => {
+                          if (await confirmDialog('Delete this note?', { title: 'Delete note', confirmLabel: 'Delete', danger: true })) {
                             void deleteNote(note.id);
                           }
                         }}

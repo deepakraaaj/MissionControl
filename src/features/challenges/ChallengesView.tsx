@@ -8,6 +8,7 @@ import { getBestChallengeStreak, getChallengeStreak, useChallengeStore } from '.
 import { useMissionStore } from '../missions/mission-store';
 import { MissionIcon } from '../../components/ui/mission-icon';
 import { useTaskStore } from '../tasks/task-store';
+import { confirmDialog } from '../../components/ui/native-dialog';
 
 const EMOJIS = ['🔥', '💪', '📚', '🧘', '🏃', '💧', '🎨', '💻'];
 const DURATIONS = [7, 14, 30, 60, 100];
@@ -118,7 +119,7 @@ export function ChallengesView() {
                 <div className="flex items-start gap-4">
                   <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-panel2/70 text-2xl">{challenge.emoji}</div>
                   <div className="min-w-0 flex-1"><h3 className="break-words text-lg font-semibold text-text-primary">{challenge.title}</h3>{mission ? <div className="mt-1.5 flex items-center gap-1.5 text-xs font-medium text-accent"><MissionIcon icon={mission.emoji} className="h-3.5 w-3.5" />{mission.title}</div> : null}<p className="mt-1 text-xs text-text-secondary">{challenge.checkIns.length} of {challenge.targetDays} days completed · repeats daily{sourceTask ? ' · linked task' : ''}</p></div>
-                  <button aria-label="Delete challenge" onClick={() => deleteChallenge(challenge.id)} className="p-2 text-text-muted opacity-0 transition group-hover:opacity-100 hover:text-danger"><Trash2 className="h-4 w-4" /></button>
+                  <button aria-label="Delete challenge" onClick={() => { void confirmDialog(`Delete challenge “${challenge.title}”?`, { title: 'Delete challenge', confirmLabel: 'Delete', danger: true }).then((ok) => { if (ok) deleteChallenge(challenge.id); }); }} className="p-2 text-text-muted opacity-0 transition group-hover:opacity-100 hover:text-danger"><Trash2 className="h-4 w-4" /></button>
                 </div>
                 <div className="mt-5 grid grid-cols-2 gap-2">
                   <div className="flex items-center gap-2 rounded-xl bg-panel2/55 px-3 py-2"><Flame className="h-4 w-4 text-warning" /><span className="text-sm font-semibold text-text-primary">{streak}</span><span className="text-xs text-text-secondary">day streak</span></div>

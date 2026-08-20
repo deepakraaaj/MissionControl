@@ -18,6 +18,7 @@ import {
   Users,
   X,
 } from 'lucide-react';
+import { confirmDialog } from '../../components/ui/native-dialog';
 import type { LucideIcon } from 'lucide-react';
 import { useTeamStore } from './team-store';
 import type { ChatRef, ChatRefKind, TeamChatMessage } from './team-types';
@@ -607,7 +608,7 @@ function MessageRow({
             <button
               type="button"
               aria-label="Delete message"
-              onClick={() => { deleteChatMessage(message.id); closeActions(); }}
+              onClick={() => { void confirmDialog('Delete this message?', { title: 'Delete message', confirmLabel: 'Delete', danger: true }).then((ok) => { if (ok) { deleteChatMessage(message.id); closeActions(); } }); }}
               className="rounded p-1 text-text-muted transition-colors hover:bg-panel2 hover:text-danger"
             >
               <Trash2 className="h-3.5 w-3.5" />
