@@ -42,8 +42,23 @@ holds. To populate a room with the turf booking workspace, run this once with th
 room's id (**Database → SQL Editor**, signed in as an approved member of that room):
 
 ```sql
-SELECT public.seed_turf_workspace('<room-uuid>');
+DO $$
+DECLARE seeded text;
+BEGIN
+  -- The function gates on is_approved_room_member(), which reads auth.uid().
+  -- The SQL editor runs without a JWT, so adopt an approved member's id first.
+  PERFORM set_config('request.jwt.claims',
+    json_build_object('sub', '<approved-member-user-uuid>')::text, true);
+  seeded := public.seed_turf_workspace('<room-uuid>');
+  RAISE NOTICE 'seeded project %', seeded;
+END $$;
 ```
+
+The function creates its own project id (`turf-<hash>`). If the room already has
+a turf project you want to keep, re-point the seeded rows onto it and drop the
+temporary one — `team_tasks`, `team_problems`, `team_diagrams`, `team_notes`,
+`team_leads`, `team_work_links`, `team_workflows` and `team_chat_messages` all
+key off `project_id`.
 
 It is idempotent, so re-running only adds what is missing. `team_room_state` is
 left in place after the backfill; drop it once you have verified the relational
