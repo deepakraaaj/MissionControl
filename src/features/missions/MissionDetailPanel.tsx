@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, useMemo, lazy, Suspense } from 'react';
+import { useEffect, useRef, useState, useMemo, Suspense } from 'react';
 import { Badge } from '../../components/ui/badge';
 import { Button } from '../../components/ui/button';
 import { Input } from '../../components/ui/input';
@@ -14,7 +14,8 @@ import {
 } from 'lucide-react';
 import { useNoteStore } from '../notes/note-store';
 import { getCategoryById, NoteCategoryIcon, getNoteColorStyle, getNoteDisplayTitle } from '../notes/note-helpers';
-const NoteEditorModal = lazy(() => import('../notes/NotesView').then((m) => ({ default: m.NoteEditorModal })));
+import { lazyWithReload } from '../../lib/lazy-with-reload';
+const NoteEditorModal = lazyWithReload('note-editor', () => import('../notes/NotesView').then((m) => ({ default: m.NoteEditorModal })));
 import { RichTextContent } from '../../components/ui/rich-text-content';
 import { confirmDialog } from '../../components/ui/native-dialog';
 import type { Note } from '../notes/note-types';

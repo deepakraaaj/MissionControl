@@ -1,8 +1,8 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { ChevronLeft, ChevronRight, Download, Edit3, Maximize2, Minimize2, Network, Plus, Trash2 } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Download, Edit3, LayoutGrid, Maximize2, Minimize2, Network, Plus, Trash2 } from 'lucide-react';
 import {
   Background, Controls, Handle, MiniMap, Position, ReactFlow, ReactFlowProvider, addEdge,
-  useEdgesState, useNodesState, type Connection, type Edge, type Node, type NodeProps,
+  useEdgesState, useNodesState, useReactFlow, type Connection, type Edge, type Node, type NodeProps,
 } from '@xyflow/react';
 import '@xyflow/react/dist/style.css';
 import { useTeamStore } from './team-store';
@@ -70,6 +70,84 @@ const toFlowNodes = (nodes: DiagramNode[]): Node<FlowData>[] => nodes.map((node)
 const toDiagramNodes = (nodes: Node<FlowData>[]): DiagramNode[] => nodes.map((node) => ({ id: node.id, x: node.position.x, y: node.position.y, label: node.data.label, sublabel: node.data.sublabel, type: (node.data.type as DiagramNode['type']) || 'process', color: 'blue' }));
 
 
+/** Node card width is fixed (see SynCatchNode), so spacing can be exact. */
+const NODE_WIDTH = 210;
+const COLUMN_STEP = NODE_WIDTH + 110;
+const ROW_STEP = 150;
+
+/**
+ * Re-lays a diagram left-to-right in dependency order.
+ *
+ * Saved coordinates can put cards on top of each other — a diagram authored at
+ * one size, or seeded with tight spacing, ends up unreadable and zooming does
+ * not help. Column comes from the longest path to a node, so an arrow always
+ * points rightward; within a column the existing vertical order is kept, so
+ * whatever the author intended top-to-bottom survives the tidy.
+ */
+function autoLayout(nodes: Node<FlowData>[], edges: Edge[]): Node<FlowData>[] {
+  if (nodes.length === 0) return nodes;
+
+  const known = new Set(nodes.map((node) => node.id));
+  const children = new Map<string, string[]>();
+  const indegree = new Map<string, number>(nodes.map((node) => [node.id, 0]));
+
+  for (const edge of edges) {
+    if (edge.source === edge.target) continue;
+    if (!known.has(edge.source) || !known.has(edge.target)) continue;
+    children.set(edge.source, [...(children.get(edge.source) ?? []), edge.target]);
+    indegree.set(edge.target, (indegree.get(edge.target) ?? 0) + 1);
+  }
+
+  // Breadth-first levels rather than longest-path: these diagrams contain real
+  // cycles (app -> service -> realtime -> app), and longest-path relaxation
+  // inflates depth on every trip round a loop. Visiting each node once keeps
+  // the column count bounded and the shape readable.
+  const depth = new Map<string, number>();
+  const roots = nodes.filter((node) => (indegree.get(node.id) ?? 0) === 0).map((node) => node.id);
+  const fallback = [...nodes]
+    .sort((a, b) => (indegree.get(a.id) ?? 0) - (indegree.get(b.id) ?? 0) || a.position.y - b.position.y)[0].id;
+
+  const walk = (start: string) => {
+    if (depth.has(start)) return;
+    depth.set(start, 0);
+    let frontier = [start];
+    while (frontier.length > 0) {
+      const next: string[] = [];
+      for (const id of frontier) {
+        for (const child of children.get(id) ?? []) {
+          if (depth.has(child)) continue;
+          depth.set(child, (depth.get(id) ?? 0) + 1);
+          next.push(child);
+        }
+      }
+      frontier = next;
+    }
+  };
+
+  // A fully cyclic diagram has no root, so seed from the least-depended-on node.
+  (roots.length > 0 ? roots : [fallback]).forEach(walk);
+  // Anything in a disconnected component still needs a column.
+  nodes.forEach((node) => walk(node.id));
+
+
+  const columns = new Map<number, Node<FlowData>[]>();
+  for (const node of [...nodes].sort((a, b) => a.position.y - b.position.y)) {
+    const column = depth.get(node.id) ?? 0;
+    columns.set(column, [...(columns.get(column) ?? []), node]);
+  }
+
+  const tallest = Math.max(...[...columns.values()].map((column) => column.length));
+
+  return nodes.map((node) => {
+    const column = depth.get(node.id) ?? 0;
+    const siblings = columns.get(column) ?? [];
+    const row = siblings.findIndex((sibling) => sibling.id === node.id);
+    // Centre short columns against the tallest one so the shape reads evenly.
+    const offset = ((tallest - siblings.length) * ROW_STEP) / 2;
+    return { ...node, position: { x: column * COLUMN_STEP, y: offset + row * ROW_STEP } };
+  });
+}
+
 function FlowEditor({ diagram, onChange }: { diagram: VisualDiagram; onChange: (nodes: Node<FlowData>[], edges: Edge[]) => void }) {
   const [nodes, setNodes, onNodesChange] = useNodesState(toFlowNodes(diagram.nodes));
   const [edges, setEdges, onEdgesChange] = useEdgesState<Edge>(diagram.edges.map((edge) => ({ id: edge.id, source: edge.from, target: edge.to, label: edge.label, animated: edge.dashed })));
@@ -77,6 +155,7 @@ function FlowEditor({ diagram, onChange }: { diagram: VisualDiagram; onChange: (
   const [editingNodeId, setEditingNodeId] = useState<string | null>(null);
   const [nodeEditorOpen, setNodeEditorOpen] = useState(false);
   const [fullscreen, setFullscreen] = useState(false);
+  const { fitView } = useReactFlow();
 
   // Escape leaves fullscreen; without it the only way out is the toggle.
   useEffect(() => {
@@ -89,6 +168,13 @@ function FlowEditor({ diagram, onChange }: { diagram: VisualDiagram; onChange: (
   }, [fullscreen]);
   useEffect(() => { setNodes(toFlowNodes(diagram.nodes)); setEdges(diagram.edges.map((edge) => ({ id: edge.id, source: edge.from, target: edge.to, label: edge.label, animated: edge.dashed }))); }, [diagram.id, setEdges, setNodes]);
   const persistNodes = useCallback((next: Node<FlowData>[]) => { setNodes(next); onChange(next, edges); }, [edges, onChange, setNodes]);
+  const tidyLayout = useCallback(() => {
+    const arranged = autoLayout(nodes, edges);
+    setNodes(arranged);
+    onChange(arranged, edges);
+    // Fit after the new positions have been committed, not against the old ones.
+    window.setTimeout(() => fitView({ padding: 0.15, duration: 400 }), 0);
+  }, [edges, fitView, nodes, onChange, setNodes]);
   const handleNodesChange = useCallback(async (changes: Parameters<typeof onNodesChange>[0]) => {
     const removed = changes.some((change) => change.type === 'remove');
     if (removed && !await confirmDialog('Connected lines may also be removed.', { title: 'Delete diagram node?', confirmLabel: 'Delete', danger: true })) return;
@@ -163,15 +249,27 @@ function FlowEditor({ diagram, onChange }: { diagram: VisualDiagram; onChange: (
         />
       </ReactFlow>
 
-      <button
-        type="button"
-        onClick={() => setFullscreen((current) => !current)}
-        title={fullscreen ? 'Exit fullscreen (Esc)' : 'Fullscreen'}
-        aria-label={fullscreen ? 'Exit fullscreen' : 'Fullscreen'}
-        className="absolute right-4 top-4 z-10 flex h-9 w-9 items-center justify-center rounded-xl border border-borderSoft/40 bg-panel text-text-secondary shadow-lg transition-colors hover:text-text-primary"
-      >
-        {fullscreen ? <Minimize2 className="h-4 w-4" /> : <Maximize2 className="h-4 w-4" />}
-      </button>
+      <div className="absolute right-4 top-4 z-10 flex items-center gap-2">
+        <button
+          type="button"
+          onClick={tidyLayout}
+          title="Tidy layout — arrange left to right and fit to view"
+          aria-label="Tidy layout"
+          className="flex h-9 items-center gap-1.5 rounded-xl border border-borderSoft/40 bg-panel px-3 text-text-secondary shadow-lg transition-colors hover:text-text-primary"
+        >
+          <LayoutGrid className="h-4 w-4" />
+          <span className="text-[12px] font-semibold">Tidy</span>
+        </button>
+        <button
+          type="button"
+          onClick={() => setFullscreen((current) => !current)}
+          title={fullscreen ? 'Exit fullscreen (Esc)' : 'Fullscreen'}
+          aria-label={fullscreen ? 'Exit fullscreen' : 'Fullscreen'}
+          className="flex h-9 w-9 items-center justify-center rounded-xl border border-borderSoft/40 bg-panel text-text-secondary shadow-lg transition-colors hover:text-text-primary"
+        >
+          {fullscreen ? <Minimize2 className="h-4 w-4" /> : <Maximize2 className="h-4 w-4" />}
+        </button>
+      </div>
 
       {/* Says what the canvas can do — otherwise every gesture is a guess. */}
       <p className="pointer-events-none absolute left-1/2 top-3 z-10 hidden -translate-x-1/2 whitespace-nowrap rounded-full border border-borderSoft/50 bg-panel/90 px-3 py-1 text-[11px] text-text-secondary shadow-sm md:block">

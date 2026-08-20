@@ -7,7 +7,6 @@ import {
   type DragEvent as ReactDragEvent,
   type ReactNode,
   type RefObject,
-  lazy,
   Suspense,
   useEffect,
   useMemo,
@@ -72,21 +71,22 @@ import { cn } from '../../lib/cn';
 import { formatRelativeTime } from '../../lib/date';
 import { isTauriApp, showHudWindow, showQuickAddWindow, subscribeAppEvent } from '../../lib/tauri';
 import { useIsMobile } from '../../hooks/use-mobile';
+import { lazyWithReload } from '../../lib/lazy-with-reload';
 
 // Route-level code splitting: each view loads on demand behind <Suspense>.
-const TeamCalendarView = lazy(() => import('../../features/team/TeamCalendarView').then((m) => ({ default: m.TeamCalendarView })));
-const TeamHubView = lazy(() => import('../../features/team/TeamHubView').then((m) => ({ default: m.TeamHubView })));
-const TeamTasksView = lazy(() => import('../../features/team/TeamTasksView').then((m) => ({ default: m.TeamTasksView })));
-const UnifiedMissionHub = lazy(() => import('../../features/team/UnifiedMissionHub').then((m) => ({ default: m.UnifiedMissionHub })));
-const LeadsCRMView = lazy(() => import('../../features/team/LeadsCRMView').then((m) => ({ default: m.LeadsCRMView })));
-const ProblemBankView = lazy(() => import('../../features/team/ProblemBankView').then((m) => ({ default: m.ProblemBankView })));
-const TeamNotesView = lazy(() => import('../../features/team/TeamNotesView').then((m) => ({ default: m.TeamNotesView })));
-const RoadmapView = lazy(() => import('../../features/roadmap/RoadmapView').then((m) => ({ default: m.RoadmapView })));
-const JournalView = lazy(() => import('../../features/journal/JournalView').then((m) => ({ default: m.JournalView })));
-const NotesView = lazy(() => import('../../features/notes/NotesView').then((m) => ({ default: m.NotesView })));
-const AssistantView = lazy(() => import('../../features/assistant/AssistantView').then((m) => ({ default: m.AssistantView })));
-const CalendarView = lazy(() => import('../../features/calendar/CalendarView').then((m) => ({ default: m.CalendarView })));
-const ChallengesView = lazy(() => import('../../features/challenges/ChallengesView').then((m) => ({ default: m.ChallengesView })));
+const TeamCalendarView = lazyWithReload('team-calendar', () => import('../../features/team/TeamCalendarView').then((m) => ({ default: m.TeamCalendarView })));
+const TeamHubView = lazyWithReload('team-hub', () => import('../../features/team/TeamHubView').then((m) => ({ default: m.TeamHubView })));
+const TeamTasksView = lazyWithReload('team-tasks', () => import('../../features/team/TeamTasksView').then((m) => ({ default: m.TeamTasksView })));
+const UnifiedMissionHub = lazyWithReload('mission-hub', () => import('../../features/team/UnifiedMissionHub').then((m) => ({ default: m.UnifiedMissionHub })));
+const LeadsCRMView = lazyWithReload('leads-crm', () => import('../../features/team/LeadsCRMView').then((m) => ({ default: m.LeadsCRMView })));
+const ProblemBankView = lazyWithReload('problem-bank', () => import('../../features/team/ProblemBankView').then((m) => ({ default: m.ProblemBankView })));
+const TeamNotesView = lazyWithReload('team-notes', () => import('../../features/team/TeamNotesView').then((m) => ({ default: m.TeamNotesView })));
+const RoadmapView = lazyWithReload('roadmap', () => import('../../features/roadmap/RoadmapView').then((m) => ({ default: m.RoadmapView })));
+const JournalView = lazyWithReload('journal', () => import('../../features/journal/JournalView').then((m) => ({ default: m.JournalView })));
+const NotesView = lazyWithReload('notes', () => import('../../features/notes/NotesView').then((m) => ({ default: m.NotesView })));
+const AssistantView = lazyWithReload('assistant', () => import('../../features/assistant/AssistantView').then((m) => ({ default: m.AssistantView })));
+const CalendarView = lazyWithReload('calendar', () => import('../../features/calendar/CalendarView').then((m) => ({ default: m.CalendarView })));
+const ChallengesView = lazyWithReload('challenges', () => import('../../features/challenges/ChallengesView').then((m) => ({ default: m.ChallengesView })));
 
 function ViewLoading() {
   return (

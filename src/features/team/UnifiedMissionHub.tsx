@@ -1,4 +1,4 @@
-import { lazy, Suspense, useEffect, useMemo, useRef, useState } from 'react';
+import { Suspense, useEffect, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { 
   AlertOctagon,
@@ -25,14 +25,15 @@ import type { Mission } from '../missions/mission-types';
 import type { ChatRef, Lead, ProblemItem, TeamTask } from './team-types';
 import type { TeamMissionItem } from './team-types';
 import { useTeamStore } from './team-store';
-const LeadsCRMView = lazy(() => import('./LeadsCRMView').then((m) => ({ default: m.LeadsCRMView })));
-const WorkflowGuardrailView = lazy(() => import('./WorkflowGuardrailView').then((m) => ({ default: m.WorkflowGuardrailView })));
-const WorkLinksView = lazy(() => import('./WorkLinksView').then((m) => ({ default: m.WorkLinksView })));
-const VisualCanvasView = lazy(() => import('./VisualCanvasView').then((m) => ({ default: m.VisualCanvasView })));
-const ProblemBankView = lazy(() => import('./ProblemBankView').then((m) => ({ default: m.ProblemBankView })));
-const TeamTasksView = lazy(() => import('./TeamTasksView').then((m) => ({ default: m.TeamTasksView })));
-const TeamNotesView = lazy(() => import('./TeamNotesView').then((m) => ({ default: m.TeamNotesView })));
-const TeamChatView = lazy(() => import('./TeamChatView').then((m) => ({ default: m.TeamChatView })));
+import { lazyWithReload } from '../../lib/lazy-with-reload';
+const LeadsCRMView = lazyWithReload('hub-leads', () => import('./LeadsCRMView').then((m) => ({ default: m.LeadsCRMView })));
+const WorkflowGuardrailView = lazyWithReload('hub-workflows', () => import('./WorkflowGuardrailView').then((m) => ({ default: m.WorkflowGuardrailView })));
+const WorkLinksView = lazyWithReload('hub-work-links', () => import('./WorkLinksView').then((m) => ({ default: m.WorkLinksView })));
+const VisualCanvasView = lazyWithReload('hub-canvas', () => import('./VisualCanvasView').then((m) => ({ default: m.VisualCanvasView })));
+const ProblemBankView = lazyWithReload('hub-problems', () => import('./ProblemBankView').then((m) => ({ default: m.ProblemBankView })));
+const TeamTasksView = lazyWithReload('hub-tasks', () => import('./TeamTasksView').then((m) => ({ default: m.TeamTasksView })));
+const TeamNotesView = lazyWithReload('hub-notes', () => import('./TeamNotesView').then((m) => ({ default: m.TeamNotesView })));
+const TeamChatView = lazyWithReload('hub-chat', () => import('./TeamChatView').then((m) => ({ default: m.TeamChatView })));
 import { useUnreadCount } from './team-chat-unread';
 import { useMissionHubNavSlot } from './mission-hub-nav-slot';
 import { useTeamRoomStore } from './team-room-store';
