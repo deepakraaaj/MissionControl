@@ -1,5 +1,4 @@
 import { create } from 'zustand';
-import { persist, createJSONStorage } from 'zustand/middleware';
 import type {
   TeamPersona,
   Lead,
@@ -16,19 +15,8 @@ import type {
   ChatRef,
   TeamChatMessage,
   TeamPersona as Persona,
+  TeamMissionItem,
 } from './team-types';
-import {
-  INITIAL_PERSONAS,
-  INITIAL_TEAM_MISSIONS,
-  INITIAL_LEADS,
-  INITIAL_WORKFLOWS,
-  INITIAL_WORK_LINKS,
-  INITIAL_PROBLEMS,
-  INITIAL_DIAGRAMS,
-  INITIAL_TEAM_NOTES,
-  INITIAL_TEAM_TASKS,
-  type TeamMissionItem,
-} from './team-seed';
 
 let chatSeq = 0;
 const chatId = () => `chat-${Date.now().toString(36)}-${(chatSeq += 1).toString(36)}`;
@@ -178,22 +166,29 @@ interface TeamState {
   }) => ProblemItem;
 }
 
+const UNKNOWN_PERSONA: TeamPersona = {
+  id: 'unknown',
+  name: 'You',
+  role: 'General Member',
+  initials: '··',
+  color: 'gray',
+};
+
 export const useTeamStore = create<TeamState>()(
-  persist(
     (set, get) => ({
       workspaceMode: 'personal',
       teamUnlocked: false,
-      activePersona: INITIAL_PERSONAS[0],
-      teamMissions: INITIAL_TEAM_MISSIONS,
-      selectedTeamMissionId: INITIAL_TEAM_MISSIONS[0]?.id ?? null,
-      leads: INITIAL_LEADS,
-      workflows: INITIAL_WORKFLOWS,
-      workLinks: INITIAL_WORK_LINKS,
-      problems: INITIAL_PROBLEMS,
-      diagrams: INITIAL_DIAGRAMS,
-      teamNotes: INITIAL_TEAM_NOTES,
-      teamTasks: INITIAL_TEAM_TASKS,
-      personas: INITIAL_PERSONAS,
+      activePersona: UNKNOWN_PERSONA,
+      teamMissions: [],
+      selectedTeamMissionId: null,
+      leads: [],
+      workflows: [],
+      workLinks: [],
+      problems: [],
+      diagrams: [],
+      teamNotes: [],
+      teamTasks: [],
+      personas: [],
       chatMessages: [],
       chatDraftRef: null,
       channelReads: {},
@@ -751,31 +746,4 @@ export const useTeamStore = create<TeamState>()(
         return newProb;
       },
     }),
-    {
-      name: 'syncatch-team-storage-v2',
-      storage: createJSONStorage(() => localStorage),
-      version: 1,
-      migrate: (persisted) => ({
-        ...(persisted as Partial<TeamState>),
-        // Opening a room also starts its live sync, so a visual mode alone is
-        // not safe to restore after a reload. Start Personal and resume Team
-        // only through enterTeamRoom.
-        workspaceMode: 'personal',
-      }),
-      partialize: (state) => ({
-        activePersona: state.activePersona,
-        teamMissions: state.teamMissions,
-        selectedTeamMissionId: state.selectedTeamMissionId,
-        leads: state.leads,
-        workflows: state.workflows,
-        workLinks: state.workLinks,
-        problems: state.problems,
-        diagrams: state.diagrams,
-        teamNotes: state.teamNotes,
-        teamTasks: state.teamTasks,
-        chatMessages: state.chatMessages,
-        channelReads: state.channelReads,
-      }),
-    }
-  )
 );

@@ -1,6 +1,5 @@
 import { isTauriApp } from '../../lib/tauri';
 import { getSqlDatabase } from '../../lib/database';
-import { createSeedTasks } from './task-seed';
 import { hydrateTaskRecord, normalizeTaskDraft, sortTasks } from './task-helpers';
 import type { Task, TaskDraft, TaskEnergy } from './task-types';
 import { useAuthStore } from '../auth/auth-store';
@@ -59,9 +58,9 @@ function fromSqlRow(row: SqlTaskRow): Task {
 
 class BrowserTaskRepository implements TaskRepository {
   async initialize() {
-    const existing = localStorage.getItem(LOCAL_STORAGE_KEY);
-    if (!existing) {
-      localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(createSeedTasks()));
+    // Nothing to prime: an empty cache is correct until Supabase hydrates it.
+    if (!localStorage.getItem(LOCAL_STORAGE_KEY)) {
+      localStorage.setItem(LOCAL_STORAGE_KEY, '[]');
     }
   }
 
@@ -159,15 +158,9 @@ class SqlTaskRepository implements TaskRepository {
   }
 
   async initialize() {
-    const db = await this.getDatabase();
-    const countRows = await db.select<{ count: number }>('SELECT COUNT(*) as count FROM tasks');
-    const taskCount = countRows[0]?.count ?? 0;
-    if (taskCount > 0) return;
-
-    const seedTasks = createSeedTasks();
-    for (const task of seedTasks) {
-      await db.execute(TASK_INSERT_SQL, taskInsertParams(task));
-    }
+    // The local database is an offline cache of the user's Supabase tasks, so
+    // it starts empty and is filled by the sync engine — never by seed rows.
+    await this.getDatabase();
   }
 
   async listTasks() {

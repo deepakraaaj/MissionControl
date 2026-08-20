@@ -190,3 +190,39 @@ export interface TeamChatMessage {
   /** Item that was created out of this message, if any. */
   spawned?: ChatRef;
 }
+
+/**
+ * A project inside a team room — the unit every other module hangs off via
+ * `missionId`. Persisted relationally as `public.team_projects`.
+ */
+export interface TeamMissionItem {
+  id: string;
+  title: string;
+  description: string;
+  iconName: string;
+  color: string;
+  objective: string;
+  why_it_matters: string;
+  definition_of_success: string;
+  customer_segment?: string;
+  revenue_model?: string;
+  status: 'active' | 'on_hold' | 'completed';
+  is_pinned: boolean;
+  target_date: string;
+  tags: string[];
+  /** Auth user IDs explicitly attached to this project. */
+  member_ids?: string[];
+}
+
+/** Every collection that makes up one room's shared workspace. */
+export interface TeamWorkspaceData {
+  teamMissions: TeamMissionItem[];
+  leads: Lead[];
+  workflows: WorkflowSOP[];
+  workLinks: WorkLink[];
+  problems: ProblemItem[];
+  diagrams: VisualDiagram[];
+  teamNotes: TeamNote[];
+  teamTasks: TeamTask[];
+  chatMessages: TeamChatMessage[];
+}

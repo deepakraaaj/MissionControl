@@ -23,7 +23,7 @@ import {
 import type { LucideIcon } from 'lucide-react';
 import type { Mission } from '../missions/mission-types';
 import type { ChatRef, Lead, ProblemItem, TeamTask } from './team-types';
-import type { TeamMissionItem } from './team-seed';
+import type { TeamMissionItem } from './team-types';
 import { useTeamStore } from './team-store';
 const LeadsCRMView = lazy(() => import('./LeadsCRMView').then((m) => ({ default: m.LeadsCRMView })));
 const WorkflowGuardrailView = lazy(() => import('./WorkflowGuardrailView').then((m) => ({ default: m.WorkflowGuardrailView })));

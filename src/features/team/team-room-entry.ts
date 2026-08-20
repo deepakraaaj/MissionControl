@@ -6,8 +6,7 @@ import { connectTeamRoomSync } from './team-room-sync';
 export async function enterTeamRoom(roomId: string): Promise<void> {
   const state = useTeamRoomStore.getState();
   state.selectRoom(roomId);
-  const room = state.rooms.find((item) => item.roomId === roomId);
-  await connectTeamRoomSync(roomId, room?.name);
+  await connectTeamRoomSync(roomId);
   useTeamStore.getState().grantApprovedTeamAccess();
 }
 

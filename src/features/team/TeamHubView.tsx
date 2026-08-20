@@ -22,7 +22,7 @@ import {
 import type { LucideIcon } from 'lucide-react';
 import { useTeamStore } from './team-store';
 import { UnifiedMissionHub } from './UnifiedMissionHub';
-import type { TeamMissionItem } from './team-seed';
+import type { TeamMissionItem } from './team-types';
 import { getActiveTeamRoom, useTeamRoomStore } from './team-room-store';
 
 type StatusFilter = 'all' | TeamMissionItem['status'];

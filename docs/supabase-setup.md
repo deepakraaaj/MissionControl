@@ -28,6 +28,27 @@ This creates the multi-user `tasks`, focus-state, preferences (key-value), and a
 
 Run every migration in numeric order, including `009_add_team_rooms.sql`. Migration 009 adds Team Hub rooms, approval-only memberships, secure room RPCs, RLS policies, and realtime shared room state.
 
+Migrations 013-015 move the team workspace off the single `team_room_state` JSONB
+blob and onto real tables:
+
+| Migration | What it does |
+| --- | --- |
+| `013_team_workspace_relational.sql` | Creates `team_projects`, `team_leads`, `team_workflows`, `team_work_links`, `team_problems`, `team_diagrams`, `team_notes`, `team_tasks` and `team_chat_messages`, each with RLS scoped to approved room members, plus realtime. |
+| `014_seed_turf_booking_workspace.sql` | Adds `seed_turf_workspace(room_id)`, which populates a room with the turf booking project — tasks, issues, diagrams, notes, leads, links and SOPs. |
+| `015_backfill_team_room_state.sql` | Copies whatever each room already had in the old JSONB blob into the new tables. Run it once, after 013. |
+
+The app no longer ships any seed content: a room renders exactly what the backend
+holds. To populate a room with the turf booking workspace, run this once with the
+room's id (**Database → SQL Editor**, signed in as an approved member of that room):
+
+```sql
+SELECT public.seed_turf_workspace('<room-uuid>');
+```
+
+It is idempotent, so re-running only adds what is missing. `team_room_state` is
+left in place after the backfill; drop it once you have verified the relational
+tables in production.
+
 ## 2. Configure environment variables
 
 Add to `.env.local` in the project root:

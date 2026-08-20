@@ -1,106 +1,302 @@
 import type { RealtimeChannel } from '@supabase/supabase-js';
 import { getSupabaseClient } from '../../lib/auth';
 import { useTeamStore } from './team-store';
-import { INITIAL_DIAGRAMS, INITIAL_LEADS, INITIAL_PROBLEMS, INITIAL_TEAM_NOTES, INITIAL_TEAM_TASKS, INITIAL_WORKFLOWS, INITIAL_WORK_LINKS } from './team-seed';
+import { useTeamRoomStore } from './team-room-store';
+import {
+  TEAM_TABLES,
+  type TeamCollection,
+  deleteRows,
+  hydrateRow,
+  loadTeamWorkspace,
+  serializeRow,
+  upsertRows,
+} from './team-repository';
+import type { TeamPersona, TeamRole, TeamWorkspaceData } from './team-types';
 
-const DATA_KEYS = [
-  'teamMissions', 'selectedTeamMissionId', 'leads', 'workflows', 'workLinks',
-  'problems', 'diagrams', 'teamNotes', 'teamTasks', 'chatMessages',
-] as const;
+/**
+ * Live sync between the team store and Supabase.
+ *
+ * The store stays the in-memory copy that views read from, but it is never the
+ * origin of anything: it is filled from the backend on connect, and every local
+ * change is diffed by id and written straight back to the matching table. There
+ * is no bundled seed and no localStorage — an empty room renders empty.
+ */
 
-type SharedTeamState = Pick<ReturnType<typeof useTeamStore.getState>, (typeof DATA_KEYS)[number]>;
-const EMPTY_ROOM_STATE: SharedTeamState = {
-  teamMissions: [], selectedTeamMissionId: null, leads: [], workflows: [], workLinks: [],
-  problems: [], diagrams: [], teamNotes: [], teamTasks: [], chatMessages: [],
-};
-const KUMBAKONAM_PROJECT: SharedTeamState['teamMissions'][number] = {
-  id: 'm-turf-booking-app', title: 'Turf booking app', description: 'Shared turf booking, team roster, and live scorebook for Kumbakonam.', iconName: 'Activity', color: 'emerald', objective: 'Let the team discover open turf slots, book together, and track every match score.', why_it_matters: 'Remove WhatsApp back-and-forth and make every booking visible to the whole team.', definition_of_success: 'Every turf slot, booking, and match score is recorded in one shared room workspace.', customer_segment: 'Independent turf and sports-arena owners managing bookings through calls and WhatsApp', revenue_model: 'Monthly venue subscription, plus a small fee on completed bookings. Premium split-payments, scoreboards, and retention tools expand revenue per venue.', status: 'active', is_pinned: true, target_date: '2026-09-30', tags: ['Turf', 'Booking', 'Team scorebook'],
-};
-const KUMBAKONAM_CONTENT: Pick<SharedTeamState, 'leads' | 'workflows' | 'workLinks' | 'problems' | 'diagrams' | 'teamNotes' | 'teamTasks' | 'chatMessages'> = {
-  chatMessages: [],
-  leads: INITIAL_LEADS.filter((item) => item.missionId === 'm-turf').map((item) => ({ ...item, missionId: KUMBAKONAM_PROJECT.id })),
-  workflows: INITIAL_WORKFLOWS.filter((item) => item.missionId === 'm-turf').map((item) => ({ ...item, missionId: KUMBAKONAM_PROJECT.id })),
-  workLinks: INITIAL_WORK_LINKS.filter((item) => item.missionId === 'm-turf').map((item) => ({ ...item, missionId: KUMBAKONAM_PROJECT.id })),
-  problems: INITIAL_PROBLEMS.filter((item) => item.missionId === 'm-turf').map((item) => ({ ...item, missionId: KUMBAKONAM_PROJECT.id })),
-  diagrams: INITIAL_DIAGRAMS.filter((item) => item.missionId === 'm-turf').map((item) => ({ ...item, missionId: KUMBAKONAM_PROJECT.id })),
-  teamNotes: INITIAL_TEAM_NOTES.filter((item) => item.missionId === 'm-turf').map((item) => ({ ...item, missionId: KUMBAKONAM_PROJECT.id })),
-  teamTasks: INITIAL_TEAM_TASKS.filter((item) => item.missionId === 'm-turf').map((item) => ({ ...item, missionId: KUMBAKONAM_PROJECT.id })),
-};
+const COLLECTIONS = Object.keys(TEAM_TABLES) as TeamCollection[];
+
+/** Order is persisted for these, so a move is a change even when the item is not. */
+const ORDERED: ReadonlySet<TeamCollection> = new Set<TeamCollection>([
+  'teamMissions',
+  'workflows',
+  'diagrams',
+]);
+
 let unsubscribeStore: (() => void) | null = null;
 let realtimeChannel: RealtimeChannel | null = null;
-let saveTimer: number | null = null;
 let currentRoomId: string | null = null;
 let applyingRemoteState = false;
+let flushTimer: number | null = null;
+let pending: Map<TeamCollection, { upsert: Set<string>; remove: Set<string> }> = new Map();
 
-const snapshot = (): SharedTeamState => {
-  const state = useTeamStore.getState();
-  return Object.fromEntries(DATA_KEYS.map((key) => [key, state[key]])) as SharedTeamState;
-};
+const setStatus = (
+  backendSyncStatus: 'offline' | 'loading' | 'syncing' | 'synced' | 'error',
+  backendSyncError: string | null = null,
+) => useTeamStore.setState({ backendSyncStatus, backendSyncError });
 
-const applySharedState = (data: unknown) => {
-  if (!data || typeof data !== 'object' || !('teamMissions' in data)) return;
+const applyRemote = (updater: () => Partial<ReturnType<typeof useTeamStore.getState>>) => {
   applyingRemoteState = true;
-  useTeamStore.setState(data as Partial<ReturnType<typeof useTeamStore.getState>>);
-  queueMicrotask(() => { applyingRemoteState = false; });
+  useTeamStore.setState(updater());
+  queueMicrotask(() => {
+    applyingRemoteState = false;
+  });
 };
 
-const save = async (roomId: string) => {
-  useTeamStore.setState({ backendSyncStatus: 'syncing', backendSyncError: null });
-  try {
-    const client = getSupabaseClient();
-    const { data: authData } = await client.auth.getUser();
-    if (!authData.user || roomId !== currentRoomId) throw new Error('Your team session is no longer active.');
-    const { error } = await client.from('team_room_state').upsert({
-      room_id: roomId, data: snapshot(), updated_by: authData.user.id, updated_at: new Date().toISOString(),
-    }, { onConflict: 'room_id' });
-    if (error) throw error;
-    useTeamStore.setState({ backendSyncStatus: 'synced', backendSyncError: null });
-  } catch (error) {
-    const message = error instanceof Error ? error.message : 'Could not save the team workspace.';
-    console.error('Team room sync failed:', message);
-    useTeamStore.setState({ backendSyncStatus: 'error', backendSyncError: message });
-  }
+// ──────────────────────────────────────────
+// Personas come from the room's approved members, not from a bundled roster.
+
+const PERSONA_COLORS = ['emerald', 'blue', 'amber', 'purple', 'pink', 'teal'];
+
+const ROOM_ROLE_TO_TEAM_ROLE: Record<string, TeamRole> = {
+  owner: 'Tech Lead',
+  admin: 'Operations Partner',
+  member: 'General Member',
 };
 
-export async function connectTeamRoomSync(roomId: string, roomName?: string): Promise<void> {
-  disconnectTeamRoomSync();
-  useTeamStore.setState({ backendSyncStatus: 'loading', backendSyncError: null });
-  currentRoomId = roomId;
+const initialsOf = (name: string) =>
+  name
+    .split(/\s+/)
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((part) => part[0]?.toUpperCase() ?? '')
+    .join('') || '??';
+
+async function syncPersonas(roomId: string): Promise<void> {
+  const roomStore = useTeamRoomStore.getState();
+  await roomStore.loadMembers(roomId);
+  const members = useTeamRoomStore.getState().members.filter((m) => m.status === 'approved');
+
+  const personas: TeamPersona[] = members.map((member, index) => ({
+    id: member.userId,
+    name: member.displayName || member.email || 'Teammate',
+    role: ROOM_ROLE_TO_TEAM_ROLE[member.role] ?? 'General Member',
+    initials: initialsOf(member.displayName || member.email || '?'),
+    color: PERSONA_COLORS[index % PERSONA_COLORS.length],
+    email: member.email,
+  }));
+
   const client = getSupabaseClient();
-  const { data, error } = await client.from('team_room_state').select('data').eq('room_id', roomId).maybeSingle();
-  if (error) throw error;
-  const existing = data?.data && Object.keys(data.data as object).length > 0 ? data.data as SharedTeamState : EMPTY_ROOM_STATE;
-  const isKumbakonam = roomName?.toLowerCase().includes('kumbakonam');
-  const hasTurfProject = existing.teamMissions.some((project) => project.id === KUMBAKONAM_PROJECT.id);
-  const hasTurfContent = existing.teamTasks.some((item) => item.missionId === KUMBAKONAM_PROJECT.id);
-  const merged = isKumbakonam && (!hasTurfProject || !hasTurfContent)
-    ? { ...existing, ...(!hasTurfContent ? KUMBAKONAM_CONTENT : {}), teamMissions: hasTurfProject ? existing.teamMissions : [KUMBAKONAM_PROJECT, ...existing.teamMissions], selectedTeamMissionId: existing.selectedTeamMissionId ?? KUMBAKONAM_PROJECT.id }
-    : existing;
-  applySharedState(merged);
-  if (merged !== existing) await save(roomId);
-  else useTeamStore.setState({ backendSyncStatus: 'synced', backendSyncError: null });
+  const { data } = await client.auth.getUser();
+  const self = personas.find((persona) => persona.id === data.user?.id);
 
-  unsubscribeStore = useTeamStore.subscribe((state, previousState) => {
-    if (applyingRemoteState || !currentRoomId) return;
-    if (!DATA_KEYS.some((key) => state[key] !== previousState[key])) return;
-    if (saveTimer) window.clearTimeout(saveTimer);
-    const targetRoom = currentRoomId;
-    saveTimer = window.setTimeout(() => void save(targetRoom), 700);
+  useTeamStore.setState({
+    personas,
+    ...(self ? { activePersona: self } : {}),
+  });
+}
+
+// ──────────────────────────────────────────
+// Diff & flush
+
+const queue = (collection: TeamCollection, kind: 'upsert' | 'remove', id: string) => {
+  let entry = pending.get(collection);
+  if (!entry) {
+    entry = { upsert: new Set(), remove: new Set() };
+    pending.set(collection, entry);
+  }
+  // A row cannot be both created and deleted in one flush; last intent wins.
+  if (kind === 'upsert') entry.remove.delete(id);
+  else entry.upsert.delete(id);
+  entry[kind].add(id);
+};
+
+/** Queues every id whose object identity, or persisted position, changed. */
+const diffCollection = (
+  collection: TeamCollection,
+  next: readonly { id: string }[],
+  previous: readonly { id: string }[],
+) => {
+  const before = new Map(previous.map((item, index) => [item.id, { item, index }]));
+
+  next.forEach((item, index) => {
+    const prior = before.get(item.id);
+    const moved = ORDERED.has(collection) && prior?.index !== index;
+    if (!prior || prior.item !== item || moved) queue(collection, 'upsert', item.id);
+    before.delete(item.id);
   });
 
-  realtimeChannel = client.channel(`team-room-${roomId}`)
-    .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'team_room_state', filter: `room_id=eq.${roomId}` }, (payload) => {
-      if (roomId === currentRoomId) applySharedState((payload.new as { data?: unknown }).data);
-    }).subscribe();
+  before.forEach((_, id) => queue(collection, 'remove', id));
+};
+
+async function flush(roomId: string): Promise<void> {
+  const batch = pending;
+  pending = new Map();
+  if (batch.size === 0) return;
+
+  setStatus('syncing');
+  try {
+    const state = useTeamStore.getState();
+
+    // Projects first: every other table has a FK onto them, and deletes last for
+    // the same reason.
+    const ordered = [...batch.keys()].sort(
+      (a, b) => (a === 'teamMissions' ? -1 : 0) - (b === 'teamMissions' ? -1 : 0),
+    );
+
+    for (const collection of ordered) {
+      const entry = batch.get(collection)!;
+      if (entry.upsert.size === 0) continue;
+      const items = state[collection] as readonly { id: string }[];
+      const rows = items
+        .map((item, index) => ({ item, index }))
+        .filter(({ item }) => entry.upsert.has(item.id))
+        .map(({ item, index }) => serializeRow(collection, roomId, item, index));
+      await upsertRows(collection, roomId, rows);
+    }
+
+    for (const collection of [...ordered].reverse()) {
+      const entry = batch.get(collection)!;
+      if (entry.remove.size === 0) continue;
+      await deleteRows(collection, roomId, [...entry.remove]);
+    }
+
+    setStatus('synced');
+  } catch (error) {
+    // Put the batch back so a transient failure retries on the next change.
+    batch.forEach((entry, collection) => {
+      entry.upsert.forEach((id) => queue(collection, 'upsert', id));
+      entry.remove.forEach((id) => queue(collection, 'remove', id));
+    });
+    const message = error instanceof Error ? error.message : 'Could not save the team workspace.';
+    console.error('Team workspace sync failed:', message);
+    setStatus('error', message);
+  }
+}
+
+const scheduleFlush = (roomId: string) => {
+  if (flushTimer) window.clearTimeout(flushTimer);
+  flushTimer = window.setTimeout(() => void flush(roomId), 500);
+};
+
+// ──────────────────────────────────────────
+// Realtime
+
+const TABLE_TO_COLLECTION = Object.fromEntries(
+  COLLECTIONS.map((collection) => [TEAM_TABLES[collection], collection]),
+) as Record<string, TeamCollection>;
+
+function subscribeRealtime(roomId: string): RealtimeChannel {
+  const client = getSupabaseClient();
+  const channel = client.channel(`team-workspace-${roomId}`);
+
+  for (const collection of COLLECTIONS) {
+    channel.on(
+      'postgres_changes',
+      {
+        event: '*',
+        schema: 'public',
+        table: TEAM_TABLES[collection],
+        filter: `room_id=eq.${roomId}`,
+      },
+      (payload) => {
+        if (roomId !== currentRoomId) return;
+        const target = TABLE_TO_COLLECTION[payload.table];
+        if (!target) return;
+
+        applyRemote(() => {
+          const list = useTeamStore.getState()[target] as readonly { id: string }[];
+
+          if (payload.eventType === 'DELETE') {
+            const goneId = (payload.old as { id?: string })?.id;
+            if (!goneId) return {};
+            return { [target]: list.filter((item) => item.id !== goneId) } as any;
+          }
+
+          const row = payload.new as Record<string, any>;
+          if (!row?.id) return {};
+          const hydrated = hydrateRow(target, row) as { id: string };
+          const index = list.findIndex((item) => item.id === hydrated.id);
+          const next =
+            index >= 0
+              ? list.map((item) => (item.id === hydrated.id ? hydrated : item))
+              : [hydrated, ...list];
+          return { [target]: next } as any;
+        });
+      },
+    );
+  }
+
+  return channel.subscribe();
+}
+
+// ──────────────────────────────────────────
+// Public API
+
+export async function connectTeamRoomSync(roomId: string): Promise<void> {
+  disconnectTeamRoomSync();
+  setStatus('loading');
+  currentRoomId = roomId;
+
+  try {
+    const workspace = await loadTeamWorkspace(roomId);
+    applyRemote(() => ({
+      ...workspace,
+      selectedTeamMissionId:
+        useTeamStore.getState().selectedTeamMissionId &&
+        workspace.teamMissions.some((m) => m.id === useTeamStore.getState().selectedTeamMissionId)
+          ? useTeamStore.getState().selectedTeamMissionId
+          : workspace.teamMissions[0]?.id ?? null,
+    }));
+
+    await syncPersonas(roomId);
+    setStatus('synced');
+  } catch (error) {
+    const message = error instanceof Error ? error.message : 'Could not load the team workspace.';
+    console.error('Team workspace load failed:', message);
+    setStatus('error', message);
+    throw error;
+  }
+
+  unsubscribeStore = useTeamStore.subscribe((state, previous) => {
+    if (applyingRemoteState || !currentRoomId) return;
+    let changed = false;
+    for (const collection of COLLECTIONS) {
+      const next = state[collection] as readonly { id: string }[];
+      const before = previous[collection] as readonly { id: string }[];
+      if (next === before) continue;
+      diffCollection(collection, next, before);
+      changed = true;
+    }
+    if (changed) scheduleFlush(currentRoomId);
+  });
+
+  realtimeChannel = subscribeRealtime(roomId);
 }
 
 export function disconnectTeamRoomSync(): void {
   unsubscribeStore?.();
   unsubscribeStore = null;
-  if (saveTimer) window.clearTimeout(saveTimer);
-  saveTimer = null;
+  if (flushTimer) window.clearTimeout(flushTimer);
+  flushTimer = null;
+  pending = new Map();
   if (realtimeChannel) void getSupabaseClient().removeChannel(realtimeChannel);
   realtimeChannel = null;
   currentRoomId = null;
-  useTeamStore.setState({ backendSyncStatus: 'offline', backendSyncError: null });
+
+  const cleared: TeamWorkspaceData = {
+    teamMissions: [],
+    leads: [],
+    workflows: [],
+    workLinks: [],
+    problems: [],
+    diagrams: [],
+    teamNotes: [],
+    teamTasks: [],
+    chatMessages: [],
+  };
+  useTeamStore.setState({
+    ...cleared,
+    selectedTeamMissionId: null,
+    backendSyncStatus: 'offline',
+    backendSyncError: null,
+  });
 }
