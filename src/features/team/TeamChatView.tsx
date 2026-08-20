@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import {
+  Activity,
   AlertOctagon,
   AtSign,
   CheckSquare,
@@ -626,6 +627,7 @@ export function TeamChatView({ missionId, onOpenRef }: TeamChatViewProps) {
   const setActiveChatChannel = useTeamStore((s) => s.setActiveChatChannel);
   const [threadId, setThreadId] = useState<string | null>(null);
   const [showJump, setShowJump] = useState(false);
+  const [showActivity, setShowActivity] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
   const jumpToLatest = () =>
     scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: 'smooth' });
@@ -638,7 +640,10 @@ export function TeamChatView({ missionId, onOpenRef }: TeamChatViewProps) {
     [chatMessages, missionId],
   );
 
-  const channel = messages.filter((m) => !m.parentId);
+  const activityCount = messages.filter((message) => message.kind === 'system' && !message.parentId).length;
+  const channel = messages.filter((message) =>
+    !message.parentId && (showActivity || message.kind !== 'system'),
+  );
   const replyCounts = useMemo(() => {
     const counts: Record<string, number> = {};
     messages.forEach((m) => {
@@ -666,6 +671,19 @@ export function TeamChatView({ missionId, onOpenRef }: TeamChatViewProps) {
   return (
     <div className="flex h-full min-h-0 gap-0 lg:gap-3">
       <section className="relative flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden rounded-[20px] border border-borderSoft/60 bg-panel/40 shadow-[0_12px_32px_rgb(var(--shadow-color)/0.12)]">
+        {activityCount > 0 && (
+          <div className="flex shrink-0 justify-end border-b border-borderSoft/35 px-3 py-2">
+            <button
+              type="button"
+              onClick={() => setShowActivity((visible) => !visible)}
+              aria-pressed={showActivity}
+              className="flex items-center gap-1.5 rounded-lg px-2.5 py-1 text-[11px] font-medium text-text-muted transition-colors hover:bg-panel2 hover:text-text-primary"
+            >
+              <Activity className="h-3.5 w-3.5" />
+              {showActivity ? 'Hide activity' : `Show activity (${activityCount})`}
+            </button>
+          </div>
+        )}
         <div
           ref={scrollRef}
           onScroll={(event) => {

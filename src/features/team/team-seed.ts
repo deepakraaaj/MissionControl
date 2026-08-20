@@ -54,6 +54,8 @@ export interface TeamMissionItem {
   is_pinned: boolean;
   target_date: string;
   tags: string[];
+  /** Auth user IDs explicitly attached to this project. */
+  member_ids?: string[];
 }
 
 export const INITIAL_TEAM_MISSIONS: TeamMissionItem[] = [

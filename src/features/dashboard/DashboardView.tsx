@@ -166,7 +166,7 @@ export function DashboardView({ onNavigate, onOpenTask, onOpenMission, onNewTask
     void refreshNotes(true);
   }, [refreshNotes]);
 
-  const now = new Date(nowMs);
+  const now = useMemo(() => new Date(nowMs), [nowMs]);
   const todayKey = localDateKey(now);
   const name = getDisplayName(session?.user?.user_metadata, session?.user?.email);
   const quote = DAILY_QUOTES[dayOfYear(now) % DAILY_QUOTES.length];

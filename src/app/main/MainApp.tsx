@@ -1,9 +1,6 @@
 import { TeamHeaderSwitcher } from "../../features/team/TeamHeaderSwitcher";
 import { PocketDropFAB } from "../../features/team/PocketDropModal";
-import { UnifiedMissionHub } from "../../features/team/UnifiedMissionHub";
 import { MissionHubNavSlotContext } from "../../features/team/mission-hub-nav-slot";
-import { TeamHubView } from "../../features/team/TeamHubView";
-import { TeamTasksView } from "../../features/team/TeamTasksView";
 import { useTeamStore } from "../../features/team/team-store";
 import { confirmDialog } from "../../components/ui/native-dialog";
 import {
@@ -17,7 +14,7 @@ import {
   useRef,
   useState,
 } from 'react';
-import { Sun, CheckSquare, Target, MoreHorizontal, CheckCircle2, Timer, Flag, Clock, BarChart3, ClipboardList, Settings, Lightbulb, Link2, AlertCircle, Pin, FileText, ArrowLeft, ArrowUpRight, RotateCcw, Cloud, Pencil, Trash2, Play, Pause, CheckCircle, Menu, X, Plus, CalendarDays, ChevronDown, CornerDownRight, BookHeart, StickyNote, Wifi, WifiOff, MessageCircle, MessageSquare, Trophy, Users, AlertOctagon, type LucideIcon } from 'lucide-react';
+import { Sun, CheckSquare, Target, MoreHorizontal, CheckCircle2, Timer, Flag, Clock, BarChart3, ClipboardList, Settings, Lightbulb, Link2, AlertCircle, Pin, FileText, ArrowLeft, ArrowUpRight, RotateCcw, Cloud, Pencil, Trash2, Play, Pause, CheckCircle, Menu, X, Plus, CalendarDays, ChevronDown, CornerDownRight, BookHeart, StickyNote, Wifi, WifiOff, MessageCircle, MessageSquare, Trophy, Users, AlertOctagon, PanelLeftClose, PanelLeftOpen, type LucideIcon } from 'lucide-react';
 import { MissionIcon } from '../../components/ui/mission-icon';
 import { DatePicker } from '../../components/ui/date-picker';
 import { Badge } from '../../components/ui/badge';
@@ -78,6 +75,9 @@ import { useIsMobile } from '../../hooks/use-mobile';
 
 // Route-level code splitting: each view loads on demand behind <Suspense>.
 const TeamCalendarView = lazy(() => import('../../features/team/TeamCalendarView').then((m) => ({ default: m.TeamCalendarView })));
+const TeamHubView = lazy(() => import('../../features/team/TeamHubView').then((m) => ({ default: m.TeamHubView })));
+const TeamTasksView = lazy(() => import('../../features/team/TeamTasksView').then((m) => ({ default: m.TeamTasksView })));
+const UnifiedMissionHub = lazy(() => import('../../features/team/UnifiedMissionHub').then((m) => ({ default: m.UnifiedMissionHub })));
 const LeadsCRMView = lazy(() => import('../../features/team/LeadsCRMView').then((m) => ({ default: m.LeadsCRMView })));
 const ProblemBankView = lazy(() => import('../../features/team/ProblemBankView').then((m) => ({ default: m.ProblemBankView })));
 const TeamNotesView = lazy(() => import('../../features/team/TeamNotesView').then((m) => ({ default: m.TeamNotesView })));
@@ -692,6 +692,7 @@ function NavButton({
   caption,
   onClick,
   compact = false,
+  collapsed = false,
 }: {
   active: boolean;
   label: string;
@@ -700,17 +701,19 @@ function NavButton({
   caption?: string;
   onClick: () => void;
   compact?: boolean;
+  collapsed?: boolean;
 }) {
   return (
     <button
       className={cn(
         'group relative flex w-full items-center gap-3 overflow-hidden rounded-[14px] border text-left transition-all duration-200',
-        compact ? 'px-3 py-2.5' : 'px-3 py-2.5',
+        collapsed ? 'justify-center px-2 py-2.5' : 'px-3 py-2.5',
         active
           ? 'border-accent/25 bg-accent/10 shadow-[0_8px_22px_rgba(var(--accent),0.08)]'
           : 'border-transparent bg-transparent hover:border-borderSoft/30 hover:bg-panel/55',
       )}
       onClick={onClick}
+      title={collapsed ? label : undefined}
       type="button"
     >
       {active ? <span aria-hidden className="absolute inset-y-2 left-0 w-0.5 rounded-r-full bg-accent" /> : null}
@@ -726,7 +729,7 @@ function NavButton({
       >
         <Icon className="h-4 w-4" />
       </span>
-      <div className="min-w-0">
+      {!collapsed && <div className="min-w-0">
         <p
           className={cn(
             'text-[14px] font-semibold tracking-tight',
@@ -736,7 +739,7 @@ function NavButton({
           {label}
         </p>
         {caption ? <p className="mt-0.5 hidden truncate text-[11px] leading-4 text-text-muted/85 sm:block">{caption}</p> : null}
-      </div>
+      </div>}
     </button>
   );
 }
@@ -835,6 +838,7 @@ function SidebarContent({
   activeView,
   ensureIds,
   compact = false,
+  collapsed = false,
 }: {
   pinnedAppIds: SidebarPinnedAppId[];
   onOpenApps: () => void;
@@ -843,6 +847,7 @@ function SidebarContent({
   activeView: MainView;
   ensureIds?: SidebarPinnedAppId[];
   compact?: boolean;
+  collapsed?: boolean;
 }) {
   const visibleIds = ensureIds
     ? Array.from(new Set([...pinnedAppIds, ...ensureIds]))
@@ -878,9 +883,9 @@ function SidebarContent({
           type="button"
           onClick={() => onViewSelect(isTeam ? 'missions' : 'dashboard')}
           aria-label="Go to dashboard"
-          className="-mx-1 flex items-center rounded-2xl px-1 py-1 transition-opacity hover:opacity-80 cursor-pointer"
+          className={cn('-mx-1 flex items-center rounded-2xl px-1 py-1 transition-opacity hover:opacity-80 cursor-pointer', collapsed && 'justify-center')}
         >
-          <SynCatchWordmark themed animated logoClassName="h-12 w-12" textClassName="text-2xl font-bold tracking-tight" />
+          <SynCatchWordmark themed animated logoClassName="h-12 w-12" textClassName={cn('text-2xl font-bold tracking-tight', collapsed && 'hidden')} />
         </button>
       ) : null}
 
@@ -891,6 +896,7 @@ function SidebarContent({
               <NavButton
                 active={false}
                 compact
+                collapsed={collapsed}
                 gradient="from-rose-500 via-orange-500 to-amber-500"
                 icon={MessageSquare}
                 label="Chat"
@@ -902,6 +908,7 @@ function SidebarContent({
                 active={activeView === view.id}
                 caption={view.description}
                 compact={compact}
+                collapsed={collapsed}
                 gradient={view.gradient}
                 icon={view.icon}
                 key={view.id}
@@ -919,6 +926,7 @@ function SidebarContent({
                   active={activeView === view.id}
                   caption={view.description}
                   compact={compact}
+                  collapsed={collapsed}
                   gradient={view.gradient}
                   icon={view.icon}
                   key={view.id}
@@ -932,7 +940,7 @@ function SidebarContent({
         )}
       </div>
 
-      {!compact ? (
+      {!compact && !isTeam && !collapsed ? (
         /* Start-button style: Apps anchored to the bottom-left corner of the sidebar. */
         <div className="mt-auto border-t border-borderSoft/20 pt-4">{appsButton}</div>
       ) : null}
@@ -2195,6 +2203,7 @@ export function MainApp() {
   const [missionComposerOpen, setMissionComposerOpen] = useState(false);
   const [editingMission, setEditingMission] = useState<Mission | null>(null);
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(() => localStorage.getItem('syncatch-sidebar-collapsed') === '1');
   const [mobileChatPickerOpen, setMobileChatPickerOpen] = useState(false);
   const [missionHubNavSlot, setMissionHubNavSlot] = useState<HTMLElement | null>(null);
   const [fabDockOpen, setFabDockOpen] = useState(false);
@@ -4411,9 +4420,23 @@ export function MainApp() {
       ) : null}
 
       <div className="app-frame relative flex h-full flex-col overflow-visible lg:overflow-hidden lg:flex-row">
-        <aside className="sidebar-shell relative z-10 hidden w-full flex-col border-r border-borderSoft/24 p-6 lg:flex lg:w-[248px]">
+        <aside className={cn('sidebar-shell relative z-10 hidden w-full flex-col border-r border-borderSoft/24 transition-[width,padding] duration-200 lg:flex', sidebarCollapsed ? 'lg:w-[84px] lg:p-3' : 'lg:w-[248px] lg:p-6')}>
+          <button
+            type="button"
+            onClick={() => setSidebarCollapsed((current) => {
+              const next = !current;
+              localStorage.setItem('syncatch-sidebar-collapsed', next ? '1' : '0');
+              return next;
+            })}
+            aria-label={sidebarCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
+            title={sidebarCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
+            className="absolute -right-3 top-5 z-20 flex h-7 w-7 items-center justify-center rounded-full border border-borderSoft/50 bg-panel text-text-muted shadow-sm transition-colors hover:text-text-primary"
+          >
+            {sidebarCollapsed ? <PanelLeftOpen className="h-3.5 w-3.5" /> : <PanelLeftClose className="h-3.5 w-3.5" />}
+          </button>
           <SidebarContent
             activeView={activeView}
+            collapsed={sidebarCollapsed}
             onOpenApps={openAppsView}
             onViewSelect={(view) => setActiveView(view)}
             pinnedAppIds={sidebarPinnedApps}
@@ -4479,16 +4502,6 @@ export function MainApp() {
               </div>
 
               <TeamHeaderSwitcher onSwitchMode={(mode) => setActiveView(mode === 'team' ? 'missions' : 'dashboard')} />
-              <Button
-                onClick={() => setActiveView('settings')}
-                aria-label="Settings"
-                size="sm"
-                type="button"
-                variant={activeView === 'settings' ? 'secondary' : 'ghost'}
-                className="hidden h-12 w-12 shrink-0 p-0 sm:flex"
-              >
-                <Settings className="h-5 w-5" />
-              </Button>
             </div>
           </header>
 
@@ -4600,10 +4613,12 @@ export function MainApp() {
             ) : showMissionDetailPanel && detailMission ? (
               workspaceMode === "team" ? (
                 <div className="fixed inset-0 z-30 flex min-w-0 flex-col overflow-hidden bg-slate-950/95 backdrop-blur-md animate-in fade-in lg:z-50">
-                  <UnifiedMissionHub
-                    mission={detailMission}
-                    onBack={() => setDetailMissionId(null)}
-                  />
+                  <Suspense fallback={<ViewLoading />}>
+                    <UnifiedMissionHub
+                      mission={detailMission}
+                      onBack={() => setDetailMissionId(null)}
+                    />
+                  </Suspense>
                 </div>
               ) : (
                 <>

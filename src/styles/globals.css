@@ -1,7 +1,9 @@
-@import '@fontsource/space-grotesk/400.css';
-@import '@fontsource/space-grotesk/500.css';
-@import '@fontsource/space-grotesk/700.css';
-@import '@fontsource/jetbrains-mono/500.css';
+/* Ship only the Latin glyphs the interface uses. The package defaults also
+   bundle Latin Extended, Vietnamese, Greek, and Cyrillic font files. */
+@import '@fontsource/space-grotesk/latin-400.css';
+@import '@fontsource/space-grotesk/latin-500.css';
+@import '@fontsource/space-grotesk/latin-700.css';
+@import '@fontsource/jetbrains-mono/latin-500.css';
 
 @tailwind base;
 @tailwind components;

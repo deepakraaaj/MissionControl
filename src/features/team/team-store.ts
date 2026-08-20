@@ -754,8 +754,15 @@ export const useTeamStore = create<TeamState>()(
     {
       name: 'syncatch-team-storage-v2',
       storage: createJSONStorage(() => localStorage),
+      version: 1,
+      migrate: (persisted) => ({
+        ...(persisted as Partial<TeamState>),
+        // Opening a room also starts its live sync, so a visual mode alone is
+        // not safe to restore after a reload. Start Personal and resume Team
+        // only through enterTeamRoom.
+        workspaceMode: 'personal',
+      }),
       partialize: (state) => ({
-        workspaceMode: state.workspaceMode,
         activePersona: state.activePersona,
         teamMissions: state.teamMissions,
         selectedTeamMissionId: state.selectedTeamMissionId,

@@ -13,8 +13,9 @@ export async function enterTeamRoom(roomId: string): Promise<void> {
 
 /**
  * Opens the room the user was last in, so switching to Team goes straight to
- * work instead of through the picker. Falls back to the only approved room
- * when there is exactly one.
+ * work instead of through the picker. Falls back to the first approved room
+ * when there is no remembered selection; the header remains the place to
+ * switch workspaces afterward.
  *
  * @returns true when a room was opened; false means the picker is still needed.
  */
@@ -30,9 +31,7 @@ export async function resumeLastTeamRoom(): Promise<boolean> {
   const approved = rooms.filter((room) => room.status === 'approved');
   if (approved.length === 0) return false;
 
-  const remembered =
-    approved.find((room) => room.roomId === activeRoomId) ?? (approved.length === 1 ? approved[0] : null);
-  if (!remembered) return false;
+  const remembered = approved.find((room) => room.roomId === activeRoomId) ?? approved[0];
 
   await enterTeamRoom(remembered.roomId);
   return true;
