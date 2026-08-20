@@ -807,6 +807,18 @@ html:not([data-theme]) .calendar-panel,
     margin-top: 2px;
   }
 
+  /* Project chat becomes a distraction-free mobile surface. Collapsing the
+     shared inset also lets composers and thread panels use the reclaimed room. */
+  @media (max-width: 1023px) {
+    html[data-chat-focus='true'] {
+      --mobile-nav-height: 0px;
+    }
+
+    html[data-chat-focus='true'] .mobile-bottom-nav {
+      display: none;
+    }
+  }
+
   /* Capture popup mobile overrides */
   @media (max-width: 640px) {
     .capture-popup-shell {
@@ -919,3 +931,11 @@ html:not([data-theme]) .calendar-panel,
 }
 
 /* End of file */
+
+/* Chat surface: a faint dotted wallpaper so bubbles read as bubbles, the way
+   WhatsApp separates its message list from the app chrome. */
+.chat-wallpaper {
+  background-color: rgb(var(--bg-soft));
+  background-image: radial-gradient(rgb(var(--text-muted) / 0.08) 1px, transparent 1px);
+  background-size: 22px 22px;
+}

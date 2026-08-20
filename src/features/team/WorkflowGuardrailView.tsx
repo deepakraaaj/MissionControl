@@ -1,36 +1,219 @@
-import { useState } from 'react';
-import { CheckCircle2, Circle, ShieldCheck, ArrowRight, User, Calendar, AlertCircle, Target } from 'lucide-react';
+import { useMemo, useState } from 'react';
+import { CheckCircle2, Circle, ShieldCheck, Plus, User, Calendar, Target } from 'lucide-react';
 import { useTeamStore } from './team-store';
-import type { WorkflowSOP } from './team-types';
 
 interface WorkflowGuardrailViewProps {
   missionId: string;
 }
 
+type Dialog = 'process' | 'step' | null;
+
 export function WorkflowGuardrailView({ missionId }: WorkflowGuardrailViewProps) {
   const workflows = useTeamStore((s) => s.workflows);
   const toggleSOPStep = useTeamStore((s) => s.toggleSOPStep);
-  const missionWorkflows = workflows.filter((w) => w.missionId === missionId);
+  const addWorkflow = useTeamStore((s) => s.addWorkflow);
+  const addSOPStep = useTeamStore((s) => s.addSOPStep);
+  const missionWorkflows = useMemo(
+    () => workflows.filter((w) => w.missionId === missionId),
+    [workflows, missionId],
+  );
 
-  const activeSOP = missionWorkflows[0];
+  const [selectedId, setSelectedId] = useState('');
+  const activeSOP = missionWorkflows.find((w) => w.id === selectedId) ?? missionWorkflows[0];
+
+  const [dialog, setDialog] = useState<Dialog>(null);
+  const [titleDraft, setTitleDraft] = useState('');
+  const [descriptionDraft, setDescriptionDraft] = useState('');
+  const [outcomeDraft, setOutcomeDraft] = useState('');
+
+  const openDialog = (which: Exclude<Dialog, null>) => {
+    setTitleDraft('');
+    setDescriptionDraft('');
+    setOutcomeDraft('');
+    setDialog(which);
+  };
+
+  const submitDialog = (event: React.FormEvent) => {
+    event.preventDefault();
+    const title = titleDraft.trim();
+    if (!title) return;
+    if (dialog === 'process') {
+      const created = addWorkflow({
+        missionId,
+        title,
+        description: descriptionDraft.trim(),
+        targetOutcome: outcomeDraft.trim(),
+        steps: [],
+        status: 'draft',
+      });
+      setSelectedId(created.id);
+    } else if (dialog === 'step' && activeSOP) {
+      addSOPStep(activeSOP.id, { title, description: descriptionDraft.trim() });
+    }
+    setDialog(null);
+  };
+
+  const completedCount = activeSOP?.steps.filter((s) => s.completed).length ?? 0;
+  const progressPercent = activeSOP && activeSOP.steps.length > 0
+    ? Math.round((completedCount / activeSOP.steps.length) * 100)
+    : 0;
+
+  const dialogNode = dialog && (
+    <div
+      className="fixed inset-0 z-[100] flex items-start justify-center overflow-y-auto bg-black/65 p-4 backdrop-blur-sm sm:items-center"
+      onMouseDown={() => setDialog(null)}
+    >
+      <form
+        onSubmit={submitDialog}
+        onMouseDown={(event) => event.stopPropagation()}
+        onKeyDown={(event) => { if (event.key === 'Escape') setDialog(null); }}
+        className="my-auto w-full max-w-md rounded-2xl border border-borderSoft/45 bg-panel p-4 shadow-2xl sm:p-5"
+      >
+        <div className="mb-5">
+          <h2 className="text-base font-bold text-text-primary">
+            {dialog === 'process' ? 'New process' : 'Add step'}
+          </h2>
+          <p className="mt-1 text-xs text-text-secondary">
+            {dialog === 'process'
+              ? 'A standard operating procedure your team follows end to end.'
+              : `Appended to the end of “${activeSOP?.title}”.`}
+          </p>
+        </div>
+
+        <label htmlFor="sop-title" className="mb-2 block text-xs font-semibold text-text-secondary">
+          {dialog === 'process' ? 'Process name' : 'Step title'}
+        </label>
+        <input
+          id="sop-title"
+          autoFocus
+          required
+          maxLength={100}
+          value={titleDraft}
+          onChange={(event) => setTitleDraft(event.target.value)}
+          placeholder={dialog === 'process' ? 'e.g. Turf Venue 14-Day Free Pilot SOP' : 'e.g. Generate Printable QR Table Stand'}
+          className="w-full rounded-xl border border-borderSoft/50 bg-panel2 px-3.5 py-3 text-sm text-text-primary outline-none transition focus:border-accent/70 focus:ring-2 focus:ring-accent/15"
+        />
+
+        <label htmlFor="sop-description" className="mb-2 mt-4 block text-xs font-semibold text-text-secondary">
+          {dialog === 'process' ? 'Description' : 'What has to happen'}
+        </label>
+        <textarea
+          id="sop-description"
+          rows={3}
+          maxLength={400}
+          value={descriptionDraft}
+          onChange={(event) => setDescriptionDraft(event.target.value)}
+          placeholder={dialog === 'process' ? 'What this protocol guarantees.' : 'Enough detail that anyone on the team can run it.'}
+          className="w-full resize-none rounded-xl border border-borderSoft/50 bg-panel2 px-3.5 py-3 text-sm text-text-primary outline-none transition focus:border-accent/70 focus:ring-2 focus:ring-accent/15"
+        />
+
+        {dialog === 'process' && (
+          <>
+            <label htmlFor="sop-outcome" className="mb-2 mt-4 block text-xs font-semibold text-text-secondary">
+              Target outcome
+            </label>
+            <input
+              id="sop-outcome"
+              maxLength={160}
+              value={outcomeDraft}
+              onChange={(event) => setOutcomeDraft(event.target.value)}
+              placeholder="e.g. 3 live bookings within 72 hours"
+              className="w-full rounded-xl border border-borderSoft/50 bg-panel2 px-3.5 py-3 text-sm text-text-primary outline-none transition focus:border-accent/70 focus:ring-2 focus:ring-accent/15"
+            />
+          </>
+        )}
+
+        <div className="mt-5 flex justify-end gap-2">
+          <button
+            type="button"
+            onClick={() => setDialog(null)}
+            className="rounded-xl border border-borderSoft/40 px-4 py-2.5 text-xs font-bold text-text-secondary hover:bg-panel2"
+          >
+            Cancel
+          </button>
+          <button
+            type="submit"
+            disabled={!titleDraft.trim()}
+            className="rounded-xl bg-accent px-4 py-2.5 text-xs font-bold text-[rgb(var(--accent-contrast))] disabled:cursor-not-allowed disabled:opacity-45"
+          >
+            {dialog === 'process' ? 'Create process' : 'Add step'}
+          </button>
+        </div>
+      </form>
+    </div>
+  );
 
   if (!activeSOP) {
     return (
-      <div className="flex flex-col items-center justify-center p-12 text-center bg-slate-900/40 rounded-2xl border border-slate-800">
-        <ShieldCheck className="w-10 h-10 text-slate-600 mb-3" />
-        <h3 className="text-sm font-semibold text-slate-300">No SOP Workflow Configured</h3>
-        <p className="text-xs text-slate-500 max-w-sm mt-1">
-          Add a step-by-step execution protocol so your team follows standard operating procedures without drifting.
-        </p>
-      </div>
+      <>
+        <div className="flex flex-col items-center justify-center rounded-2xl border border-slate-800 bg-slate-900/40 px-5 py-10 text-center sm:p-12">
+          <ShieldCheck className="w-10 h-10 text-slate-600 mb-3" />
+          <h3 className="text-sm font-semibold text-slate-300">No SOP Workflow Configured</h3>
+          <p className="text-xs text-slate-500 max-w-sm mt-1">
+            Add a step-by-step execution protocol so your team follows standard operating procedures without drifting.
+          </p>
+          <button
+            type="button"
+            onClick={() => openDialog('process')}
+            className="mt-4 inline-flex items-center gap-1.5 rounded-xl bg-accent px-3 py-2 text-xs font-bold text-[rgb(var(--accent-contrast))]"
+          >
+            <Plus className="h-4 w-4" />
+            New process
+          </button>
+        </div>
+        {dialogNode}
+      </>
     );
   }
 
-  const completedCount = activeSOP.steps.filter((s) => s.completed).length;
-  const progressPercent = Math.round((completedCount / activeSOP.steps.length) * 100);
-
   return (
     <div className="space-y-4">
+      {/* Process switcher + create */}
+      <div className="flex min-h-12 flex-wrap items-center gap-2 rounded-xl border border-borderSoft/35 bg-panel/55 p-2">
+        {missionWorkflows.length > 1 ? (
+          // A scrolling strip beats a <select>: every process is visible and
+          // one click away, and the active one is obvious.
+          <div className="flex min-w-0 flex-1 items-center gap-1 overflow-x-auto scrollbar-none">
+            {missionWorkflows.map((workflow) => {
+              const isActive = workflow.id === activeSOP.id;
+              const done = workflow.steps.filter((s) => s.completed).length;
+              return (
+                <button
+                  key={workflow.id}
+                  type="button"
+                  onClick={() => setSelectedId(workflow.id)}
+                  aria-current={isActive ? 'true' : undefined}
+                  className={`flex shrink-0 items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-xs transition-colors ${
+                    isActive
+                      ? 'bg-accent/14 font-semibold text-accent'
+                      : 'font-medium text-text-secondary hover:bg-panel2 hover:text-text-primary'
+                  }`}
+                >
+                  <span className="max-w-[180px] truncate">{workflow.title}</span>
+                  <span className={`tabular-nums ${isActive ? 'text-accent/70' : 'text-text-muted'}`}>
+                    {done}/{workflow.steps.length}
+                  </span>
+                </button>
+              );
+            })}
+          </div>
+        ) : (
+          <div className="min-w-0 flex-1 px-1 text-xs font-medium text-text-secondary">
+            {missionWorkflows.length} process · {activeSOP.steps.length} steps
+          </div>
+        )}
+        <button
+          type="button"
+          onClick={() => openDialog('process')}
+          title="New process"
+          aria-label="New process"
+          className="ml-auto inline-flex shrink-0 items-center gap-1 rounded-lg bg-accent px-2.5 py-2 text-xs font-bold text-[rgb(var(--accent-contrast))]"
+        >
+          <Plus className="h-4 w-4" />
+          <span className="hidden md:inline">New</span>
+        </button>
+      </div>
+
       {/* SOP Header & Guardrail Progress */}
       <div className="p-4 bg-slate-900/80 rounded-2xl border border-slate-800 space-y-3">
         <div className="flex flex-wrap items-center justify-between gap-3">
@@ -49,11 +232,11 @@ export function WorkflowGuardrailView({ missionId }: WorkflowGuardrailViewProps)
                   {activeSOP.status.replace('_', ' ')}
                 </span>
               </h3>
-              <p className="text-xs text-slate-400 mt-0.5">{activeSOP.description}</p>
+              {activeSOP.description && <p className="text-xs text-slate-400 mt-0.5">{activeSOP.description}</p>}
             </div>
           </div>
 
-          <div className="text-right">
+          <div className="ml-auto text-right">
             <div className="text-sm font-bold font-mono text-emerald-400">{progressPercent}% Completed</div>
             <div className="text-[11px] text-slate-500">{completedCount} of {activeSOP.steps.length} Milestones</div>
           </div>
@@ -67,11 +250,13 @@ export function WorkflowGuardrailView({ missionId }: WorkflowGuardrailViewProps)
           />
         </div>
 
-        <div className="flex items-center gap-2 pt-1 text-[11px] text-slate-400">
-          <Target className="w-3.5 h-3.5 text-emerald-400 flex-shrink-0" />
-          <span className="font-semibold text-slate-300">Target Outcome:</span>
-          <span>{activeSOP.targetOutcome}</span>
-        </div>
+        {activeSOP.targetOutcome && (
+          <div className="flex items-center gap-2 pt-1 text-[11px] text-slate-400">
+            <Target className="w-3.5 h-3.5 text-emerald-400 flex-shrink-0" />
+            <span className="font-semibold text-slate-300">Target Outcome:</span>
+            <span>{activeSOP.targetOutcome}</span>
+          </div>
+        )}
       </div>
 
       {/* Step Sequence List (Guardrails) */}
@@ -122,9 +307,11 @@ export function WorkflowGuardrailView({ missionId }: WorkflowGuardrailViewProps)
                   )}
                 </div>
 
-                <p className="text-xs text-slate-400 mt-1 leading-relaxed">
-                  {step.description}
-                </p>
+                {step.description && (
+                  <p className="text-xs text-slate-400 mt-1 leading-relaxed">
+                    {step.description}
+                  </p>
+                )}
 
                 {step.completed && step.completedBy && (
                   <div className="flex items-center gap-3 mt-2 text-[10px] text-emerald-400/90 font-mono">
@@ -142,7 +329,18 @@ export function WorkflowGuardrailView({ missionId }: WorkflowGuardrailViewProps)
             </div>
           );
         })}
+
+        <button
+          type="button"
+          onClick={() => openDialog('step')}
+          className="flex w-full items-center justify-center gap-1.5 rounded-2xl border border-dashed border-borderSoft/50 px-3.5 py-3 text-xs font-semibold text-text-secondary transition-colors hover:border-accent/60 hover:bg-panel2 hover:text-text-primary"
+        >
+          <Plus className="h-4 w-4" />
+          Add step
+        </button>
       </div>
+
+      {dialogNode}
     </div>
   );
 }

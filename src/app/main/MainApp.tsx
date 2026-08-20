@@ -16,7 +16,7 @@ import {
   useRef,
   useState,
 } from 'react';
-import { Sun, CheckSquare, Target, MoreHorizontal, CheckCircle2, Timer, Flag, Clock, BarChart3, ClipboardList, Settings, Lightbulb, Link2, AlertCircle, Pin, FileText, ArrowUpRight, RotateCcw, Cloud, Pencil, Trash2, Play, Pause, CheckCircle, Menu, X, Plus, CalendarDays, ChevronDown, CornerDownRight, BookHeart, StickyNote, Wifi, WifiOff, MessageCircle, Trophy, Users, AlertOctagon, type LucideIcon } from 'lucide-react';
+import { Sun, CheckSquare, Target, MoreHorizontal, CheckCircle2, Timer, Flag, Clock, BarChart3, ClipboardList, Settings, Lightbulb, Link2, AlertCircle, Pin, FileText, ArrowLeft, ArrowUpRight, RotateCcw, Cloud, Pencil, Trash2, Play, Pause, CheckCircle, Menu, X, Plus, CalendarDays, ChevronDown, CornerDownRight, BookHeart, StickyNote, Wifi, WifiOff, MessageCircle, MessageSquare, Trophy, Users, AlertOctagon, type LucideIcon } from 'lucide-react';
 import { MissionIcon } from '../../components/ui/mission-icon';
 import { DatePicker } from '../../components/ui/date-picker';
 import { Badge } from '../../components/ui/badge';
@@ -687,6 +687,7 @@ function NavButton({
   active,
   label,
   icon: Icon,
+  gradient,
   caption,
   onClick,
   compact = false,
@@ -694,6 +695,7 @@ function NavButton({
   active: boolean;
   label: string;
   icon: LucideIcon;
+  gradient?: string;
   caption?: string;
   onClick: () => void;
   compact?: boolean;
@@ -713,8 +715,10 @@ function NavButton({
       {active ? <span aria-hidden className="absolute inset-y-2 left-0 w-0.5 rounded-r-full bg-accent" /> : null}
       <span
         className={cn(
-          'flex h-8 w-8 shrink-0 items-center justify-center rounded-[10px] border transition-colors',
-          active
+          'flex h-8 w-8 shrink-0 items-center justify-center rounded-[10px] border transition-all',
+          compact && gradient
+            ? `border-white/10 bg-gradient-to-br ${gradient} text-white shadow-[0_6px_16px_rgba(0,0,0,0.2)]`
+            : active
             ? 'border-accent/20 bg-accent/12 text-accent'
             : 'border-borderSoft/25 bg-panel/45 text-text-muted group-hover:border-borderSoft/40 group-hover:text-text-secondary',
         )}
@@ -823,17 +827,17 @@ function AppLauncherTile({
 }
 
 function SidebarContent({
-  activeSession,
   pinnedAppIds,
   onOpenApps,
+  onOpenChat,
   onViewSelect,
   activeView,
   ensureIds,
   compact = false,
 }: {
-  activeSession: WorkSession | null;
   pinnedAppIds: SidebarPinnedAppId[];
   onOpenApps: () => void;
+  onOpenChat?: () => void;
   onViewSelect: (view: MainView) => void;
   activeView: MainView;
   ensureIds?: SidebarPinnedAppId[];
@@ -880,16 +884,24 @@ function SidebarContent({
       ) : null}
 
       <div className={cn(compact ? 'space-y-2' : 'mt-7')}>
-        {/* Mobile drawer keeps Apps at the top; desktop pins it to the bottom-left corner. */}
-        {compact ? appsButton : null}
-
         {isTeam ? (
           <div className={cn('pt-1', compact ? 'space-y-1' : 'space-y-1.5')}>
+            {compact && onOpenChat ? (
+              <NavButton
+                active={false}
+                compact
+                gradient="from-rose-500 via-orange-500 to-amber-500"
+                icon={MessageSquare}
+                label="Chat"
+                onClick={onOpenChat}
+              />
+            ) : null}
             {teamLauncherViews.map((view) => (
               <NavButton
                 active={activeView === view.id}
                 caption={view.description}
                 compact={compact}
+                gradient={view.gradient}
                 icon={view.icon}
                 key={view.id}
                 label={view.label}
@@ -906,6 +918,7 @@ function SidebarContent({
                   active={activeView === view.id}
                   caption={view.description}
                   compact={compact}
+                  gradient={view.gradient}
                   icon={view.icon}
                   key={view.id}
                   label={view.label}
@@ -918,14 +931,10 @@ function SidebarContent({
         )}
       </div>
 
-      {compact ? (
-        <div className="mt-6">
-          <SidebarLiveStatus activeSession={activeSession} />
-        </div>
-      ) : (
+      {!compact ? (
         /* Start-button style: Apps anchored to the bottom-left corner of the sidebar. */
         <div className="mt-auto border-t border-borderSoft/20 pt-4">{appsButton}</div>
-      )}
+      ) : null}
     </div>
   );
 }
@@ -1941,6 +1950,29 @@ function SidebarLiveStatus({ activeSession }: { activeSession: WorkSession | nul
   );
 }
 
+function DrawerProfile({ onOpen }: { onOpen: () => void }) {
+  const persona = useTeamStore((state) => state.activePersona);
+  const initials = persona.initials || persona.name.slice(0, 2).toUpperCase();
+
+  return (
+    <button
+      type="button"
+      onClick={onOpen}
+      className="relative mt-5 flex w-full items-center gap-3 rounded-2xl border border-borderSoft/25 bg-panel/55 p-3 text-left transition-colors hover:border-accent/30 hover:bg-panel"
+      aria-label="Open profile settings"
+    >
+      <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-accent/25 bg-accent/12 text-xs font-bold text-accent">
+        {initials}
+      </span>
+      <span className="min-w-0 flex-1">
+        <span className="block truncate text-sm font-semibold text-text-primary">{persona.name}</span>
+        <span className="mt-0.5 block truncate text-[11px] text-text-muted">{persona.email || persona.role}</span>
+      </span>
+      <Settings className="h-4 w-4 shrink-0 text-text-muted" aria-hidden="true" />
+    </button>
+  );
+}
+
 function TodayFocusCard({
   activeSession,
   currentTask,
@@ -2162,6 +2194,7 @@ export function MainApp() {
   const [missionComposerOpen, setMissionComposerOpen] = useState(false);
   const [editingMission, setEditingMission] = useState<Mission | null>(null);
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
+  const [mobileChatPickerOpen, setMobileChatPickerOpen] = useState(false);
   const [missionHubNavSlot, setMissionHubNavSlot] = useState<HTMLElement | null>(null);
   const [fabDockOpen, setFabDockOpen] = useState(false);
   const dragImageRef = useRef<HTMLImageElement | null>(null);
@@ -2580,6 +2613,7 @@ export function MainApp() {
   const isMobile = useIsMobile();
   const workspaceMode = useTeamStore((s) => s.workspaceMode);
   const teamUnlocked = useTeamStore((s) => s.teamUnlocked);
+  const teamMissions = useTeamStore((s) => s.teamMissions);
 
 
   useEffect(() => {
@@ -4294,57 +4328,85 @@ export function MainApp() {
   return (
     <div className="h-full">
       {mobileNavOpen ? (
-        <div className="fixed inset-0 z-50 flex justify-start lg:hidden">
+        <div className="fixed inset-0 z-50 flex justify-start p-2 lg:hidden">
           <button
             type="button"
-            className="absolute inset-0 transition-opacity"
-            style={{ backgroundColor: 'rgba(0, 0, 0, 0.5)' }}
+            className="absolute inset-0 bg-black/60 backdrop-blur-[3px] transition-opacity"
             onClick={() => setMobileNavOpen(false)}
             aria-label="Close navigation"
           />
-          <aside className="relative z-10 flex h-full min-h-0 w-[284px] flex-col overflow-hidden bg-panel2 p-6 shadow-2xl transition-transform duration-300">
-            <div className="mb-8 flex items-center justify-between gap-3">
-              <button
-                type="button"
-                onClick={() => { setActiveView('dashboard'); setMobileNavOpen(false); }}
-                aria-label="Go to dashboard"
-                className="flex items-center rounded-xl transition-opacity hover:opacity-80"
-              >
-                <SynCatchWordmark themed animated logoClassName="h-7 w-7" textClassName="text-sm font-bold tracking-tight" />
-              </button>
+          <aside
+            role="dialog"
+            aria-modal="true"
+            aria-label="Navigation drawer"
+            className="relative z-10 flex h-full min-h-0 w-[min(300px,calc(100vw-2rem))] flex-col overflow-hidden rounded-[28px] border border-white/[0.08] bg-panel2/95 p-5 shadow-[0_28px_90px_rgba(0,0,0,0.62)] backdrop-blur-2xl animate-in slide-in-from-left-4 duration-200"
+          >
+            <div aria-hidden className="absolute inset-x-8 top-0 h-px bg-gradient-to-r from-transparent via-white/25 to-transparent" />
+            <div aria-hidden className="pointer-events-none absolute -left-16 -top-20 h-52 w-52 rounded-full bg-accent/10 blur-3xl" />
+            <div aria-hidden className="pointer-events-none absolute -bottom-24 -right-20 h-64 w-64 rounded-full bg-cyan-500/5 blur-3xl" />
+            <div className="relative mb-6 flex items-center justify-between gap-3 border-b border-borderSoft/15 pb-5">
+              {mobileChatPickerOpen ? (
+                <button type="button" onClick={() => setMobileChatPickerOpen(false)} className="flex items-center gap-2 rounded-xl px-2 py-2 text-sm font-semibold text-text-primary hover:bg-panel" aria-label="Back to navigation">
+                  <ArrowLeft className="h-4 w-4" /> Project chats
+                </button>
+              ) : (
+                <button
+                  type="button"
+                  onClick={() => { setActiveView('dashboard'); setMobileNavOpen(false); }}
+                  aria-label="Go to dashboard"
+                  className="flex items-center rounded-xl transition-opacity hover:opacity-80"
+                >
+                  <SynCatchWordmark themed animated logoClassName="h-11 w-11" textClassName="text-base font-bold tracking-tight" />
+                </button>
+              )}
               <Button onClick={() => setMobileNavOpen(false)} size="sm" type="button" variant="ghost" className="h-8 w-8 p-0 rounded-full">
                 <X className="h-4 w-4" />
               </Button>
             </div>
             
-            <div className="flex-1 overflow-y-auto">
-              <SidebarContent
+            <div className="relative flex-1 overflow-y-auto">
+              {mobileChatPickerOpen ? (
+                <div className="space-y-2">
+                  <p className="px-2 pb-2 text-xs leading-5 text-text-muted">Choose the project channel you want to open.</p>
+                  {teamMissions.length > 0 ? teamMissions.map((mission) => (
+                    <button
+                      key={mission.id}
+                      type="button"
+                      onClick={() => {
+                        sessionStorage.setItem('missioncontrol:open-chat-mission', mission.id);
+                        setActiveView('missions');
+                        setMobileChatPickerOpen(false);
+                        setMobileNavOpen(false);
+                        window.dispatchEvent(new CustomEvent('missioncontrol:open-project-chat', { detail: mission.id }));
+                      }}
+                      className="flex w-full items-center gap-3 rounded-2xl border border-borderSoft/20 bg-panel/35 p-3 text-left transition-colors hover:border-accent/30 hover:bg-panel"
+                    >
+                      <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-rose-500 via-orange-500 to-amber-500 text-white shadow-sm"><MessageSquare className="h-4 w-4" /></span>
+                      <span className="min-w-0 flex-1"><span className="block truncate text-sm font-semibold text-text-primary">{mission.title}</span><span className="mt-0.5 block truncate text-[11px] text-text-muted">Project chat</span></span>
+                      <ChevronDown className="h-4 w-4 -rotate-90 text-text-muted" />
+                    </button>
+                  )) : <p className="rounded-2xl border border-dashed border-borderSoft/30 p-4 text-center text-xs text-text-muted">Create a project before starting a chat.</p>}
+                </div>
+              ) : <SidebarContent
                 compact
                 ensureIds={mobileDrawerCoreApps}
-                activeSession={activeSession}
                 activeView={activeView}
                 onOpenApps={() => {
                   openAppsView();
                   setMobileNavOpen(false);
+                }}
+                onOpenChat={() => {
+                  setMobileChatPickerOpen(true);
                 }}
                 onViewSelect={(view) => {
                   setActiveView(view);
                   setMobileNavOpen(false);
                 }}
                 pinnedAppIds={sidebarPinnedApps}
-              />
+              />}
             </div>
 
-            <div className="mt-6 space-y-2 pt-6 border-t border-borderSoft/20">
-              <p className="px-2 text-[10px] font-bold uppercase tracking-widest text-text-muted mb-2">Quick Actions</p>
-              <Button
-                onClick={() => { setMobileNavOpen(false); setActiveView('tasks'); setTaskComposerOpen(true); }}
-                className="w-full justify-start gap-3 rounded-2xl"
-                variant="secondary"
-              >
-                <Plus className="h-4 w-4" /> New Task
-              </Button>
-            </div>
+            {!mobileChatPickerOpen ? <DrawerProfile onOpen={() => { setMobileNavOpen(false); setActiveView('settings'); }} /> : null}
           </aside>
         </div>
       ) : null}
@@ -4352,7 +4414,6 @@ export function MainApp() {
       <div className="app-frame relative flex h-full flex-col overflow-visible lg:overflow-hidden lg:flex-row">
         <aside className="sidebar-shell relative z-10 hidden w-full flex-col border-r border-borderSoft/24 p-6 lg:flex lg:w-[248px]">
           <SidebarContent
-            activeSession={activeSession}
             activeView={activeView}
             onOpenApps={openAppsView}
             onViewSelect={(view) => setActiveView(view)}
@@ -4425,7 +4486,7 @@ export function MainApp() {
                 size="sm"
                 type="button"
                 variant={activeView === 'settings' ? 'secondary' : 'ghost'}
-                className="h-12 w-12 shrink-0 p-0"
+                className="hidden h-12 w-12 shrink-0 p-0 sm:flex"
               >
                 <Settings className="h-5 w-5" />
               </Button>
@@ -4436,7 +4497,7 @@ export function MainApp() {
             <main
               className={cn(
                 'main-scroll-region absolute inset-0 overflow-y-scroll px-3 py-4 pb-32 sm:px-6 sm:py-6 lg:relative lg:inset-auto lg:h-full lg:min-w-0 lg:flex-1 lg:pb-6',
-                workspaceMode === 'team' && 'py-0 sm:py-0',
+                workspaceMode === 'team' && 'py-0 pb-[var(--mobile-nav-height)] sm:py-0 lg:pb-6',
                 workspaceMode === 'team' && teamUnlocked ? 'team-workspace' : null,
               )}
               style={{ WebkitOverflowScrolling: 'touch' }}
@@ -4539,7 +4600,7 @@ export function MainApp() {
               </>
             ) : showMissionDetailPanel && detailMission ? (
               workspaceMode === "team" ? (
-                <div className="fixed inset-0 z-50 bg-slate-950/95 backdrop-blur-md flex flex-col animate-in fade-in">
+                <div className="fixed inset-0 z-30 flex min-w-0 flex-col overflow-hidden bg-slate-950/95 backdrop-blur-md animate-in fade-in lg:z-50">
                   <UnifiedMissionHub
                     mission={detailMission}
                     onBack={() => setDetailMissionId(null)}
@@ -4577,7 +4638,7 @@ export function MainApp() {
           sits in the bottom-right corner — a chat composer's send button, a
           table's last row. Collapsed by default; the toggle stays put and the
           buttons stack above it. */}
-      {!mobileNavOpen && !showTaskDetailPanel && !showMissionDetailPanel ? (
+      {!mobileNavOpen && !showTaskDetailPanel && !showMissionDetailPanel && workspaceMode !== 'team' ? (
         <>
           <button
             type="button"
@@ -4599,7 +4660,7 @@ export function MainApp() {
       ) : null}
 
       {/* Mobile bottom navigation */}
-      <nav className="mobile-bottom-nav lg:hidden">
+      <nav id="mobile-primary-navigation" aria-label="Primary navigation" className="mobile-bottom-nav lg:hidden">
         {(workspaceMode === 'team' && teamUnlocked
           ? [
               { id: 'missions' as MainView, label: 'Projects', Icon: Target },

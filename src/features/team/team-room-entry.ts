@@ -19,8 +19,11 @@ export async function enterTeamRoom(roomId: string): Promise<void> {
  * @returns true when a room was opened; false means the picker is still needed.
  */
 export async function resumeLastTeamRoom(): Promise<boolean> {
-  if (!useTeamRoomStore.getState().hydrated) {
-    await useTeamRoomStore.getState().hydrate();
+  // An earlier hydrate that failed still flips `hydrated`, so retry whenever we
+  // have no rooms to choose from rather than sending the user to the picker.
+  const hydratedState = useTeamRoomStore.getState();
+  if (!hydratedState.hydrated || hydratedState.rooms.length === 0) {
+    await hydratedState.hydrate();
   }
 
   const { rooms, activeRoomId } = useTeamRoomStore.getState();

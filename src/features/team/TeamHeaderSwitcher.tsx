@@ -34,6 +34,14 @@ export function TeamHeaderSwitcher({ onSwitchMode }: TeamHeaderSwitcherProps) {
   // for the cases it cannot decide: no rooms yet, or several to choose from.
   const goToTeam = async () => {
     if (switching) return;
+    // Back from a Personal detour: the room never closed and its sync is still
+    // live, so flip the mode instead of re-running room discovery — that round
+    // trip can fail (offline, slow session refresh) and drop you in the picker.
+    if (teamUnlocked && activeRoom) {
+      setWorkspaceMode('team');
+      onSwitchMode?.('team');
+      return;
+    }
     setSwitching(true);
     try {
       if (await resumeLastTeamRoom()) {

@@ -1,4 +1,4 @@
-import { lazy, Suspense, useMemo, useState } from 'react';
+import { lazy, Suspense, useEffect, useMemo, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { 
   AlertOctagon,
@@ -6,6 +6,7 @@ import {
   CheckSquare,
   FileText,
   Link2,
+  Menu,
   MessageSquare,
   Network,
   ShieldCheck,
@@ -31,6 +32,7 @@ import { useMissionHubNavSlot } from './mission-hub-nav-slot';
 interface UnifiedMissionHubProps {
   mission: Mission | TeamMissionItem;
   onBack?: () => void;
+  initialTab?: TabKey;
 }
 
 type TabKey = 'chat' | 'tasks' | 'leads' | 'workflows' | 'canvas' | 'links' | 'problems' | 'notes';
@@ -45,8 +47,9 @@ const REF_TAB: Record<ChatRef['kind'], TabKey> = {
   note: 'notes',
 };
 
-export function UnifiedMissionHub({ mission, onBack }: UnifiedMissionHubProps) {
-  const [selectedTab, setSelectedTab] = useState<TabKey>('tasks');
+export function UnifiedMissionHub({ mission, onBack, initialTab = 'tasks' }: UnifiedMissionHubProps) {
+  const [selectedTab, setSelectedTab] = useState<TabKey>(initialTab);
+  const [mobileNavVisible, setMobileNavVisible] = useState(false);
   const navSlot = useMissionHubNavSlot();
   const unreadChat = useUnreadCount(mission.id);
   const chatDraftRef = useTeamStore((s) => s.chatDraftRef);
@@ -95,9 +98,31 @@ export function UnifiedMissionHub({ mission, onBack }: UnifiedMissionHubProps) {
     setSelectedTab(key);
   };
 
-  const tabs: Array<{ key: TabKey; label: string; icon: LucideIcon; count?: number; badge?: number }> = [
-    { key: 'chat', label: 'Chat', icon: MessageSquare, badge: unreadChat },
-    { key: 'tasks', label: 'Tasks & Sprints', icon: CheckSquare, count: teamTasks.length },
+  // Chat is a focused mobile surface. Tell the app shell to temporarily remove
+  // its bottom navigation and reclaim that space for messages and the composer.
+  useEffect(() => {
+    if (activeTab === 'chat' && !mobileNavVisible) {
+      document.documentElement.dataset.chatFocus = 'true';
+    } else {
+      delete document.documentElement.dataset.chatFocus;
+    }
+
+    return () => {
+      delete document.documentElement.dataset.chatFocus;
+    };
+  }, [activeTab, mobileNavVisible]);
+
+  useEffect(() => {
+    const openChat = () => {
+      if (chatDraftRef) clearChatDraft();
+      setSelectedTab('chat');
+    };
+    window.addEventListener('missioncontrol:open-project-chat', openChat);
+    return () => window.removeEventListener('missioncontrol:open-project-chat', openChat);
+  }, [chatDraftRef, clearChatDraft]);
+
+  const tabs: Array<{ key: TabKey; label: string; icon: LucideIcon; count?: number }> = [
+    { key: 'tasks', label: 'Tasks', icon: CheckSquare, count: teamTasks.length },
     { key: 'leads', label: 'Leads & CRM', icon: Users, count: leads.length },
     { key: 'workflows', label: 'Process', icon: ShieldCheck, count: workflows.length },
     { key: 'canvas', label: 'Diagram', icon: Network },
@@ -121,7 +146,7 @@ export function UnifiedMissionHub({ mission, onBack }: UnifiedMissionHubProps) {
       <div className="my-auto h-5 w-px shrink-0 bg-borderSoft" />
 
       <nav aria-label="Project sections" className="flex h-full min-w-0 flex-1 items-stretch gap-5 overflow-x-auto scrollbar-none sm:gap-6">
-        {tabs.map(({ key, label, icon: Icon, count, badge }) => {
+        {tabs.map(({ key, label, icon: Icon, count }) => {
           const isActive = activeTab === key;
           return (
             <button
@@ -140,11 +165,6 @@ export function UnifiedMissionHub({ mission, onBack }: UnifiedMissionHubProps) {
                   {count}
                 </span>
               )}
-              {badge !== undefined && badge > 0 && (
-                <span className="ml-0.5 flex h-4 min-w-[1rem] items-center justify-center rounded-full bg-danger px-1 text-[10px] font-bold tabular-nums text-[rgb(var(--accent-contrast))]">
-                  {badge > 99 ? '99+' : badge}
-                </span>
-              )}
               <span
                 aria-hidden
                 className={`pointer-events-none absolute inset-x-0 bottom-0 h-[2px] rounded-full transition-colors ${
@@ -161,72 +181,86 @@ export function UnifiedMissionHub({ mission, onBack }: UnifiedMissionHubProps) {
   const isActiveMission = mission.status === 'active';
 
   return (
-    <div className={`flex min-w-0 flex-1 flex-col text-text-primary ${activeTab === 'chat' ? 'h-full overflow-hidden' : 'overflow-y-auto'}`}>
-      {navSlot ? createPortal(navBar, navSlot) : null}
+    <div className={`relative flex min-w-0 flex-1 flex-col text-text-primary ${activeTab === 'chat' ? 'h-full overflow-hidden' : 'overflow-y-auto'}`}>
+      {navSlot && activeTab !== 'chat' ? createPortal(navBar, navSlot) : null}
 
-      {/* Compact project banner */}
-      <div className="space-y-1.5 border-b border-borderSoft/60 bg-panel/40 px-4 py-3 sm:px-5">
-        {navSlot ? null : navBar}
+      {/* The project summary is useful while working in modules, but redundant
+          in chat where it steals a large part of a phone viewport. */}
+      {activeTab !== 'chat' ? (
+        <div className="space-y-1.5 border-b border-borderSoft/60 bg-panel/40 px-4 py-3 sm:px-5">
+          {navSlot ? null : navBar}
 
-        <div className="flex min-w-0 items-center gap-2">
-          <h1 className="truncate text-base font-bold tracking-tight text-text-primary sm:text-lg">
-            {mission.title}
-          </h1>
-          <span
-            className={`shrink-0 rounded-full border px-2 py-px text-[10px] font-semibold uppercase tracking-wide ${
-              isActiveMission
-                ? 'border-success/40 bg-success/14 text-success'
-                : 'border-borderSoft bg-panel2 text-text-secondary'
-            }`}
+          <div className="flex min-w-0 items-center gap-2">
+            <h1 className="truncate text-base font-bold tracking-tight text-text-primary sm:text-lg">
+              {mission.title}
+            </h1>
+            <span
+              className={`shrink-0 rounded-full border px-2 py-px text-[10px] font-semibold uppercase tracking-wide ${
+                isActiveMission
+                  ? 'border-success/40 bg-success/14 text-success'
+                  : 'border-borderSoft bg-panel2 text-text-secondary'
+              }`}
+            >
+              {mission.status}
+            </span>
+          </div>
+
+          <p
+            className="truncate text-xs text-text-secondary"
+            title={mission.objective ? `${mission.description}\n\nGoal: ${mission.objective}` : mission.description}
           >
-            {mission.status}
-          </span>
-        </div>
+            {mission.description}
+            {mission.objective && (
+              <>
+                <span className="mx-1.5 text-text-muted">&middot;</span>
+                <Target className="mr-1 inline h-3 w-3 -translate-y-px text-accent" />
+                <span className="font-medium text-text-primary">Goal:</span> {mission.objective}
+              </>
+            )}
+          </p>
 
-        <p
-          className="truncate text-xs text-text-secondary"
-          title={mission.objective ? `${mission.description}\n\nGoal: ${mission.objective}` : mission.description}
-        >
-          {mission.description}
-          {mission.objective && (
-            <>
-              <span className="mx-1.5 text-text-muted">&middot;</span>
-              <Target className="mr-1 inline h-3 w-3 -translate-y-px text-accent" />
-              <span className="font-medium text-text-primary">Goal:</span> {mission.objective}
-            </>
-          )}
-        </p>
-
-        {/* Inline metric line */}
-        <div className={`flex flex-wrap items-center gap-x-2.5 gap-y-1 text-xs text-text-secondary ${activeTab === 'canvas' ? 'hidden' : ''}`}>
-          <span>
-            <span className="font-semibold tabular-nums text-accent">{taskProgress}%</span> sprint
-            <span className="ml-1 tabular-nums text-text-muted">({completedTasks}/{teamTasks.length})</span>
-          </span>
-          <span className="h-3 w-px bg-borderSoft" />
-          <span>
-            <span className="font-semibold tabular-nums text-success">
-              {leads.filter((l) => l.status === 'active_pilot').length}
-            </span>{' '}
-            live
-          </span>
-          <span className="h-3 w-px bg-borderSoft" />
-          <span>
-            <span className="font-semibold tabular-nums text-text-primary">{leads.length}</span> leads
-          </span>
-          <span className="h-3 w-px bg-borderSoft" />
-          <span>
-            <span className={`font-semibold tabular-nums ${problems.length > 0 ? 'text-danger' : 'text-text-primary'}`}>
-              {problems.length}
-            </span>{' '}
-            issues
-          </span>
+          <div className={`flex flex-wrap items-center gap-x-2.5 gap-y-1 text-xs text-text-secondary ${activeTab === 'canvas' ? 'hidden' : ''}`}>
+            <span>
+              <span className="font-semibold tabular-nums text-accent">{taskProgress}%</span> sprint
+              <span className="ml-1 tabular-nums text-text-muted">({completedTasks}/{teamTasks.length})</span>
+            </span>
+            <span className="h-3 w-px bg-borderSoft" />
+            <span><span className="font-semibold tabular-nums text-success">{leads.filter((l) => l.status === 'active_pilot').length}</span> live</span>
+            <span className="h-3 w-px bg-borderSoft" />
+            <span><span className="font-semibold tabular-nums text-text-primary">{leads.length}</span> leads</span>
+            <span className="h-3 w-px bg-borderSoft" />
+            <span><span className={`font-semibold tabular-nums ${problems.length > 0 ? 'text-danger' : 'text-text-primary'}`}>{problems.length}</span> issues</span>
+          </div>
         </div>
-      </div>
+      ) : (
+        <div className="flex h-11 shrink-0 items-center justify-between border-b border-borderSoft/50 px-2 sm:px-3">
+          <div className="flex min-w-0 items-center gap-1">
+            <button
+              type="button"
+              onClick={onBack}
+              aria-label="Back to projects"
+              className="flex h-9 min-h-0 w-9 min-w-0 shrink-0 items-center justify-center rounded-lg text-text-secondary transition-colors hover:bg-panel2 hover:text-text-primary"
+            >
+              <ArrowLeft className="h-4 w-4" aria-hidden="true" />
+            </button>
+            <span className="truncate text-sm font-semibold text-text-primary">Chat</span>
+          </div>
+          <button
+            type="button"
+            onClick={() => setMobileNavVisible((visible) => !visible)}
+            aria-expanded={mobileNavVisible}
+            aria-controls="mobile-primary-navigation"
+            className="flex h-9 min-h-0 shrink-0 items-center gap-2 rounded-lg px-2.5 text-xs font-medium text-text-secondary transition-colors hover:bg-panel2 hover:text-text-primary lg:hidden"
+          >
+            <Menu className="h-4 w-4" aria-hidden="true" />
+            <span>{mobileNavVisible ? 'Hide navigation' : 'Navigation'}</span>
+          </button>
+        </div>
+      )}
 
 
       {/* Main Tab Content Surface */}
-      <div className={`w-full ${activeTab === 'chat' ? 'min-h-0 flex-1 p-3 pb-[calc(var(--mobile-nav-height)+0.5rem)] sm:p-4 lg:pb-4' : 'p-4 sm:p-6'}`}>
+      <div className={`w-full ${activeTab === 'chat' ? 'min-h-0 flex-1 p-2 sm:p-4' : 'p-4 sm:p-6'}`}>
         {activeTab === 'chat' && (
           <TeamChatView missionId={mission.id} onOpenRef={(ref) => setActiveTab(REF_TAB[ref.kind])} />
         )}
@@ -246,6 +280,25 @@ export function UnifiedMissionHub({ mission, onBack }: UnifiedMissionHubProps) {
         {activeTab === 'notes' && <TeamNotesView filterMissionId={mission.id} />}
         </Suspense>
       </div>
+
+      {/* Chat rides along as a floating button instead of a tab, so it stays one
+          tap away from whatever tab you are working in. Sits left of the quick
+          actions dock so the two never overlap. */}
+      {activeTab !== 'chat' ? createPortal(
+        <button
+          type="button"
+          onClick={() => setActiveTab('chat')}
+          aria-label={unreadChat > 0 ? `Open project chat, ${unreadChat} unread` : 'Open project chat'}
+          className="fixed bottom-[calc(var(--mobile-nav-height)+1rem)] right-4 z-[39] flex h-12 w-12 items-center justify-center rounded-full border border-white/15 bg-accent text-[rgb(var(--accent-contrast))] shadow-[0_10px_28px_rgb(var(--shadow-color)/0.4)] transition-transform hover:scale-105 active:scale-95 lg:bottom-6 lg:right-6 lg:z-[66] lg:h-11 lg:w-11"
+        >
+          <MessageSquare className="h-5 w-5" />
+          {unreadChat > 0 && (
+            <span className="absolute -right-0.5 -top-0.5 flex h-4 min-w-[1rem] items-center justify-center rounded-full bg-danger px-1 text-[10px] font-bold tabular-nums text-white">
+              {unreadChat > 99 ? '99+' : unreadChat}
+            </span>
+          )}
+        </button>
+      , document.body) : null}
     </div>
   );
 }

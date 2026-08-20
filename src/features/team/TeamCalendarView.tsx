@@ -168,20 +168,20 @@ export function TeamCalendarView() {
   return (
     <div className="space-y-4">
       {/* Top Calendar Header & Filter */}
-      <div className="space-y-3 rounded-2xl border border-borderSoft/30 bg-panel/45 p-4">
-        <div className="flex flex-wrap items-center justify-between gap-3">
-          <div className="flex items-center gap-2">
-            <div className="p-2 rounded-xl bg-blue-500/20 text-blue-400 border border-blue-500/30">
-              <CalendarIcon className="w-4 h-4" />
+      <div className="space-y-2 rounded-2xl border border-borderSoft/30 bg-panel/45 p-3 sm:space-y-3 sm:p-4">
+        <div className="flex min-w-0 items-center justify-between gap-2 sm:gap-3">
+          <div className="flex min-w-0 flex-1 items-center gap-2">
+            <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-blue-500/30 bg-blue-500/20 text-blue-400 sm:h-auto sm:w-auto sm:p-2">
+              <CalendarIcon className="h-4 w-4" />
             </div>
-            <div>
-              <h3 className="flex items-center gap-2 text-xs font-bold text-text-primary">
-                Team Schedule & Milestones
-                <span className="rounded-full bg-panel2/60 px-2 py-0.5 font-mono text-[10px] text-text-muted">
-                  {filteredEvents.length} Events Logged
+            <div className="min-w-0">
+              <h3 className="flex min-w-0 items-center gap-2 text-xs font-bold text-text-primary">
+                <span className="truncate">Team Schedule</span>
+                <span className="shrink-0 rounded-full bg-panel2/60 px-1.5 py-0.5 font-mono text-[9px] text-text-muted sm:px-2 sm:text-[10px]">
+                  {filteredEvents.length}<span className="hidden sm:inline"> Events Logged</span><span className="sm:hidden"> events</span>
                 </span>
               </h3>
-              <p className="text-[11px] text-text-muted">
+              <p className="hidden text-[11px] text-text-muted sm:block">
                 Synchronized view of sprint task due dates, CRM venue follow-ups, and pilot review windows.
               </p>
             </div>
@@ -191,7 +191,8 @@ export function TeamCalendarView() {
           <select
             value={selectedVentureId}
             onChange={(e) => setSelectedVentureId(e.target.value)}
-            className="rounded-xl border border-borderSoft/35 bg-panel2/55 px-3 py-1.5 text-xs font-medium text-text-primary focus:border-accent focus:outline-none cursor-pointer"
+            aria-label="Filter calendar by project"
+            className="h-9 min-h-0 w-[116px] shrink-0 cursor-pointer truncate rounded-xl border border-borderSoft/35 bg-panel2/55 px-2 py-1 text-xs font-medium text-text-primary focus:border-accent focus:outline-none sm:h-auto sm:w-auto sm:px-3 sm:py-1.5"
           >
             <option value="all">All projects</option>
             {teamMissions.map((m) => (

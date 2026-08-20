@@ -1,14 +1,15 @@
 import { useState } from 'react';
 import { ExternalLink, Globe, Code2, Palette, FileText, Plus, Trash2, Folder, Link2 } from 'lucide-react';
+import type { LucideIcon } from 'lucide-react';
 import { useTeamStore } from './team-store';
 import { DiscussButton } from './DiscussButton';
-import type { WorkLink, WorkLinkCategory } from './team-types';
+import type { WorkLinkCategory } from './team-types';
 
 interface WorkLinksViewProps {
   missionId: string;
 }
 
-const CATEGORY_CONFIG: Record<WorkLinkCategory, { label: string; icon: any; color: string; border: string }> = {
+const CATEGORY_CONFIG: Record<WorkLinkCategory, { label: string; icon: LucideIcon; color: string; border: string }> = {
   demo: { label: 'Live Demo / Vercel', icon: Globe, color: 'text-emerald-400 bg-emerald-500/20', border: 'border-emerald-500/30' },
   repo: { label: 'Source Code / GitHub', icon: Code2, color: 'text-slate-200 bg-slate-800', border: 'border-slate-700' },
   design: { label: 'Design / Figma', icon: Palette, color: 'text-purple-400 bg-purple-500/20', border: 'border-purple-500/30' },
@@ -178,13 +179,13 @@ export function WorkLinksView({ missionId }: WorkLinksViewProps) {
               </div>
 
               <DiscussButton
-                className="opacity-0 group-hover:opacity-100"
+                className="opacity-100 lg:opacity-0 lg:group-hover:opacity-100"
                 item={{ kind: 'link', id: link.id, label: link.title, detail: link.category }}
               />
               <button
                 type="button"
                 onClick={() => deleteWorkLink(link.id)}
-                className="opacity-0 group-hover:opacity-100 p-1.5 text-slate-500 hover:text-rose-400 transition-opacity"
+                className="p-1.5 text-slate-500 opacity-100 transition-opacity hover:text-rose-400 lg:opacity-0 lg:group-hover:opacity-100"
                 title="Delete Link"
               >
                 <Trash2 className="w-3.5 h-3.5" />

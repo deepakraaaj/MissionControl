@@ -4,6 +4,7 @@ import type {
   TeamPersona,
   Lead,
   WorkflowSOP,
+  SOPStep,
   WorkLink,
   ProblemItem,
   VisualDiagram,
@@ -105,7 +106,8 @@ interface TeamState {
 
   // Workflows & SOP Actions
   toggleSOPStep: (sopId: string, stepId: string) => void;
-  addWorkflow: (workflow: Omit<WorkflowSOP, 'id'>) => void;
+  addWorkflow: (workflow: Omit<WorkflowSOP, 'id'>) => WorkflowSOP;
+  addSOPStep: (sopId: string, step: Pick<SOPStep, 'title' | 'description'>) => void;
 
   // Work Links Actions
   addWorkLink: (link: Omit<WorkLink, 'id' | 'createdAt'>) => void;
@@ -311,7 +313,37 @@ export const useTeamStore = create<TeamState>()(
           ...wfData,
           id: `sop-${Date.now()}`,
         };
-        set((state) => ({ workflows: [...state.workflows, newWf] }));
+        set((state) => ({
+          workflows: [...state.workflows, newWf],
+          chatMessages: [
+            ...state.chatMessages,
+            systemMessage(newWf.missionId, 'added a process', {
+              kind: 'workflow', id: newWf.id, label: newWf.title, detail: newWf.status,
+            }),
+          ],
+        }));
+        return newWf;
+      },
+
+      addSOPStep: (sopId, step) => {
+        set((state) => ({
+          workflows: state.workflows.map((wf) => {
+            if (wf.id !== sopId) return wf;
+            const newStep: SOPStep = {
+              id: `step-${Date.now()}`,
+              stepNumber: wf.steps.length + 1,
+              title: step.title,
+              description: step.description,
+              completed: false,
+            };
+            return {
+              ...wf,
+              steps: [...wf.steps, newStep],
+              // A fresh open step means the protocol is no longer finished.
+              status: wf.status === 'completed' ? 'in_progress' : wf.status,
+            };
+          }),
+        }));
       },
 
       // Work Links
