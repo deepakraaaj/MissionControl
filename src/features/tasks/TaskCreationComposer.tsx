@@ -183,7 +183,12 @@ export function TaskCreationComposer({
   const scheduledForId = `${composerId}-scheduled-for`;
   const detailsId = `${composerId}-details`;
 
-  const [draft, setDraft] = useState<ComposerDraft>({ ...INITIAL_DRAFT, lane, priority });
+  const [draft, setDraft] = useState<ComposerDraft>({
+    ...INITIAL_DRAFT,
+    lane,
+    priority,
+    missionId: defaultMissionId ?? null,
+  });
   const [detailsOpen, setDetailsOpen] = useState(false);
   const [clarification, setClarification] = useState<TaskClarification | null>(null);
   const [isThinking, setIsThinking] = useState(false);

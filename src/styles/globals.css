@@ -943,3 +943,23 @@ html:not([data-theme]) .calendar-panel,
   background-image: radial-gradient(rgb(var(--text-muted) / 0.08) 1px, transparent 1px);
   background-size: 22px 22px;
 }
+
+/* Subtle tech grid background pattern for visual representation */
+.bg-grid-subtle {
+  background-image:
+    linear-gradient(to right, rgb(var(--border-subtle) / 0.16) 1px, transparent 1px),
+    linear-gradient(to bottom, rgb(var(--border-subtle) / 0.16) 1px, transparent 1px);
+  background-size: 24px 24px;
+}
+
+.bg-grid-dense {
+  background-image:
+    linear-gradient(to right, rgb(var(--border-subtle) / 0.22) 1px, transparent 1px),
+    linear-gradient(to bottom, rgb(var(--border-subtle) / 0.22) 1px, transparent 1px);
+  background-size: 16px 16px;
+}
+
+.bg-dots-subtle {
+  background-image: radial-gradient(rgb(var(--text-muted) / 0.14) 1px, transparent 1px);
+  background-size: 20px 20px;
+}

@@ -92,8 +92,14 @@ export function PocketDropModal({ isOpen, onClose, defaultMissionId }: PocketDro
   };
 
   return (
-    <div className="team-workspace fixed inset-0 z-50 flex items-end sm:items-center justify-center p-3 sm:p-4 bg-black/80 backdrop-blur-md animate-in fade-in">
-      <div className="relative w-full max-w-lg bg-slate-900 border border-slate-700/80 rounded-3xl shadow-2xl p-5 sm:p-6 text-slate-100 space-y-4">
+    <div
+      onClick={onClose}
+      className="team-workspace fixed inset-0 z-50 flex items-end sm:items-center justify-center p-3 sm:p-4 bg-black/40 backdrop-blur-[3px] animate-in fade-in"
+    >
+      <div
+        onClick={(e) => e.stopPropagation()}
+        className="relative w-full max-w-lg bg-slate-900 border border-slate-700/80 rounded-3xl shadow-2xl p-5 sm:p-6 text-slate-100 space-y-4"
+      >
         {/* Header */}
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">

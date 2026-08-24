@@ -8,12 +8,13 @@ import {
   type ReactNode,
   type RefObject,
   Suspense,
+  useCallback,
   useEffect,
   useMemo,
   useRef,
   useState,
 } from 'react';
-import { Sun, CheckSquare, Target, MoreHorizontal, CheckCircle2, Timer, Flag, Clock, BarChart3, ClipboardList, Settings, Lightbulb, Link2, AlertCircle, Pin, FileText, ArrowLeft, ArrowUpRight, RotateCcw, Cloud, Pencil, Trash2, Play, Pause, CheckCircle, Menu, X, Plus, CalendarDays, ChevronDown, CornerDownRight, BookHeart, StickyNote, Wifi, WifiOff, MessageCircle, MessageSquare, Trophy, Users, AlertOctagon, PanelLeftClose, PanelLeftOpen, type LucideIcon } from 'lucide-react';
+import { Sun, CheckSquare, Target, MoreHorizontal, CheckCircle2, Timer, Flag, Clock, BarChart3, ClipboardList, Settings, Lightbulb, Link2, AlertCircle, Pin, FileText, ArrowLeft, ArrowUpRight, RotateCcw, Cloud, Pencil, Trash2, Play, Pause, CheckCircle, Check, CircleDashed, Menu, X, Plus, CalendarDays, ChevronDown, CornerDownRight, BookHeart, StickyNote, Wifi, WifiOff, MessageCircle, MessageSquare, Trophy, Users, AlertOctagon, PanelLeftClose, PanelLeftOpen, FolderKanban, type LucideIcon } from 'lucide-react';
 import { MissionIcon } from '../../components/ui/mission-icon';
 import { DatePicker } from '../../components/ui/date-picker';
 import { Badge } from '../../components/ui/badge';
@@ -87,6 +88,7 @@ const NotesView = lazyWithReload('notes', () => import('../../features/notes/Not
 const AssistantView = lazyWithReload('assistant', () => import('../../features/assistant/AssistantView').then((m) => ({ default: m.AssistantView })));
 const CalendarView = lazyWithReload('calendar', () => import('../../features/calendar/CalendarView').then((m) => ({ default: m.CalendarView })));
 const ChallengesView = lazyWithReload('challenges', () => import('../../features/challenges/ChallengesView').then((m) => ({ default: m.ChallengesView })));
+const ProjectsView = lazyWithReload('projects', () => import('../../features/projects/ProjectsView').then((m) => ({ default: m.ProjectsView })));
 
 function ViewLoading() {
   return (
@@ -96,7 +98,7 @@ function ViewLoading() {
   );
 }
 
-type MainView = 'dashboard' | 'focus' | 'missions' | 'roadmap' | 'today' | 'calendar' | 'challenges' | 'tasks' | 'history' | 'insights' | 'review' | 'journal' | 'notes' | 'assistant' | 'settings' | 'apps' | 'crm' | 'problems';
+type MainView = 'dashboard' | 'focus' | 'missions' | 'projects' | 'roadmap' | 'today' | 'calendar' | 'challenges' | 'tasks' | 'history' | 'insights' | 'review' | 'journal' | 'notes' | 'assistant' | 'settings' | 'apps' | 'crm' | 'problems';
 
 type CaptureState = {
   kind: SessionCaptureKind;
@@ -141,6 +143,13 @@ const launcherViews: Array<{
     icon: Flag,
     description: 'Track larger goals',
     gradient: 'from-fuchsia-500 via-pink-500 to-rose-500',
+  },
+  {
+    id: 'projects',
+    label: 'Projects',
+    icon: FolderKanban,
+    description: 'View Vellarc project context',
+    gradient: 'from-violet-500 via-indigo-500 to-blue-600',
   },
   {
     id: 'roadmap',
@@ -301,6 +310,7 @@ const mobileDrawerCoreApps: SidebarPinnedAppId[] = [
   'today',
   'tasks',
   'missions',
+  'projects',
   'roadmap',
   'challenges',
   'journal',
@@ -341,7 +351,7 @@ const taskBoardColumns: TaskBoardColumn[] = [
   { lane: 'done', title: 'Completed', tone: 'success', empty: 'Drop here' },
 ];
 
-const completedDigestLimit = 3;
+const completedDigestLimit = 8;
 const completedFilterSummaryFormatter = new Intl.DateTimeFormat(undefined, {
   dateStyle: 'medium',
   timeStyle: 'short',
@@ -665,6 +675,7 @@ function getViewCopy(view: MainView) {
     dashboard: 'Dashboard',
     focus: 'What Now',
     missions: 'Missions',
+    projects: 'Projects',
     roadmap: 'Roadmap',
     today: 'Today',
     calendar: 'Calendar',
@@ -2216,6 +2227,8 @@ export function MainApp() {
   const [taskComposerOpen, setTaskComposerOpen] = useState(false);
   const [completedArchiveOpen, setCompletedArchiveOpen] = useState(false);
   const [taskScopeMode, setTaskScopeMode] = useState<TaskScopeMode>('pending');
+  const [taskMissionFilter, setTaskMissionFilter] = useState<string>('all');
+  const [taskMissionMenuOpen, setTaskMissionMenuOpen] = useState(false);
   const [completedFilterMode, setCompletedFilterMode] = useState<CompletedFilterMode>('all');
   const [completedFilterFromDate, setCompletedFilterFromDate] = useState('');
   const [completedFilterFromTime, setCompletedFilterFromTime] = useState('00:00');
@@ -2435,7 +2448,46 @@ export function MainApp() {
     ],
     [activeTasks, backlogTasks, completedTasks, nextTasks, queueTasks, subtaskBoard],
   );
-  const rootTasksForSettings = useMemo(() => getRootTasks(tasks), [tasks]);
+  const missionTaskCounts = useMemo(() => {
+    const counts: Record<string, { total: number; pending: number }> = {};
+    let unassignedTotal = 0;
+    let unassignedPending = 0;
+
+    for (const task of tasks) {
+      const effMissionId = task.mission_id || (task.parent_task_id ? tasksById.get(task.parent_task_id)?.mission_id : null);
+      const isPending = task.status !== 'done' && task.lane !== 'done';
+
+      if (!effMissionId) {
+        unassignedTotal++;
+        if (isPending) unassignedPending++;
+      } else {
+        if (!counts[effMissionId]) {
+          counts[effMissionId] = { total: 0, pending: 0 };
+        }
+        counts[effMissionId].total++;
+        if (isPending) counts[effMissionId].pending++;
+      }
+    }
+    return { counts, unassignedTotal, unassignedPending, totalTasks: tasks.length };
+  }, [tasks, tasksById]);
+
+  const matchesTaskMission = useCallback(
+    (task: Task) => {
+      if (taskMissionFilter === 'all') return true;
+      const taskMissionId = task.mission_id || (task.parent_task_id ? tasksById.get(task.parent_task_id)?.mission_id : null);
+      if (taskMissionFilter === 'none') return !taskMissionId;
+      return taskMissionId === taskMissionFilter;
+    },
+    [taskMissionFilter, tasksById],
+  );
+
+  const rootTasksForSettings = useMemo(() => {
+    const roots = getRootTasks(tasks);
+    if (taskMissionFilter === 'all') return roots;
+    if (taskMissionFilter === 'none') return roots.filter((t) => !t.mission_id);
+    return roots.filter((t) => t.mission_id === taskMissionFilter);
+  }, [tasks, taskMissionFilter]);
+
   const completedRootTaskCount = useMemo(
     () => rootTasksForSettings.filter((task) => task.lane === 'done' || task.status === 'done').length,
     [rootTasksForSettings],
@@ -2552,8 +2604,8 @@ export function MainApp() {
   const completedFilterTone = getCompletedFilterTone(completedFilterMode);
 
   const allCompletedItems = useMemo(
-    () => getCompletedDigestItems(completedTasks, subtaskBoard.done),
-    [completedTasks, subtaskBoard.done],
+    () => getCompletedDigestItems(completedTasks, subtaskBoard.done).filter(matchesTaskMission),
+    [completedTasks, matchesTaskMission, subtaskBoard.done],
   );
   const visibleTaskBoard = useMemo(() => {
     const today = formatDateInputValue(new Date());
@@ -2562,33 +2614,42 @@ export function MainApp() {
       if (taskScopeMode === 'pending') return task.status !== 'done' && task.lane !== 'done';
       return task.scheduled_for === today || task.due_date === today || Boolean(task.completed_at?.startsWith(today));
     };
-    return taskBoard.map((column) => ({
+    return taskBoard.map((column) => {
+      const isCompletedColumn = column.lane === 'done';
+      return {
         ...column,
         tasks: column.tasks.filter((task) =>
-          matchesScope(task) && taskMatchesBoardRange(task, completedFilterRange.from, completedFilterRange.to),
+          (isCompletedColumn ? (taskScopeMode === 'today' ? matchesScope(task) : true) : matchesScope(task)) &&
+          matchesTaskMission(task) &&
+          taskMatchesBoardRange(task, completedFilterRange.from, completedFilterRange.to),
         ),
         subtasks: column.subtasks.filter((task) =>
-          matchesScope(task) && taskMatchesBoardRange(task, completedFilterRange.from, completedFilterRange.to),
+          (isCompletedColumn ? (taskScopeMode === 'today' ? matchesScope(task) : true) : matchesScope(task)) &&
+          matchesTaskMission(task) &&
+          taskMatchesBoardRange(task, completedFilterRange.from, completedFilterRange.to),
         ),
-      }));
-  }, [completedFilterRange.from, completedFilterRange.to, taskBoard, taskScopeMode]);
+      };
+    });
+  }, [completedFilterRange.from, completedFilterRange.to, matchesTaskMission, taskBoard, taskScopeMode]);
   const visibleBlockedTasks = useMemo(
     () =>
       blockedTasks.filter((task) =>
-        taskMatchesBoardRange(task, completedFilterRange.from, completedFilterRange.to),
+        matchesTaskMission(task) && taskMatchesBoardRange(task, completedFilterRange.from, completedFilterRange.to),
       ),
-    [blockedTasks, completedFilterRange.from, completedFilterRange.to],
+    [blockedTasks, completedFilterRange.from, completedFilterRange.to, matchesTaskMission],
   );
 
   useEffect(() => {
     if (activeView !== 'tasks') {
       setPageDateMenuOpen(false);
+      setTaskMissionMenuOpen(false);
     }
   }, [activeView]);
 
   useEffect(() => {
     if (taskComposerOpen) {
       setPageDateMenuOpen(false);
+      setTaskMissionMenuOpen(false);
     }
   }, [taskComposerOpen]);
 
@@ -2609,6 +2670,24 @@ export function MainApp() {
       window.removeEventListener('keydown', handleKeyDown);
     };
   }, [pageDateMenuOpen]);
+
+  useEffect(() => {
+    if (!taskMissionMenuOpen) {
+      return;
+    }
+
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        setTaskMissionMenuOpen(false);
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [taskMissionMenuOpen]);
 
   useEffect(() => {
     const image = new Image();
@@ -3441,6 +3520,198 @@ export function MainApp() {
     );
   }
 
+  function renderTaskMissionFilterControl() {
+    const selectedMission = missions.find((m) => m.id === taskMissionFilter);
+    const activeLabel =
+      taskMissionFilter === 'all'
+        ? 'All missions'
+        : taskMissionFilter === 'none'
+          ? 'No mission'
+          : selectedMission?.title ?? 'Mission';
+
+    const activeCount =
+      taskMissionFilter === 'all'
+        ? tasks.length
+        : taskMissionFilter === 'none'
+          ? missionTaskCounts.unassignedTotal
+          : (missionTaskCounts.counts[taskMissionFilter]?.total ?? 0);
+
+    const isFiltered = taskMissionFilter !== 'all';
+
+    return (
+      <div className="relative shrink-0">
+        <Button
+          aria-controls="task-mission-filter-popover"
+          aria-expanded={taskMissionMenuOpen}
+          aria-label={`Filter tasks by mission. Currently selected: ${activeLabel}`}
+          className={cn(
+            'h-9 shrink-0 rounded-full px-3 sm:px-4 max-[380px]:w-9 max-[380px]:justify-center max-[380px]:gap-0 max-[380px]:px-0 transition-all',
+            isFiltered
+              ? 'border-accent/40 bg-accent/12 text-accent hover:bg-accent/20 hover:border-accent/60'
+              : '',
+          )}
+          onClick={() => setTaskMissionMenuOpen((open) => !open)}
+          size="sm"
+          type="button"
+          title={`Filter by mission: ${activeLabel}`}
+          variant="secondary"
+        >
+          {taskMissionFilter === 'all' ? (
+            <Target className="h-4 w-4 shrink-0 text-text-secondary" />
+          ) : taskMissionFilter === 'none' ? (
+            <CircleDashed className="h-4 w-4 shrink-0 text-text-muted" />
+          ) : selectedMission ? (
+            <MissionIcon icon={selectedMission.emoji} className="h-4 w-4 shrink-0" />
+          ) : (
+            <Target className="h-4 w-4 shrink-0" />
+          )}
+          <span className="hidden max-w-[130px] truncate sm:inline max-[380px]:hidden">{activeLabel}</span>
+          <span
+            className={cn(
+              'inline-flex items-center rounded-full border px-1.5 py-0.5 text-[9px] font-semibold tabular-nums leading-none max-[380px]:hidden',
+              isFiltered
+                ? 'border-accent/30 bg-accent/20 text-accent'
+                : 'border-borderSoft/40 bg-panel/60 text-text-secondary',
+            )}
+          >
+            {activeCount}
+          </span>
+          <ChevronDown
+            className={cn('h-3.5 w-3.5 transition-transform duration-150 max-[380px]:hidden', taskMissionMenuOpen ? 'rotate-180' : null)}
+          />
+        </Button>
+
+        {taskMissionMenuOpen ? (
+          <>
+            <div
+              aria-hidden="true"
+              className="fixed inset-0 z-30 bg-transparent"
+              onClick={() => setTaskMissionMenuOpen(false)}
+            />
+            <div className="fixed inset-x-3 top-[72px] z-40 w-auto sm:absolute sm:inset-x-auto sm:right-0 sm:top-full sm:mt-2 sm:w-72">
+              <Card
+                id="task-mission-filter-popover"
+                className="max-h-[calc(100vh-6rem)] overflow-y-auto rounded-[22px] border border-borderSoft/28 bg-panel/96 p-2 shadow-[0_18px_50px_rgb(var(--shadow-color)/0.22)] backdrop-blur-md sm:max-h-[460px] scrollbar-thin"
+              >
+                <div className="px-2.5 py-2">
+                  <p className="text-[10px] font-bold uppercase tracking-[0.24em] text-text-muted">Filter by Mission</p>
+                </div>
+
+                <div className="space-y-1">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setTaskMissionFilter('all');
+                      setTaskMissionMenuOpen(false);
+                    }}
+                    className={cn(
+                      'flex w-full items-center justify-between gap-2.5 rounded-xl px-2.5 py-2 text-left text-xs font-medium transition-colors',
+                      taskMissionFilter === 'all'
+                        ? 'bg-accent/12 text-accent font-semibold'
+                        : 'text-text-secondary hover:bg-panel2/60 hover:text-text-primary',
+                    )}
+                  >
+                    <div className="flex min-w-0 items-center gap-2">
+                      <Target className="h-3.5 w-3.5 shrink-0" />
+                      <span className="truncate">All missions</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <span className="rounded-full bg-panel px-1.5 py-0.5 text-[9px] tabular-nums text-text-muted">
+                        {tasks.length}
+                      </span>
+                      {taskMissionFilter === 'all' ? <Check className="h-3.5 w-3.5 shrink-0 text-accent" /> : null}
+                    </div>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setTaskMissionFilter('none');
+                      setTaskMissionMenuOpen(false);
+                    }}
+                    className={cn(
+                      'flex w-full items-center justify-between gap-2.5 rounded-xl px-2.5 py-2 text-left text-xs font-medium transition-colors',
+                      taskMissionFilter === 'none'
+                        ? 'bg-accent/12 text-accent font-semibold'
+                        : 'text-text-secondary hover:bg-panel2/60 hover:text-text-primary',
+                    )}
+                  >
+                    <div className="flex min-w-0 items-center gap-2">
+                      <CircleDashed className="h-3.5 w-3.5 shrink-0 text-text-muted" />
+                      <span className="truncate">No mission (Unassigned)</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <span className="rounded-full bg-panel px-1.5 py-0.5 text-[9px] tabular-nums text-text-muted">
+                        {missionTaskCounts.unassignedTotal}
+                      </span>
+                      {taskMissionFilter === 'none' ? <Check className="h-3.5 w-3.5 shrink-0 text-accent" /> : null}
+                    </div>
+                  </button>
+
+                  {missions.length > 0 ? (
+                    <>
+                      <div className="my-1.5 border-t border-borderSoft/30" />
+                      <p className="px-2.5 py-1 text-[9px] font-bold uppercase tracking-[0.2em] text-text-muted/70">
+                        Active Missions ({missions.length})
+                      </p>
+                      {missions.map((mission) => {
+                        const count = missionTaskCounts.counts[mission.id]?.total ?? 0;
+                        const isSelected = taskMissionFilter === mission.id;
+                        return (
+                          <button
+                            key={mission.id}
+                            type="button"
+                            onClick={() => {
+                              setTaskMissionFilter(mission.id);
+                              setTaskMissionMenuOpen(false);
+                            }}
+                            className={cn(
+                              'flex w-full items-center justify-between gap-2.5 rounded-xl px-2.5 py-2 text-left text-xs font-medium transition-colors',
+                              isSelected
+                                ? 'bg-accent/12 text-accent font-semibold'
+                                : 'text-text-secondary hover:bg-panel2/60 hover:text-text-primary',
+                            )}
+                          >
+                            <div className="flex min-w-0 items-center gap-2">
+                              <MissionIcon icon={mission.emoji} className="h-3.5 w-3.5 shrink-0" />
+                              <span className="truncate">{mission.title}</span>
+                            </div>
+                            <div className="flex items-center gap-2">
+                              <span className="rounded-full bg-panel px-1.5 py-0.5 text-[9px] tabular-nums text-text-muted">
+                                {count}
+                              </span>
+                              {isSelected ? <Check className="h-3.5 w-3.5 shrink-0 text-accent" /> : null}
+                            </div>
+                          </button>
+                        );
+                      })}
+                    </>
+                  ) : null}
+                </div>
+
+                {isFiltered ? (
+                  <div className="mt-2 border-t border-borderSoft/30 pt-1.5">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setTaskMissionFilter('all');
+                        setTaskMissionMenuOpen(false);
+                      }}
+                      className="flex w-full items-center justify-center gap-1.5 rounded-lg py-1.5 text-center text-[11px] font-medium text-text-muted hover:bg-panel2/50 hover:text-text-primary transition-colors"
+                    >
+                      <RotateCcw className="h-3 w-3" />
+                      <span>Reset mission filter</span>
+                    </button>
+                  </div>
+                ) : null}
+              </Card>
+            </div>
+          </>
+        ) : null}
+      </div>
+    );
+  }
+
   function renderTasks() {
     return (
       <div className="space-y-6">
@@ -3458,6 +3729,7 @@ export function MainApp() {
                 <div className="flex h-full min-h-0 flex-col">
                   <TaskCreationComposer
                     autoFocus
+                    defaultMissionId={taskMissionFilter !== 'all' && taskMissionFilter !== 'none' ? taskMissionFilter : null}
                     fillHeight
                     onCancel={() => setTaskComposerOpen(false)}
                     onSubmitted={() => {
@@ -3472,6 +3744,7 @@ export function MainApp() {
                   <SectionHeading title="Add task" />
                   <TaskCreationComposer
                     autoFocus
+                    defaultMissionId={taskMissionFilter !== 'all' && taskMissionFilter !== 'none' ? taskMissionFilter : null}
                     onCancel={() => setTaskComposerOpen(false)}
                     onSubmitted={() => {
                       setTaskComposerOpen(false);
@@ -3485,7 +3758,9 @@ export function MainApp() {
           </div>
         ) : null}
 
-        <div className="md:hidden">{renderTaskScopeControl()}</div>
+        <div className="md:hidden">
+          {renderTaskScopeControl()}
+        </div>
 
         <div className="flex gap-5 overflow-x-auto pb-4 2xl:grid 2xl:grid-cols-[repeat(4,minmax(240px,1fr))_minmax(280px,340px)] 2xl:overflow-visible">
           {visibleTaskBoard.map((column) => {
@@ -3539,52 +3814,49 @@ export function MainApp() {
                     </div>
 
                     {completedItems.length ? (
-                      <div className="min-h-0 space-y-2">
-                        <div className="flex items-center justify-between gap-2 px-1">
-                          <p className="text-[10px] font-bold uppercase tracking-[0.24em] text-text-muted">
-                            {completedArchiveOpen ? 'Archive' : 'Recent'}
-                          </p>
-                          {hiddenCompletedCount ? (
-                            <Badge tone="success" className="px-2 py-0.5 text-[9px]">
-                              +{hiddenCompletedCount}
-                            </Badge>
-                          ) : null}
+                      <div className="flex flex-1 flex-col justify-between gap-3">
+                        <div className="space-y-2">
+                          <div className="flex items-center justify-between gap-2 px-1">
+                            <p className="text-[10px] font-bold uppercase tracking-[0.24em] text-text-muted">
+                              {completedArchiveOpen ? 'All completed' : 'Completed tasks'}
+                            </p>
+                            {completedItems.length > completedDigestLimit ? (
+                              <Badge tone="success" className="px-2 py-0.5 text-[9px]">
+                                {visibleCompletedItems.length} of {completedItems.length}
+                              </Badge>
+                            ) : null}
+                          </div>
+
+                          <div className="space-y-2">
+                            {visibleCompletedItems.map((task) => (
+                              <CompletedDigestItem
+                                draggable
+                                dragging={draggedTaskId === task.id}
+                                key={task.id}
+                                onDragEnd={handleTaskDragEnd}
+                                onDragStart={(event) => handleTaskDragStart(event, task.id)}
+                                onRestore={() => void moveTaskToLane(task.id, 'inbox')}
+                                onSelect={() => {
+                                  selectTask(task.id);
+                                  setDetailTaskId(task.id);
+                                }}
+                                parentTask={task.parent_task_id ? tasksById.get(task.parent_task_id) ?? null : null}
+                                task={task}
+                              />
+                            ))}
+                          </div>
                         </div>
 
-                        <div
-                          className={cn(
-                            'space-y-2',
-                            completedArchiveOpen ? 'max-h-[420px] overflow-y-auto pr-1 scrollbar-thin' : null,
-                          )}
-                        >
-                          {visibleCompletedItems.map((task) => (
-                            <CompletedDigestItem
-                              draggable
-                              dragging={draggedTaskId === task.id}
-                              key={task.id}
-                              onDragEnd={handleTaskDragEnd}
-                              onDragStart={(event) => handleTaskDragStart(event, task.id)}
-                              onRestore={() => void moveTaskToLane(task.id, 'inbox')}
-                              onSelect={() => {
-                                selectTask(task.id);
-                                setDetailTaskId(task.id);
-                              }}
-                              parentTask={task.parent_task_id ? tasksById.get(task.parent_task_id) ?? null : null}
-                              task={task}
-                            />
-                          ))}
-                        </div>
-
-                        {hiddenCompletedCount ? (
+                        {completedItems.length > completedDigestLimit ? (
                           <Button
-                            className="mt-1 w-full justify-between px-3"
+                            className="mt-2 w-full justify-between rounded-xl border border-borderSoft/30 bg-panel/30 px-3 py-2 text-xs text-text-secondary hover:bg-panel hover:text-text-primary transition-all"
                             onClick={() => setCompletedArchiveOpen((open) => !open)}
                             size="sm"
                             type="button"
                             variant="ghost"
                           >
-                            <span>{completedArchiveOpen ? 'Show recent' : `Show ${hiddenCompletedCount} more`}</span>
-                            <MoreHorizontal className="h-4 w-4" />
+                            <span>{completedArchiveOpen ? 'Show less' : `Show all (${completedItems.length})`}</span>
+                            <ChevronDown className={cn('h-3.5 w-3.5 transition-transform duration-150', completedArchiveOpen ? 'rotate-180' : null)} />
                           </Button>
                         ) : null}
                       </div>
@@ -4491,6 +4763,7 @@ export function MainApp() {
 
             <div className="flex shrink-0 items-center gap-2 sm:gap-3">
               {activeView === 'tasks' ? <div className="hidden md:block">{renderTaskScopeControl()}</div> : null}
+              {activeView === 'tasks' ? renderTaskMissionFilterControl() : null}
 
               {activeView === 'tasks' ? (
                 <Button
@@ -4593,6 +4866,7 @@ export function MainApp() {
                   ) : null}
                   {activeView === 'focus' ? renderFocus() : null}
                   {activeView === 'missions' ? renderMissions() : null}
+                  {activeView === 'projects' ? <ProjectsView /> : null}
                   {activeView === 'roadmap' ? <RoadmapView missions={missions} allTasks={tasks} onOpenMission={setDetailMissionId} /> : null}
                   {activeView === 'today' ? renderToday() : null}
                   {activeView === 'calendar' ? <CalendarView onOpenTarget={openCalendarTarget} /> : null}
@@ -4629,7 +4903,7 @@ export function MainApp() {
                   type="button"
                 />
 
-                <aside className="absolute inset-y-0 right-0 z-40 w-full max-w-[480px] overflow-hidden border-l border-white/[0.06] bg-panel shadow-2xl lg:relative lg:inset-auto lg:z-auto lg:my-3 lg:mr-3 lg:h-[calc(100%-1.5rem)] lg:min-h-0 lg:w-[420px] lg:max-w-none lg:shrink-0 lg:rounded-[24px] lg:border lg:shadow-[0_24px_80px_rgba(0,0,0,0.42)] xl:w-[480px]">
+                <aside className="absolute inset-y-0 right-0 z-40 w-full max-w-[480px] overflow-hidden border-l border-borderSoft/35 bg-panel shadow-2xl lg:relative lg:inset-auto lg:z-auto lg:my-3 lg:mr-3 lg:h-[calc(100%-1.5rem)] lg:min-h-0 lg:w-[420px] lg:max-w-none lg:shrink-0 lg:rounded-[24px] lg:border lg:border-borderSoft/35 lg:shadow-[0_24px_80px_rgb(var(--shadow-color)/0.18)] xl:w-[480px]">
                   <TaskDetailPanel
                     allTasks={tasks}
                     onClose={() => setDetailTaskId(null)}

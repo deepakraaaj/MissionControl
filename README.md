@@ -105,6 +105,7 @@ VITE_CEREBRAS_API_KEY=your_key      # AI assistant
 VITE_CEREBRAS_MODEL=gpt-oss-120b    # optional, this is the default
 VITE_SUPABASE_URL=your_url          # cloud sync
 VITE_SUPABASE_ANON_KEY=your_anon_key
+VITE_VELLARC_URL=https://your-vellarc-app.example.com
 ```
 
 | Command | Description |

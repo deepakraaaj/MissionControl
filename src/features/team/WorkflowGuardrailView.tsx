@@ -60,7 +60,7 @@ export function WorkflowGuardrailView({ missionId }: WorkflowGuardrailViewProps)
 
   const dialogNode = dialog && (
     <div
-      className="fixed inset-0 z-[100] flex items-start justify-center overflow-y-auto bg-black/65 p-4 backdrop-blur-sm sm:items-center"
+      className="fixed inset-0 z-[100] flex items-start justify-center overflow-y-auto bg-black/40 p-4 backdrop-blur-[3px] sm:items-center"
       onMouseDown={() => setDialog(null)}
     >
       <form

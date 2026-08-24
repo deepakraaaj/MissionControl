@@ -61,7 +61,7 @@ function ChipSelect<T extends string>({
   toneMap?: (v: T) => 'default' | 'accent' | 'warning' | 'success' | 'attention';
 }) {
   return (
-    <div className="flex w-fit max-w-full flex-wrap gap-1 rounded-xl bg-black/20 p-1">
+    <div className="flex w-fit max-w-full flex-wrap gap-1 rounded-xl border border-borderSoft/35 bg-panel2/50 p-1">
       {options.map((opt) => {
         const active = opt === value;
         const tone = toneMap?.(opt) ?? 'default';
@@ -71,14 +71,16 @@ function ChipSelect<T extends string>({
             type="button"
             onClick={() => onChange(opt)}
             className={cn(
-              'inline-flex h-8 items-center rounded-lg border px-3 text-xs font-medium transition-all duration-200',
+              'inline-flex h-8 items-center rounded-lg px-3 text-xs font-medium transition-all duration-150',
               active
                 ? tone === 'warning'
-                  ? 'border-warning/15 bg-warning/18 text-warning shadow-sm'
+                  ? 'border border-warning/25 bg-warning/15 text-warning font-semibold shadow-xs'
                   : tone === 'success'
-                    ? 'border-success/15 bg-success/18 text-success shadow-sm'
-                    : 'border-white/10 bg-white/[0.09] text-text-primary shadow-sm'
-                : 'border-transparent text-text-muted hover:bg-white/[0.04] hover:text-text-primary',
+                    ? 'border border-success/25 bg-success/15 text-success font-semibold shadow-xs'
+                    : tone === 'accent' || tone === 'attention'
+                      ? 'border border-accent/30 bg-accent/15 text-accent font-semibold shadow-xs'
+                      : 'border border-borderSoft/60 bg-panel text-text-primary font-semibold shadow-xs'
+                : 'border border-transparent text-text-muted hover:bg-panel/50 hover:text-text-primary',
             )}
           >
             {label(opt)}
@@ -91,7 +93,7 @@ function ChipSelect<T extends string>({
 
 function FieldLabel({ children }: { children: React.ReactNode }) {
   return (
-    <p className="text-[10px] uppercase tracking-[0.28em] text-text-muted">{children}</p>
+    <p className="text-[10px] font-bold uppercase tracking-[0.24em] text-text-muted">{children}</p>
   );
 }
 
@@ -106,7 +108,7 @@ function SectionLabel({
 }) {
   return (
     <div className="flex items-center justify-between gap-3">
-      <div className="flex items-center gap-2 text-xs font-medium text-text-secondary">
+      <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-text-secondary">
         <Icon size={14} className="text-text-muted" />
         <span>{children}</span>
       </div>
@@ -125,7 +127,7 @@ function SubtaskRow({
   onDelete: () => void;
 }) {
   return (
-    <div className="group flex items-center gap-3 rounded-[14px] border border-borderSoft/30 bg-panel/30 px-3 py-2.5">
+    <div className="group flex items-center gap-3 rounded-xl border border-borderSoft/35 bg-panel2/40 px-3.5 py-2.5 transition-colors hover:border-borderSoft/60 hover:bg-panel2/60">
       <button
         type="button"
         onClick={onMarkDone}
@@ -134,25 +136,26 @@ function SubtaskRow({
           'flex h-5 w-5 shrink-0 items-center justify-center rounded-full border text-[10px] font-semibold transition-colors',
           subtask.lane === 'done'
             ? 'border-success/40 bg-success/20 text-success'
-            : 'border-borderStrong/30 text-text-muted hover:border-accent/40 hover:text-accent',
+            : 'border-borderStrong/35 text-text-muted hover:border-accent/40 hover:text-accent',
         )}
       >
         {subtask.lane === 'done' ? '✓' : ''}
       </button>
-      <span className={cn('flex-1 text-sm', subtask.lane === 'done' ? 'text-text-muted line-through' : 'text-text-primary')}>
+      <span className={cn('flex-1 text-sm leading-snug', subtask.lane === 'done' ? 'text-text-muted line-through' : 'text-text-primary font-medium')}>
         {subtask.title}
       </span>
       <div className="flex items-center gap-2 opacity-0 transition-opacity group-hover:opacity-100">
         {subtask.energy !== 'shallow' ? (
-          <span className="text-[10px] text-text-muted">{humanizeEnergy(subtask.energy)}</span>
+          <span className="rounded-md bg-panel px-1.5 py-0.5 text-[10px] text-text-muted border border-borderSoft/30">{humanizeEnergy(subtask.energy)}</span>
         ) : null}
-        <span className="text-[10px] text-text-muted">{subtask.estimated_minutes}m</span>
+        <span className="rounded-md bg-panel px-1.5 py-0.5 text-[10px] text-text-muted border border-borderSoft/30">{subtask.estimated_minutes}m</span>
         <button
           type="button"
           onClick={onDelete}
-          className="ml-1 rounded p-1 text-text-muted hover:bg-warning/10 hover:text-warning"
+          className="ml-1 rounded-md p-1 text-text-muted hover:bg-warning/10 hover:text-warning transition-colors"
+          title="Delete subtask"
         >
-          <Trash2 size={12} />
+          <Trash2 size={13} />
         </button>
       </div>
     </div>
@@ -191,9 +194,9 @@ function AddSubtaskRow({
       <button
         type="button"
         onClick={() => setOpen(true)}
-        className="flex w-full items-center gap-2 rounded-[14px] border border-dashed border-borderSoft/40 px-3 py-2 text-sm text-text-muted transition-colors hover:border-accent/30 hover:text-accent"
+        className="flex w-full items-center gap-2 rounded-xl border border-dashed border-borderSoft/45 bg-panel2/20 px-3.5 py-2.5 text-xs font-medium text-text-muted transition-colors hover:border-accent/40 hover:bg-accent/5 hover:text-accent"
       >
-        <span className="text-base leading-none">+</span>
+        <span className="text-base leading-none font-bold">+</span>
         Add subtask
       </button>
     );
@@ -210,7 +213,7 @@ function AddSubtaskRow({
           if (e.key === 'Escape') { setOpen(false); setTitle(''); }
         }}
         placeholder="Subtask title…"
-        className="h-9 flex-1 text-sm"
+        className="h-9 flex-1 text-sm bg-panel border-borderSoft/45"
       />
       <Button size="sm" type="button" onClick={() => void handleSave()} disabled={!title.trim() || saving}>
         {saving ? '…' : 'Add'}
@@ -292,25 +295,27 @@ export function TaskDetailPanel({ task, allTasks, onClose, onOpenTask }: TaskDet
   const progress = subtasks.length ? Math.round((doneSubtasks / subtasks.length) * 100) : 0;
 
   return (
-    <div className="relative flex h-full min-h-0 flex-col overflow-hidden bg-[radial-gradient(circle_at_85%_0%,rgb(var(--accent)/0.07),transparent_28%),rgb(var(--panel))]">
+    <div className="relative flex h-full min-h-0 flex-col overflow-hidden bg-panel bg-grid-subtle">
       {/* Header */}
-      <div className="border-b border-white/[0.055] px-7 pb-6 pt-7">
-        <div className="mb-4 flex items-start justify-between gap-3">
+      <div className="border-b border-borderSoft/30 px-6 sm:px-7 pb-5 pt-6">
+        <div className="mb-3 flex items-start justify-between gap-3">
           <div className="min-w-0">
             {mission ? (
-              <p className="flex items-center gap-1.5 text-[10px] font-medium uppercase tracking-[0.22em] text-text-muted">
-                <MissionIcon icon={mission.emoji} className="h-3 w-3" /> {mission.title}
-              </p>
+              <span className="inline-flex items-center gap-1.5 rounded-full border border-accent/30 bg-accent/12 px-2.5 py-0.5 text-xs font-semibold text-accent">
+                <MissionIcon icon={mission.emoji} className="h-3.5 w-3.5 shrink-0" />
+                <span className="truncate">{mission.title}</span>
+              </span>
             ) : (
-              <p className="text-[10px] font-medium uppercase tracking-[0.22em] text-text-muted">Task details</p>
+              <span className="text-[11px] font-bold uppercase tracking-[0.24em] text-text-muted">Task details</span>
             )}
             {parentTask ? (
               <button
                 type="button"
                 onClick={() => onOpenTask?.(parentTask.id)}
-                className="mt-2 flex max-w-full items-center gap-1 text-xs text-accent hover:text-accent/80"
+                className="mt-2 flex max-w-full items-center gap-1 text-xs text-accent hover:text-accent/80 transition-colors"
               >
-                <span className="truncate">{parentTask.title}</span><ChevronRight size={12} />
+                <span className="truncate font-medium">{parentTask.title}</span>
+                <ChevronRight size={12} />
               </button>
             ) : null}
           </div>
@@ -319,7 +324,7 @@ export function TaskDetailPanel({ task, allTasks, onClose, onOpenTask }: TaskDet
               type="button"
               onClick={onClose}
               aria-label="Close task details"
-              className="-mr-1 -mt-1 flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-text-muted transition-colors hover:bg-panel2 hover:text-text-primary"
+              className="-mr-1 -mt-1 flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-text-muted transition-colors hover:bg-panel2 hover:text-text-primary"
             >
               <X size={18} />
             </button>
@@ -331,129 +336,151 @@ export function TaskDetailPanel({ task, allTasks, onClose, onOpenTask }: TaskDet
             onChange={(e) => update('title', e.target.value)}
             onBlur={() => void handleSave()}
             rows={2}
-              className="w-full resize-none bg-transparent text-[24px] font-semibold leading-[1.2] tracking-[-0.025em] text-text-primary outline-none placeholder:text-text-muted"
+            className="w-full resize-none bg-transparent text-xl sm:text-2xl font-bold leading-snug tracking-tight text-text-primary outline-none placeholder:text-text-muted"
             placeholder="Task title"
           />
         </div>
-        <div className="mt-3 flex items-center gap-2 text-xs text-text-muted">
-          <span className="rounded-md bg-white/[0.06] px-2.5 py-1 text-text-secondary">{humanizeLane(draft.lane)}</span>
-          <span>{humanizePriority(draft.priority)} priority</span>
-          <span className="text-borderStrong">•</span>
-          <span>{humanizeMinutes(draft.estimated_minutes)}</span>
+        <div className="mt-3 flex flex-wrap items-center gap-2 text-xs">
+          <span className="rounded-md border border-borderSoft/35 bg-panel2/60 px-2.5 py-0.5 text-xs font-medium text-text-secondary">
+            {humanizeLane(draft.lane)}
+          </span>
+          <span className="rounded-md border border-borderSoft/35 bg-panel2/60 px-2.5 py-0.5 text-xs font-medium text-text-secondary capitalize">
+            {humanizePriority(draft.priority)} priority
+          </span>
+          <span className="text-text-muted">•</span>
+          <span className="text-xs font-medium text-text-muted">
+            {humanizeMinutes(draft.estimated_minutes)}
+          </span>
         </div>
       </div>
 
       {/* Body — scrollable */}
-      <div className="min-h-0 flex-1 space-y-8 overflow-y-auto px-7 py-7">
+      <div className="min-h-0 flex-1 space-y-6 overflow-y-auto px-6 sm:px-7 py-6">
         {/* Description */}
-        <div className="space-y-2.5">
+        <div className="space-y-2">
           <SectionLabel icon={ListChecks}>Description</SectionLabel>
           <Textarea
             value={draft.notes}
             onChange={(e) => update('notes', e.target.value)}
             onBlur={() => void handleSave()}
             placeholder="Add context, links, or anything you need to remember…"
-            rows={5}
-            className="min-h-[124px] resize-y rounded-2xl border-white/[0.055] bg-black/20 px-4 py-3.5 leading-6 shadow-inner shadow-black/10 focus:border-accent/25 focus:bg-black/25"
+            rows={4}
+            className="min-h-[110px] resize-y rounded-xl border border-borderSoft/40 bg-panel2/40 px-4 py-3 text-sm leading-relaxed text-text-primary placeholder:text-text-muted outline-none transition focus:border-accent/40 focus:bg-panel2/70"
           />
         </div>
 
-        {/* Status chips */}
-        <div className="space-y-4">
+        {/* Properties Container */}
+        <div className="space-y-3">
           <SectionLabel icon={CircleGauge}>Properties</SectionLabel>
-          <div className="space-y-5 rounded-2xl bg-white/[0.025] p-4 ring-1 ring-inset ring-white/[0.045]">
-          <div className="space-y-2">
-            <FieldLabel>Status</FieldLabel>
-            <ChipSelect
-              options={LANE_OPTIONS}
-              value={draft.lane}
-              onChange={(v) => update('lane', v)}
-              label={humanizeLane}
-              toneMap={(v) => v === 'now' ? 'accent' : v === 'done' ? 'success' : 'default'}
-            />
-          </div>
-          <div className="grid grid-cols-1 gap-4 border-t border-borderSoft/20 pt-4 sm:grid-cols-2">
-          <div className="space-y-2">
-            <div className="flex items-center gap-1.5"><Flag size={12} className="text-text-muted" /><FieldLabel>Priority</FieldLabel></div>
-            <ChipSelect
-              options={PRIORITY_OPTIONS}
-              value={draft.priority}
-              onChange={(v) => update('priority', v)}
-              label={humanizePriority}
-              toneMap={(v) => v === 'critical' ? 'warning' : v === 'high' ? 'attention' : 'default'}
-            />
-          </div>
-          <div className="space-y-2">
-            <div className="flex items-center gap-1.5"><Zap size={12} className="text-text-muted" /><FieldLabel>Energy</FieldLabel></div>
-            <ChipSelect
-              options={ENERGY_OPTIONS}
-              value={draft.energy}
-              onChange={(v) => update('energy', v)}
-              label={humanizeEnergy}
-              toneMap={(v) => v === 'deep' ? 'attention' : 'default'}
-            />
-          </div>
-          </div>
-          <div className="space-y-2 border-t border-borderSoft/20 pt-4">
-            <FieldLabel>Estimate</FieldLabel>
-            <div className="flex flex-wrap gap-1 rounded-xl bg-black/20 p-1">
-              {ESTIMATE_PRESETS.map((preset) => {
-                const active = draft.estimated_minutes === preset;
-                return (
-                  <button
-                    key={preset}
-                    type="button"
-                    onClick={() => {
-                      update('estimated_minutes', preset);
-                      void handleSave();
-                    }}
-                    className={cn(
-                      'inline-flex h-8 items-center rounded-lg border px-2.5 text-xs font-medium transition-all',
-                      active
-                        ? 'border-white/10 bg-white/[0.09] text-text-primary shadow-sm'
-                        : 'border-transparent text-text-muted hover:bg-white/[0.04] hover:text-text-primary',
-                    )}
-                  >
-                    {humanizeMinutes(preset)}
-                  </button>
-                );
-              })}
+          <div className="space-y-4 rounded-2xl border border-borderSoft/35 bg-panel2/25 p-4 sm:p-5">
+            {/* Status */}
+            <div className="space-y-2">
+              <FieldLabel>Status</FieldLabel>
+              <ChipSelect
+                options={LANE_OPTIONS}
+                value={draft.lane}
+                onChange={(v) => update('lane', v)}
+                label={humanizeLane}
+                toneMap={(v) => v === 'now' ? 'accent' : v === 'done' ? 'success' : 'default'}
+              />
             </div>
-            <div className="flex items-center gap-2">
-              <div className="flex items-center gap-1">
-                <input
-                  type="number"
-                  min={5}
-                  max={480}
-                  step={5}
-                  value={draft.estimated_minutes}
-                  onChange={(e) => update('estimated_minutes', Number(e.target.value))}
-                  onBlur={() => void handleSave()}
-                  className="h-8 w-16 rounded-lg border border-white/[0.06] bg-black/20 px-2 text-sm text-text-primary outline-none focus:border-accent/30"
-                />
-                <span className="text-xs text-text-muted">min</span>
-              </div>
-              {draft.estimated_minutes >= 60 ? (
-                <span className="text-xs text-text-muted">= {humanizeMinutes(draft.estimated_minutes)}</span>
-              ) : null}
-            </div>
-          </div>
 
-          <div className="space-y-2 border-t border-borderSoft/20 pt-4">
-            <div className="flex items-center gap-1.5"><CalendarDays size={12} className="text-text-muted" /><FieldLabel>Due date</FieldLabel></div>
-            <DatePicker
-              value={draft.due_date}
-              onChange={(date) => {
-                update('due_date', date);
-                void handleSave();
-              }}
-            />
-          </div>
+            {/* Priority & Energy */}
+            <div className="grid grid-cols-1 gap-4 border-t border-borderSoft/25 pt-4 sm:grid-cols-2">
+              <div className="space-y-2">
+                <div className="flex items-center gap-1.5">
+                  <Flag size={12} className="text-text-muted" />
+                  <FieldLabel>Priority</FieldLabel>
+                </div>
+                <ChipSelect
+                  options={PRIORITY_OPTIONS}
+                  value={draft.priority}
+                  onChange={(v) => update('priority', v)}
+                  label={humanizePriority}
+                  toneMap={(v) => v === 'critical' ? 'warning' : v === 'high' ? 'attention' : 'default'}
+                />
+              </div>
+
+              <div className="space-y-2">
+                <div className="flex items-center gap-1.5">
+                  <Zap size={12} className="text-text-muted" />
+                  <FieldLabel>Energy</FieldLabel>
+                </div>
+                <ChipSelect
+                  options={ENERGY_OPTIONS}
+                  value={draft.energy}
+                  onChange={(v) => update('energy', v)}
+                  label={humanizeEnergy}
+                  toneMap={(v) => v === 'deep' ? 'attention' : 'default'}
+                />
+              </div>
+            </div>
+
+            {/* Estimate */}
+            <div className="space-y-2 border-t border-borderSoft/25 pt-4">
+              <FieldLabel>Estimate</FieldLabel>
+              <div className="flex flex-wrap gap-1 rounded-xl border border-borderSoft/35 bg-panel2/50 p-1">
+                {ESTIMATE_PRESETS.map((preset) => {
+                  const active = draft.estimated_minutes === preset;
+                  return (
+                    <button
+                      key={preset}
+                      type="button"
+                      onClick={() => {
+                        update('estimated_minutes', preset);
+                        void handleSave();
+                      }}
+                      className={cn(
+                        'inline-flex h-8 items-center rounded-lg px-2.5 text-xs font-medium transition-all',
+                        active
+                          ? 'border border-borderSoft/60 bg-panel text-text-primary font-semibold shadow-xs'
+                          : 'border border-transparent text-text-muted hover:bg-panel/50 hover:text-text-primary',
+                      )}
+                    >
+                      {humanizeMinutes(preset)}
+                    </button>
+                  );
+                })}
+              </div>
+              <div className="flex items-center gap-2 pt-1">
+                <div className="flex items-center gap-1.5">
+                  <input
+                    type="number"
+                    min={5}
+                    max={480}
+                    step={5}
+                    value={draft.estimated_minutes}
+                    onChange={(e) => update('estimated_minutes', Number(e.target.value))}
+                    onBlur={() => void handleSave()}
+                    className="h-8 w-18 rounded-lg border border-borderSoft/40 bg-panel px-2.5 text-xs font-medium text-text-primary outline-none focus:border-accent"
+                  />
+                  <span className="text-xs text-text-muted">min</span>
+                </div>
+                {draft.estimated_minutes >= 60 ? (
+                  <span className="text-xs text-text-muted font-medium">(= {humanizeMinutes(draft.estimated_minutes)})</span>
+                ) : null}
+              </div>
+            </div>
+
+            {/* Due Date */}
+            <div className="space-y-2 border-t border-borderSoft/25 pt-4">
+              <div className="flex items-center gap-1.5">
+                <CalendarDays size={12} className="text-text-muted" />
+                <FieldLabel>Due date</FieldLabel>
+              </div>
+              <DatePicker
+                value={draft.due_date}
+                onChange={(date) => {
+                  update('due_date', date);
+                  void handleSave();
+                }}
+              />
+            </div>
           </div>
         </div>
 
         {/* Assignees */}
-        <div className="space-y-2.5">
+        <div className="space-y-2">
           <SectionLabel icon={Users}>Assignees</SectionLabel>
           <AssigneeSelect
             value={draft.assignee_ids}
@@ -466,9 +493,9 @@ export function TaskDetailPanel({ task, allTasks, onClose, onOpenTask }: TaskDet
           />
         </div>
 
-        {/* Completion note — appears once the task is done */}
+        {/* Completion note */}
         {draft.lane === 'done' ? (
-          <div className="space-y-1.5 rounded-[14px] border border-success/25 bg-success/[0.06] p-3">
+          <div className="space-y-1.5 rounded-xl border border-success/30 bg-success/8 p-3.5">
             <FieldLabel>
               <span className="text-success">Completion note</span>
             </FieldLabel>
@@ -478,13 +505,13 @@ export function TaskDetailPanel({ task, allTasks, onClose, onOpenTask }: TaskDet
               onBlur={() => void handleSave()}
               placeholder="What actually got done? Outcome, blockers, follow-ups…"
               rows={3}
-              className="resize-none text-sm"
+              className="resize-none text-sm bg-panel/70 border-success/20"
             />
           </div>
         ) : null}
 
         {/* Tags */}
-        <div className="space-y-2.5">
+        <div className="space-y-2">
           <SectionLabel icon={Tag}>Tags</SectionLabel>
           <Input
             value={draft.tags.join(', ')}
@@ -499,7 +526,7 @@ export function TaskDetailPanel({ task, allTasks, onClose, onOpenTask }: TaskDet
             }
             onBlur={() => void handleSave()}
             placeholder="Add tags, separated by commas"
-            className="h-11 rounded-xl border-white/[0.055] bg-black/20 text-sm focus:bg-black/25"
+            className="h-10 rounded-xl border-borderSoft/40 bg-panel2/40 text-sm placeholder:text-text-muted focus:border-accent/40 focus:bg-panel2/70"
           />
           {draft.tags.length > 0 ? (
             <div className="flex flex-wrap gap-1.5 pt-1">
@@ -516,11 +543,11 @@ export function TaskDetailPanel({ task, allTasks, onClose, onOpenTask }: TaskDet
         <div className="space-y-3">
           <SectionLabel
             icon={ListChecks}
-            aside={subtasks.length > 0 ? <span className="text-xs text-text-muted">{doneSubtasks}/{subtasks.length} done</span> : null}
+            aside={subtasks.length > 0 ? <span className="text-xs font-semibold text-text-muted">{doneSubtasks}/{subtasks.length} done</span> : null}
           >Subtasks</SectionLabel>
           {subtasks.length > 0 ? (
-            <div className="h-1 overflow-hidden rounded-full bg-panel2">
-              <div className="h-full rounded-full bg-success transition-all" style={{ width: `${progress}%` }} />
+            <div className="h-1.5 overflow-hidden rounded-full bg-panel2/70 border border-borderSoft/20">
+              <div className="h-full rounded-full bg-success transition-all duration-300" style={{ width: `${progress}%` }} />
             </div>
           ) : null}
           <div className="space-y-2">
@@ -537,15 +564,14 @@ export function TaskDetailPanel({ task, allTasks, onClose, onOpenTask }: TaskDet
         </div>
       </div>
 
-      <div className="flex items-center justify-between gap-3 border-t border-white/[0.055] bg-black/15 px-7 py-4 backdrop-blur-xl">
+      {/* Footer */}
+      <div className="flex items-center justify-between gap-3 border-t border-borderSoft/30 bg-panel/95 px-6 sm:px-7 py-3.5 backdrop-blur-md">
         <div className="flex min-w-0 items-center gap-2">
           <Button
             size="sm"
             onClick={async () => {
               if (dirty) await handleSave();
               await markDone(task.id);
-              // Reflect completion locally (without marking dirty) so the
-              // completion-note field appears right away to capture a summary.
               setDraft((d) => ({
                 ...d,
                 lane: 'done',
@@ -555,20 +581,25 @@ export function TaskDetailPanel({ task, allTasks, onClose, onOpenTask }: TaskDet
             }}
             disabled={task.lane === 'done'}
             variant={task.lane === 'done' ? 'secondary' : 'primary'}
-            className="min-w-[116px]"
+            className="min-w-[116px] rounded-xl font-semibold"
           >
             <Check size={16} />
             {task.lane === 'done' ? 'Completed' : 'Mark done'}
           </Button>
-          {dirty ? <span className="truncate text-xs text-text-muted">{saving ? 'Saving…' : 'Unsaved changes'}</span> : null}
+          {dirty ? <span className="truncate text-xs font-medium text-text-muted">{saving ? 'Saving…' : 'Unsaved changes'}</span> : null}
         </div>
         {confirmDelete ? (
           <div className="flex items-center gap-1">
-            <button className="px-2 py-2 text-xs text-text-muted hover:text-text-primary" onClick={() => setConfirmDelete(false)}>Cancel</button>
-            <button className="rounded-xl bg-warning/12 px-3 py-2 text-xs font-medium text-warning hover:bg-warning/20" onClick={() => void handleDelete()}>Delete task</button>
+            <button className="px-2.5 py-1.5 text-xs font-medium text-text-muted hover:text-text-primary transition-colors" onClick={() => setConfirmDelete(false)}>Cancel</button>
+            <button className="rounded-xl bg-danger/15 border border-danger/25 px-3 py-1.5 text-xs font-semibold text-danger hover:bg-danger/25 transition-colors" onClick={() => void handleDelete()}>Delete task</button>
           </div>
         ) : (
-          <button type="button" onClick={() => void handleDelete()} aria-label="Delete task" className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl text-text-muted transition-colors hover:bg-warning/10 hover:text-warning">
+          <button
+            type="button"
+            onClick={() => void handleDelete()}
+            aria-label="Delete task"
+            className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl text-text-muted transition-colors hover:bg-danger/10 hover:text-danger"
+          >
             <Trash2 size={16} />
           </button>
         )}

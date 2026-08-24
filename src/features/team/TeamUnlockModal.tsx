@@ -65,7 +65,7 @@ export function TeamUnlockModal({ isOpen, onClose, onSuccess }: TeamUnlockModalP
   };
 
   return (
-    <div className="team-room-modal fixed inset-0 z-50 flex items-center justify-center bg-black/75 p-4 backdrop-blur-md">
+    <div className="team-room-modal fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4 backdrop-blur-sm">
       <div className="relative max-h-[90vh] w-full max-w-2xl overflow-y-auto rounded-3xl border border-slate-700/80 bg-slate-900 p-5 text-slate-100 shadow-2xl sm:p-6">
         <button type="button" onClick={closeModal} className="absolute right-4 top-4 rounded-xl p-2 text-slate-400 hover:bg-slate-800 hover:text-white" aria-label="Close"><X className="h-5 w-5" /></button>
         <div className="mb-5 flex items-center gap-3 pr-10">

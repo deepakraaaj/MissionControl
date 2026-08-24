@@ -494,7 +494,7 @@ export function VisualCanvasView({ missionId }: VisualCanvasViewProps) {
         )}
       </div>
       {nameDialog && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/65 p-4 backdrop-blur-sm" onMouseDown={() => setNameDialog(null)}>
+        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/40 p-4 backdrop-blur-[3px]" onMouseDown={() => setNameDialog(null)}>
           <form onSubmit={saveDiagramName} onMouseDown={(event) => event.stopPropagation()} className="w-full max-w-md rounded-2xl border border-borderSoft/45 bg-panel p-5 shadow-2xl">
             <div className="mb-5">
               <h2 className="text-base font-bold text-text-primary">{nameDialog === 'create' ? 'Create diagram' : 'Rename diagram'}</h2>
@@ -519,7 +519,7 @@ export function VisualCanvasView({ missionId }: VisualCanvasViewProps) {
         </div>
       )}
       {deleteDialogOpen && active && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/65 p-4 backdrop-blur-sm" onMouseDown={() => setDeleteDialogOpen(false)}>
+        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/40 p-4 backdrop-blur-[3px]" onMouseDown={() => setDeleteDialogOpen(false)}>
           <div role="alertdialog" aria-modal="true" aria-labelledby="delete-diagram-title" onMouseDown={(event) => event.stopPropagation()} className="w-full max-w-sm rounded-2xl border border-borderSoft/45 bg-panel p-5 shadow-2xl">
             <span className="mb-4 flex h-10 w-10 items-center justify-center rounded-xl bg-danger/10 text-danger"><Trash2 className="h-5 w-5" /></span>
             <h2 id="delete-diagram-title" className="text-base font-bold text-text-primary">Delete this diagram?</h2>

@@ -1,7 +1,27 @@
 import { useMemo, useState, useRef, useEffect, useCallback } from 'react';
 import { createPortal } from 'react-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ChevronLeft, ChevronRight, Trash2, X, Plus, Edit2, Eye, Frown, Annoyed, Meh, Smile, Laugh, BookOpenCheck } from 'lucide-react';
+import {
+  ChevronLeft,
+  ChevronRight,
+  Trash2,
+  X,
+  Plus,
+  Edit2,
+  Eye,
+  Frown,
+  Meh,
+  Smile,
+  Laugh,
+  BookOpenCheck,
+  Sun,
+  Telescope,
+  AlertCircle,
+  Lightbulb,
+  Heart,
+  Calendar,
+  Zap,
+} from 'lucide-react';
 import { DatePicker } from '../../components/ui/date-picker';
 import { Badge } from '../../components/ui/badge';
 import { Button } from '../../components/ui/button';
@@ -13,8 +33,8 @@ import { cn } from '../../lib/cn';
 import { formatRelativeTime } from '../../lib/date';
 import { useJournalStore } from './journal-store';
 import { useMissionStore } from '../missions/mission-store';
-import { JOURNAL_KIND_META, toLocalDateString, getJournalKindMeta } from './journal-helpers';
-import type { JournalEntry, JournalDay, JournalEntryKind } from './journal-types';
+import { toLocalDateString } from './journal-helpers';
+import type { JournalEntry, JournalEntryKind } from './journal-types';
 import { confirmDialog } from '../../components/ui/native-dialog';
 
 function useDebouncedCallback<T extends (...args: any[]) => any>(callback: T, delay: number) {
@@ -31,20 +51,117 @@ function useDebouncedCallback<T extends (...args: any[]) => any>(callback: T, de
   );
 }
 
-function getMoodGradient(mood: number | null | undefined): string {
-  const gradients: Record<number, string> = {
-    1: 'from-red-500/30 to-red-400/20',
-    2: 'from-amber-500/30 to-amber-400/20',
-    3: 'from-slate-500/25 to-slate-400/15',
-    4: 'from-emerald-500/30 to-emerald-400/20',
-    5: 'from-rose-500/30 to-rose-400/20',
-  };
-  return (mood && gradients[mood]) || 'from-slate-500/15 to-slate-400/10';
-}
+const KIND_CONFIG: Record<
+  JournalEntryKind,
+  {
+    label: string;
+    prompt: string;
+    subtext: string;
+    icon: typeof Sun;
+    tone: 'success' | 'accent' | 'warning' | 'purple';
+    gradient: string;
+    border: string;
+    badgeBg: string;
+    badgeText: string;
+    accentColor: string;
+  }
+> = {
+  best_moment: {
+    label: 'Best Moments',
+    prompt: 'What went well today?',
+    subtext: 'Wins, breakthroughs, or things that brought energy',
+    icon: Sun,
+    tone: 'success',
+    gradient: 'from-emerald-500/10 via-teal-500/5 to-transparent',
+    border: 'border-emerald-500/25 hover:border-emerald-500/45',
+    badgeBg: 'bg-emerald-500/15 border-emerald-500/30',
+    badgeText: 'text-emerald-600 dark:text-emerald-400',
+    accentColor: 'text-emerald-500',
+  },
+  manifestation: {
+    label: 'Manifestations',
+    prompt: 'What are you calling in?',
+    subtext: 'Intended outcomes, future milestones, or visions',
+    icon: Telescope,
+    tone: 'accent',
+    gradient: 'from-sky-500/10 via-blue-500/5 to-transparent',
+    border: 'border-sky-500/25 hover:border-sky-500/45',
+    badgeBg: 'bg-sky-500/15 border-sky-500/30',
+    badgeText: 'text-sky-600 dark:text-sky-400',
+    accentColor: 'text-sky-500',
+  },
+  regret: {
+    label: 'Regrets & Friction',
+    prompt: 'What would you do differently?',
+    subtext: 'Missed opportunities, friction points, or hesitations',
+    icon: AlertCircle,
+    tone: 'warning',
+    gradient: 'from-amber-500/10 via-orange-500/5 to-transparent',
+    border: 'border-amber-500/25 hover:border-amber-500/45',
+    badgeBg: 'bg-amber-500/15 border-amber-500/30',
+    badgeText: 'text-amber-600 dark:text-amber-400',
+    accentColor: 'text-amber-500',
+  },
+  lesson: {
+    label: 'Lessons & Insights',
+    prompt: 'What did you learn?',
+    subtext: 'Principles, mental models, and personal wisdom',
+    icon: Lightbulb,
+    tone: 'purple',
+    gradient: 'from-purple-500/10 via-indigo-500/5 to-transparent',
+    border: 'border-purple-500/25 hover:border-purple-500/45',
+    badgeBg: 'bg-purple-500/15 border-purple-500/30',
+    badgeText: 'text-purple-600 dark:text-purple-400',
+    accentColor: 'text-purple-500',
+  },
+};
+
+const MOODS = [
+  {
+    value: 1,
+    label: 'Struggling',
+    emoji: '😫',
+    icon: Frown,
+    activeClass: 'border-rose-500/40 bg-rose-500/15 text-rose-600 dark:text-rose-400 shadow-sm ring-1 ring-rose-500/30',
+    hoverClass: 'hover:border-rose-500/30 hover:bg-rose-500/10',
+  },
+  {
+    value: 2,
+    label: 'Low',
+    emoji: '😕',
+    icon: Meh,
+    activeClass: 'border-amber-500/40 bg-amber-500/15 text-amber-600 dark:text-amber-400 shadow-sm ring-1 ring-amber-500/30',
+    hoverClass: 'hover:border-amber-500/30 hover:bg-amber-500/10',
+  },
+  {
+    value: 3,
+    label: 'Okay',
+    emoji: '😐',
+    icon: Meh,
+    activeClass: 'border-slate-500/40 bg-slate-500/15 text-text-primary shadow-sm ring-1 ring-slate-500/30',
+    hoverClass: 'hover:border-slate-500/30 hover:bg-slate-500/10',
+  },
+  {
+    value: 4,
+    label: 'Good',
+    emoji: '🙂',
+    icon: Smile,
+    activeClass: 'border-emerald-500/40 bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 shadow-sm ring-1 ring-emerald-500/30',
+    hoverClass: 'hover:border-emerald-500/30 hover:bg-emerald-500/10',
+  },
+  {
+    value: 5,
+    label: 'Great',
+    emoji: '😄',
+    icon: Laugh,
+    activeClass: 'border-sky-500/40 bg-sky-500/15 text-sky-600 dark:text-sky-400 shadow-sm ring-1 ring-sky-500/30',
+    hoverClass: 'hover:border-sky-500/30 hover:bg-sky-500/10',
+  },
+];
 
 function getMoodLabel(mood: number): string {
-  const labels: Record<number, string> = { 1: 'Struggling', 2: 'Challenging', 3: 'Neutral', 4: 'Good', 5: 'Thriving' };
-  return labels[mood] || 'Unset';
+  const item = MOODS.find((m) => m.value === mood);
+  return item ? `${item.emoji} ${item.label}` : 'Unset';
 }
 
 function JournalEntryItem({
@@ -74,10 +191,8 @@ function JournalEntryItem({
     itemRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
   }, [focused]);
 
-  const meta = getJournalKindMeta(entry.kind);
+  const meta = KIND_CONFIG[entry.kind];
   const Icon = meta.icon;
-  const toneBorder = meta.tone === 'warning' ? 'border-amber-500/20' : meta.tone === 'success' ? 'border-emerald-500/20' : meta.tone === 'accent' ? 'border-sky-500/20' : 'border-slate-500/15';
-  const toneBg = meta.tone === 'warning' ? 'bg-amber-500/8' : meta.tone === 'success' ? 'bg-emerald-500/8' : meta.tone === 'accent' ? 'bg-sky-500/8' : 'bg-slate-500/5';
 
   return (
     <motion.div
@@ -86,86 +201,72 @@ function JournalEntryItem({
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, y: -8 }}
       transition={{ duration: 0.2 }}
-      className={cn('rounded-[20px] border p-4 sm:p-5 group backdrop-blur-sm transition-all hover:border-opacity-100', toneBorder, toneBg, focused && 'ring-2 ring-accent/35 shadow-[0_12px_32px_rgba(var(--accent),0.12)]')}
+      className={cn(
+        'group relative overflow-hidden rounded-2xl border border-borderSoft/40 bg-panel/75 p-4 sm:p-5 transition-all hover:border-borderSoft/70 hover:shadow-md',
+        focused && 'ring-2 ring-accent/40 shadow-lg',
+      )}
     >
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0 flex-1">
-          <div className="flex items-start gap-2">
-            <Icon className="h-4 w-4 text-text-secondary mt-0.5 flex-shrink-0" />
-            <div className="flex-1 min-w-0">
-              <p className={cn("text-[15px] leading-relaxed text-text-primary font-[450]", isExpanded ? "" : "line-clamp-3")}>{entry.content}</p>
-              {entry.content.length > 150 && !isExpanded && (
-                <motion.button
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  onClick={() => setIsExpanded(true)}
-                  className="text-[12px] text-text-secondary/70 hover:text-text-secondary mt-1 font-medium transition-colors"
+          <div className="flex items-start gap-2.5">
+            <span className={cn('mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-lg border', meta.badgeBg, meta.badgeText)}>
+              <Icon className="h-3 w-3" />
+            </span>
+            <div className="min-w-0 flex-1">
+              <p className={cn('text-sm sm:text-[15px] font-medium leading-relaxed text-text-primary', !isExpanded && 'line-clamp-3')}>
+                {entry.content}
+              </p>
+              {entry.content.length > 150 && (
+                <button
+                  onClick={() => setIsExpanded(!isExpanded)}
+                  className="mt-1.5 text-xs font-semibold text-accent hover:underline"
                   type="button"
                 >
-                  Read more
-                </motion.button>
-              )}
-              {isExpanded && (
-                <motion.button
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  onClick={() => setIsExpanded(false)}
-                  className="text-[12px] text-text-secondary/70 hover:text-text-secondary mt-1 font-medium transition-colors"
-                  type="button"
-                >
-                  Show less
-                </motion.button>
+                  {isExpanded ? 'Show less' : 'Read more'}
+                </button>
               )}
             </div>
           </div>
 
           {linkedRegretContent && (
-            <div className="mt-3 rounded-[14px] border border-amber-500/15 bg-amber-500/6 px-3 py-2">
-              <p className="text-[12px] text-amber-900/60 dark:text-amber-200/50 font-medium uppercase tracking-[0.3px] mb-1">Lesson from</p>
-              <p className="text-[13px] text-amber-950/70 dark:text-amber-100/70 italic">{linkedRegretContent}</p>
+            <div className="mt-3 rounded-xl border border-amber-500/25 bg-amber-500/8 px-3.5 py-2">
+              <p className="text-[10px] font-bold uppercase tracking-wider text-amber-600 dark:text-amber-400">Lesson learned from:</p>
+              <p className="mt-0.5 text-xs italic text-text-secondary">{linkedRegretContent}</p>
             </div>
           )}
 
-          <div className="mt-3 flex flex-wrap gap-2 items-center">
+          <div className="mt-3.5 flex flex-wrap items-center gap-2">
             {missionTitle && (
-              <Badge tone="neutral" className="text-[10px] font-medium bg-slate-500/12 border-slate-500/20">
+              <Badge tone="neutral" className="border-borderSoft/40 bg-panel2/60 text-[10px] font-semibold">
                 {missionTitle}
               </Badge>
             )}
-            <span className="text-[11px] text-text-muted/70 font-medium">{formatRelativeTime(entry.created_at)}</span>
+            <span className="text-[11px] font-medium text-text-muted">{formatRelativeTime(entry.created_at)}</span>
           </div>
         </div>
 
-        <div className="flex shrink-0 gap-1.5 opacity-0 group-hover:opacity-100 transition-opacity delay-100">
-          <motion.button
-            className="flex h-8 w-8 items-center justify-center rounded-full hover:bg-sky-500/12 text-text-muted/60 hover:text-sky-600/70 transition-colors"
-            onClick={() => setIsExpanded(!isExpanded)}
-            title="View full entry"
-            type="button"
-          >
-            <Eye className="h-3.5 w-3.5" />
-          </motion.button>
-          <motion.button
-            className="flex h-8 w-8 items-center justify-center rounded-full hover:bg-emerald-500/12 text-text-muted/60 hover:text-emerald-600/70 transition-colors"
+        <div className="flex shrink-0 items-center gap-1 opacity-0 transition-opacity group-hover:opacity-100">
+          <button
+            className="flex h-8 w-8 items-center justify-center rounded-lg text-text-muted hover:bg-panel2 hover:text-text-primary transition-colors"
             onClick={() => onEdit(entry)}
             title="Edit entry"
             type="button"
           >
             <Edit2 className="h-3.5 w-3.5" />
-          </motion.button>
+          </button>
           {entry.kind === 'regret' && (
-            <motion.button
-              className="flex h-8 w-8 items-center justify-center rounded-full bg-amber-500/12 hover:bg-amber-500/20 text-amber-700/70 dark:text-amber-300/70 transition-colors"
+            <button
+              className="flex h-8 w-8 items-center justify-center rounded-lg text-amber-600 hover:bg-amber-500/15 transition-colors"
               onClick={() => onTurnIntoLesson(entry)}
-              title="Turn this into a lesson"
+              title="Turn into a lesson"
               type="button"
             >
               <BookOpenCheck className="h-3.5 w-3.5" />
-            </motion.button>
+            </button>
           )}
-          <motion.button
+          <button
             disabled={isDeleting}
-            className="flex h-8 w-8 items-center justify-center rounded-full hover:bg-red-500/12 text-text-muted/60 hover:text-red-600/70 transition-colors disabled:opacity-50"
+            className="flex h-8 w-8 items-center justify-center rounded-lg text-text-muted hover:bg-danger/10 hover:text-danger transition-colors disabled:opacity-50"
             onClick={async () => {
               setIsDeleting(true);
               try {
@@ -177,12 +278,8 @@ function JournalEntryItem({
             title="Delete entry"
             type="button"
           >
-            {isDeleting ? (
-              <motion.div animate={{ rotate: 360 }} transition={{ duration: 1, repeat: Infinity }} className="h-3.5 w-3.5 rounded-full border border-text-muted/40 border-t-text-muted/70" />
-            ) : (
-              <Trash2 className="h-3.5 w-3.5" />
-            )}
-          </motion.button>
+            <Trash2 className="h-3.5 w-3.5" />
+          </button>
         </div>
       </div>
     </motion.div>
@@ -202,7 +299,7 @@ function JournalEntryModal({
   onClose: () => void;
   onSubmit: (content: string) => Promise<void>;
 }) {
-  const meta = getJournalKindMeta(kind);
+  const meta = KIND_CONFIG[kind];
   const Icon = meta.icon;
   const [content, setContent] = useState(initialContent);
   const [saving, setSaving] = useState(false);
@@ -240,74 +337,59 @@ function JournalEntryModal({
     return () => window.removeEventListener('keydown', handleKey);
   }, [onClose, handleSubmit]);
 
-  const toneAccent =
-    meta.tone === 'warning' ? 'text-amber-500' :
-    meta.tone === 'success' ? 'text-emerald-500' :
-    meta.tone === 'accent' ? 'text-sky-500' : 'text-text-secondary';
-
   return createPortal(
     <div
-      className="fixed inset-0 z-[80] flex items-end justify-center bg-black/60 p-0 sm:items-center sm:p-4"
+      className="fixed inset-0 z-[80] flex items-end justify-center bg-black/40 p-0 backdrop-blur-[3px] sm:items-center sm:p-4"
       onClick={onClose}
     >
       <div
         onClick={(e) => e.stopPropagation()}
-        className="flex max-h-[90vh] w-full max-w-lg flex-col overflow-hidden rounded-t-[28px] border border-borderSoft/40 bg-panel shadow-panel sm:rounded-[28px] pb-[env(safe-area-inset-bottom)] sm:pb-0"
+        className="flex max-h-[90vh] w-full max-w-lg flex-col overflow-hidden rounded-t-[28px] border border-borderSoft/40 bg-panel shadow-2xl sm:rounded-[28px]"
       >
-        <div className="flex shrink-0 items-center justify-between gap-3 border-b border-borderSoft/25 px-6 py-5">
+        <div className="flex shrink-0 items-center justify-between gap-3 border-b border-borderSoft/30 px-6 py-5">
           <div className="flex min-w-0 items-center gap-3">
-            <div className={cn('flex h-10 w-10 items-center justify-center rounded-2xl bg-text-primary/5', toneAccent)}>
+            <div className={cn('flex h-10 w-10 items-center justify-center rounded-xl border', meta.badgeBg, meta.badgeText)}>
               <Icon className="h-5 w-5" />
             </div>
             <div className="min-w-0">
-              <p className="text-[11px] font-bold uppercase tracking-[0.4px] text-text-muted/60">{mode === 'create' ? 'New entry' : 'Editing'}</p>
-              <h2 className="truncate text-base font-semibold text-text-primary">{meta.label}</h2>
+              <p className="text-[10px] font-bold uppercase tracking-wider text-text-muted">{mode === 'create' ? 'New reflection' : 'Editing entry'}</p>
+              <h2 className="truncate text-base font-bold text-text-primary">{meta.label}</h2>
             </div>
           </div>
           <button
             onClick={onClose}
             type="button"
-            className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-text-muted/70 transition-colors hover:bg-text-primary/8 hover:text-text-primary"
+            className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-text-muted transition-colors hover:bg-panel2 hover:text-text-primary"
           >
             <X className="h-4 w-4" />
           </button>
         </div>
 
-        <div className="space-y-2 overflow-y-auto px-6 py-5">
+        <div className="space-y-3 overflow-y-auto px-6 py-5">
           <Textarea
             autoFocus
             value={content}
             onChange={(e) => setContent(e.target.value)}
             placeholder={meta.prompt}
-            className="min-h-[160px] resize-none rounded-[18px] border-borderSoft/30 bg-panel2/40 text-[15px] leading-relaxed placeholder:text-text-muted/50"
+            rows={5}
+            className="min-h-[140px] resize-none rounded-xl border-borderSoft/40 bg-panel2/40 text-sm leading-relaxed text-text-primary placeholder:text-text-muted focus:border-accent/40 focus:bg-panel2/70"
           />
-          <div className="flex items-center justify-between px-1">
-            <p className="text-[11px] text-text-muted/50">{mode === 'edit' ? 'Autosaves as you type' : '⌘/Ctrl + Enter to save'}</p>
-            <p className={cn('text-[11px] tabular-nums', trimmed.length === 0 ? 'text-danger/70' : 'text-text-muted/50')}>
+          <div className="flex items-center justify-between px-1 text-xs text-text-muted">
+            <p>{mode === 'edit' ? 'Autosaves automatically' : '⌘ + Enter to save'}</p>
+            <p className={cn('tabular-nums', trimmed.length === 0 ? 'text-text-muted' : 'text-text-secondary')}>
               {content.length} characters
             </p>
           </div>
         </div>
 
-        <div className="flex shrink-0 items-center justify-between gap-2 border-t border-borderSoft/25 px-6 py-4">
+        <div className="flex shrink-0 items-center justify-between gap-2 border-t border-borderSoft/30 bg-panel2/30 px-6 py-4">
           <SaveStatus status={autoSaveStatus} />
           <div className="flex items-center gap-2">
-            <Button onClick={onClose} size="sm" type="button" variant="secondary" className="text-[13px] font-medium">
+            <Button onClick={onClose} size="sm" type="button" variant="ghost">
               Cancel
             </Button>
-            <Button disabled={!canSubmit} onClick={handleSubmit} size="sm" type="button" className="min-w-[120px] text-[13px] font-medium">
-              {saving ? (
-                <span className="flex items-center justify-center gap-2">
-                  <motion.span
-                    animate={{ rotate: 360 }}
-                    transition={{ duration: 1, repeat: Infinity, ease: 'linear' }}
-                    className="h-3.5 w-3.5 rounded-full border-2 border-current/40 border-t-current"
-                  />
-                  {mode === 'create' ? 'Adding' : 'Saving'}
-                </span>
-              ) : (
-                mode === 'create' ? 'Add entry' : 'Done'
-              )}
+            <Button disabled={!canSubmit} onClick={handleSubmit} size="sm" type="button" className="min-w-[100px] font-semibold">
+              {saving ? 'Saving…' : mode === 'create' ? 'Add entry' : 'Save'}
             </Button>
           </div>
         </div>
@@ -342,47 +424,45 @@ function JournalEntrySection({
   const [editingEntry, setEditingEntry] = useState<JournalEntry | null>(null);
   const updateEntry = useJournalStore((state) => state.updateEntry);
 
-  const meta = JOURNAL_KIND_META[kind];
+  const meta = KIND_CONFIG[kind];
   const Icon = meta.icon;
   const sectionEntries = entries.filter((e) => e.kind === kind && e.entry_date === selectedDate);
-  const toneClasses =
-    meta.tone === 'success'
-      ? 'border-emerald-500/20 bg-emerald-500/10 text-emerald-500'
-      : meta.tone === 'accent'
-        ? 'border-sky-500/20 bg-sky-500/10 text-sky-500'
-        : meta.tone === 'warning'
-          ? 'border-amber-500/20 bg-amber-500/10 text-amber-500'
-          : 'border-violet-500/20 bg-violet-500/10 text-violet-500';
 
   return (
     <div>
-      <Card className="overflow-hidden rounded-[24px] border-borderSoft/20 bg-panel/45 p-4 transition-colors hover:border-borderSoft/35 sm:p-5">
-        <div className={cn('flex items-center justify-between gap-3', sectionEntries.length > 0 && 'mb-4')}>
+      <Card className={cn('relative overflow-hidden rounded-[24px] border bg-panel/60 p-5 sm:p-6 transition-all shadow-sm', meta.border)}>
+        <div aria-hidden className={cn('pointer-events-none absolute inset-0 bg-gradient-to-br opacity-60', meta.gradient)} />
+
+        <div className="relative mb-4 flex items-center justify-between gap-3">
           <div className="flex items-center gap-3">
-            <div className={cn('flex h-9 w-9 items-center justify-center rounded-[12px] border', toneClasses)}>
-              <Icon className="h-4 w-4" />
+            <div className={cn('flex h-10 w-10 items-center justify-center rounded-xl border shadow-xs', meta.badgeBg, meta.badgeText)}>
+              <Icon className="h-5 w-5" />
             </div>
             <div>
-              <h3 className="text-sm font-semibold tracking-[-0.2px] text-text-primary">{meta.label}</h3>
-              <p className="mt-0.5 text-[11px] text-text-muted/75">{meta.prompt}</p>
+              <div className="flex items-center gap-2">
+                <h3 className="text-base font-bold tracking-tight text-text-primary">{meta.label}</h3>
+                {sectionEntries.length > 0 && (
+                  <span className={cn('rounded-full px-2 py-0.5 text-[10px] font-bold border', meta.badgeBg, meta.badgeText)}>
+                    {sectionEntries.length}
+                  </span>
+                )}
+              </div>
+              <p className="text-xs text-text-muted mt-0.5">{meta.subtext}</p>
             </div>
           </div>
-          <div className="flex items-center gap-2">
-            {sectionEntries.length > 0 ? <Badge tone="neutral" className="text-[10px]">{sectionEntries.length}</Badge> : null}
-            {sectionEntries.length > 0 ? (
-              <button
-                type="button"
-                onClick={() => setIsAdding(true)}
-                className="flex h-8 items-center gap-1.5 rounded-full border border-borderSoft/30 bg-panel2/45 px-3 text-[11px] font-medium text-text-secondary transition-colors hover:border-accent/25 hover:bg-accent/8 hover:text-accent"
-              >
-                <Plus className="h-3.5 w-3.5" />
-                Add
-              </button>
-            ) : null}
-          </div>
+
+          <Button
+            size="sm"
+            variant="ghost"
+            onClick={() => setIsAdding(true)}
+            className="h-8 rounded-full border border-borderSoft/40 bg-panel px-3 text-xs font-semibold text-text-secondary hover:border-accent/40 hover:bg-accent/10 hover:text-accent transition-all"
+          >
+            <Plus className="h-3.5 w-3.5 mr-1" />
+            Add
+          </Button>
         </div>
 
-        <div className="space-y-3">
+        <div className="relative space-y-3">
           <AnimatePresence>
             {sectionEntries.map((entry) => {
               const linkedRegret = entry.linked_entry_id ? entriesById.get(entry.linked_entry_id) : null;
@@ -403,18 +483,18 @@ function JournalEntrySection({
           </AnimatePresence>
 
           {sectionEntries.length === 0 && (
-            <motion.button
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
+            <button
               type="button"
               onClick={() => setIsAdding(true)}
-              className="group mt-4 flex w-full items-center justify-between rounded-[16px] border border-dashed border-borderSoft/25 bg-panel2/20 px-4 py-3.5 text-left transition-all hover:border-accent/25 hover:bg-accent/6"
+              className="group flex w-full items-center justify-between rounded-2xl border border-dashed border-borderSoft/50 bg-panel2/25 px-4 py-4 text-left transition-all hover:border-accent/40 hover:bg-accent/5"
             >
-              <span className="text-[12px] text-text-muted/75">Write your first thought</span>
-              <span className="flex h-7 w-7 items-center justify-center rounded-full bg-text-primary/5 text-text-muted transition-colors group-hover:bg-accent/12 group-hover:text-accent">
+              <span className="text-xs font-medium text-text-muted group-hover:text-text-secondary transition-colors">
+                {meta.prompt}
+              </span>
+              <span className="flex h-7 w-7 items-center justify-center rounded-full border border-borderSoft/40 bg-panel text-text-muted shadow-xs transition-colors group-hover:border-accent/40 group-hover:bg-accent group-hover:text-[rgb(var(--accent-contrast))]">
                 <Plus className="h-3.5 w-3.5" />
               </span>
-            </motion.button>
+            </button>
           )}
         </div>
 
@@ -447,51 +527,48 @@ function JournalEntrySection({
 }
 
 function MoodSelector({ mood, onChange }: { mood: number; onChange: (m: number) => void }) {
-  const moods = [
-    { value: 1, label: 'Struggling', icon: Frown, selected: 'border-red-500/30 bg-red-500/10 text-red-500' },
-    { value: 2, label: 'Low', icon: Annoyed, selected: 'border-amber-500/30 bg-amber-500/10 text-amber-500' },
-    { value: 3, label: 'Okay', icon: Meh, selected: 'border-slate-500/30 bg-slate-500/10 text-text-secondary' },
-    { value: 4, label: 'Good', icon: Smile, selected: 'border-emerald-500/30 bg-emerald-500/10 text-emerald-500' },
-    { value: 5, label: 'Great', icon: Laugh, selected: 'border-sky-500/30 bg-sky-500/10 text-sky-500' },
-  ];
-
   return (
-    <div className="flex items-center gap-2">
-      <div className="grid min-w-0 flex-1 grid-cols-5 gap-2">
-        {moods.map(({ value, label, icon: Icon, selected }) => (
-          <motion.button
-            key={value}
-            className={cn(
-              'flex min-w-0 flex-col items-center justify-center gap-1.5 rounded-[14px] border px-1 py-2.5 transition-all duration-200',
-              mood === value ? selected : 'border-borderSoft/25 bg-panel2/25 text-text-muted hover:border-borderSoft/45 hover:bg-panel2/45',
-            )}
-            onClick={() => onChange(value)}
-            type="button"
-            title={getMoodLabel(value)}
-          >
-            <Icon className="h-[18px] w-[18px]" />
-            <span className="hidden truncate text-[9px] font-medium sm:block">{label}</span>
-          </motion.button>
-        ))}
+    <div className="flex items-center gap-1.5 sm:gap-2">
+      <div className="grid min-w-0 flex-1 grid-cols-5 gap-1.5 sm:gap-2">
+        {MOODS.map(({ value, label, emoji, activeClass, hoverClass }) => {
+          const isSelected = mood === value;
+          return (
+            <button
+              key={value}
+              className={cn(
+                'flex flex-col items-center justify-center gap-1 rounded-xl border py-2 px-1 text-center transition-all duration-150',
+                isSelected
+                  ? activeClass
+                  : cn('border-borderSoft/35 bg-panel text-text-muted hover:text-text-primary', hoverClass),
+              )}
+              onClick={() => onChange(value)}
+              type="button"
+              title={label}
+            >
+              <span className="text-lg sm:text-xl leading-none">{emoji}</span>
+              <span className="text-[10px] sm:text-[11px] font-semibold truncate w-full px-0.5">{label}</span>
+            </button>
+          );
+        })}
       </div>
-        {mood > 0 && (
-          <motion.button
-            initial={{ opacity: 0, scale: 0.8 }}
-            animate={{ opacity: 1, scale: 1 }}
-            className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-borderSoft/30 transition-colors hover:border-red-500/30 hover:bg-red-500/10"
-            onClick={() => onChange(0)}
-            type="button"
-            title="Clear mood"
-          >
-            <X className="h-4 w-4 text-text-muted/70" />
-          </motion.button>
-        )}
+      {mood > 0 && (
+        <button
+          className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl border border-borderSoft/35 bg-panel text-text-muted hover:border-danger/40 hover:bg-danger/10 hover:text-danger transition-colors"
+          onClick={() => onChange(0)}
+          type="button"
+          title="Clear mood"
+        >
+          <X className="h-3.5 w-3.5" />
+        </button>
+      )}
     </div>
   );
 }
 
 function DateStepper({ selectedDate, onDateChange }: { selectedDate: string; onDateChange: (d: string) => void }) {
   const today = toLocalDateString(new Date());
+  const isToday = selectedDate === today;
+
   const goToPreviousDay = () => {
     const d = new Date(selectedDate);
     d.setDate(d.getDate() - 1);
@@ -503,23 +580,60 @@ function DateStepper({ selectedDate, onDateChange }: { selectedDate: string; onD
     onDateChange(toLocalDateString(d));
   };
 
-  return (
-    <div className="flex items-center gap-3">
-      <Button aria-label="Previous day" onClick={goToPreviousDay} size="sm" type="button" variant="ghost" className="h-9 w-9 shrink-0 rounded-full p-0 hover:bg-text-primary/8">
-        <ChevronLeft className="h-5 w-5 text-text-secondary" />
-      </Button>
+  const formattedDate = useMemo(() => {
+    const d = new Date(selectedDate);
+    return d.toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' });
+  }, [selectedDate]);
 
-      <div className="min-w-0 flex-1">
-        <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-text-muted/65">Daily reflection</p>
-        <div className="mt-2 max-w-xs"><DatePicker onChange={(value) => value && onDateChange(value)} placeholder="Pick a date" value={selectedDate} /></div>
+  return (
+    <div className="space-y-3">
+      <div className="flex items-center justify-between gap-2">
+        <span className="text-[11px] font-bold uppercase tracking-[0.2em] text-text-muted flex items-center gap-1.5">
+          <Calendar className="h-3.5 w-3.5 text-accent" />
+          Daily Reflection
+        </span>
+        {!isToday && (
+          <button
+            onClick={() => onDateChange(today)}
+            className="rounded-full bg-accent/15 border border-accent/30 px-2.5 py-0.5 text-[10px] font-bold text-accent hover:bg-accent/25 transition-colors"
+            type="button"
+          >
+            Go to today
+          </button>
+        )}
       </div>
 
-      {selectedDate !== today ? (
-        <button onClick={() => onDateChange(today)} className="shrink-0 text-[11px] font-medium text-accent hover:opacity-80" type="button">Today</button>
-      ) : null}
-      <Button aria-label="Next day" onClick={goToNextDay} size="sm" type="button" variant="ghost" className="h-9 w-9 shrink-0 rounded-full p-0 hover:bg-text-primary/8">
-        <ChevronRight className="h-5 w-5 text-text-secondary" />
-      </Button>
+      <div className="flex items-center gap-2">
+        <Button
+          aria-label="Previous day"
+          onClick={goToPreviousDay}
+          size="sm"
+          type="button"
+          variant="ghost"
+          className="h-9 w-9 shrink-0 rounded-xl border border-borderSoft/35 bg-panel p-0 hover:bg-panel2"
+        >
+          <ChevronLeft className="h-4 w-4 text-text-secondary" />
+        </Button>
+
+        <div className="min-w-0 flex-1">
+          <DatePicker onChange={(value) => value && onDateChange(value)} placeholder="Pick date" value={selectedDate} />
+        </div>
+
+        <Button
+          aria-label="Next day"
+          onClick={goToNextDay}
+          size="sm"
+          type="button"
+          variant="ghost"
+          className="h-9 w-9 shrink-0 rounded-xl border border-borderSoft/35 bg-panel p-0 hover:bg-panel2"
+        >
+          <ChevronRight className="h-4 w-4 text-text-secondary" />
+        </Button>
+      </div>
+
+      <p className="text-xs font-semibold text-text-secondary px-1">
+        {formattedDate} {isToday ? <span className="text-accent font-bold">(Today)</span> : null}
+      </p>
     </div>
   );
 }
@@ -570,9 +684,6 @@ export function JournalView({ focusedEntryId = null }: { focusedEntryId?: string
     setGratitudeInput(todayDay?.gratitude ?? '');
   }, [todayDay?.entry_date]);
 
-  // Re-fetch from the cloud whenever the journal is opened or the app regains
-  // focus, so entries created on another device (web <-> mobile) show up without
-  // needing an app restart. Silent refresh avoids flashing the loading overlay.
   useEffect(() => {
     void refresh(true);
 
@@ -651,68 +762,65 @@ export function JournalView({ focusedEntryId = null }: { focusedEntryId?: string
     500,
   );
 
+  const totalEntriesToday = entries.filter((e) => e.entry_date === selectedDate).length;
+
   return (
-    <div className="space-y-8">
+    <div className="space-y-6">
       {(error || operationError) && (
         <motion.div
           initial={{ opacity: 0, y: -10 }}
           animate={{ opacity: 1, y: 0 }}
           exit={{ opacity: 0, y: -10 }}
-          className="rounded-[20px] border border-red-500/30 bg-red-500/10 p-4 flex items-start gap-3"
+          className="rounded-2xl border border-danger/30 bg-danger/10 p-4 flex items-start gap-3 text-danger"
         >
-          <div className="flex-1">
-            <p className="text-sm font-medium text-red-700 dark:text-red-200">{error || operationError}</p>
-            {error?.includes('journal_entries') && (
-              <p className="text-xs text-red-600 dark:text-red-300 mt-2">
-                Tip: Make sure your Supabase migrations are applied. Run <code className="bg-red-500/20 px-2 py-1 rounded text-xs">supabase migration up --remote</code>
-              </p>
-            )}
-          </div>
-          <motion.button
-            onClick={() => setOperationError(null)}
-            className="flex-shrink-0 text-red-600 hover:text-red-700 transition-colors"
-            type="button"
-          >
+          <div className="flex-1 text-sm font-medium">{error || operationError}</div>
+          <button onClick={() => setOperationError(null)} className="text-danger hover:opacity-80" type="button">
             <X className="h-4 w-4" />
-          </motion.button>
+          </button>
         </motion.div>
       )}
 
-      <Card className="relative overflow-hidden rounded-[26px] border-borderSoft/20 bg-panel/45 p-5 sm:p-6">
-        <div aria-hidden className="pointer-events-none absolute -right-16 -top-20 h-48 w-48 rounded-full bg-accent/8 blur-3xl" />
-        {loading && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            className="absolute inset-0 bg-panel/50 backdrop-blur-sm rounded-[32px] flex items-center justify-center z-10"
-          >
-            <div className="flex flex-col items-center gap-2">
-              <motion.div animate={{ rotate: 360 }} transition={{ duration: 2, repeat: Infinity }} className="h-8 w-8 rounded-full border-2 border-text-secondary/30 border-t-text-secondary" />
-              <p className="text-sm text-text-muted/70">Loading journal...</p>
-            </div>
-          </motion.div>
-        )}
-        <div className="relative grid gap-5 lg:grid-cols-[minmax(280px,0.8fr)_minmax(420px,1.2fr)] lg:items-stretch">
-          <div className="rounded-[20px] border border-borderSoft/18 bg-panel2/20 p-4">
+      {/* Top Banner Card: Date + Mood + Gratitude */}
+      <Card className="relative overflow-hidden rounded-[26px] border border-borderSoft/40 bg-panel/90 p-5 sm:p-6 shadow-sm bg-grid-subtle">
+        <div aria-hidden className="pointer-events-none absolute -right-16 -top-20 h-56 w-56 rounded-full bg-accent/10 blur-3xl" />
+        
+        <div className="relative grid gap-5 lg:grid-cols-[minmax(260px,0.75fr)_minmax(420px,1.25fr)] lg:items-stretch">
+          {/* Left: Date Stepper */}
+          <div className="rounded-2xl border border-borderSoft/35 bg-panel2/35 p-4 sm:p-5 flex flex-col justify-between">
             <DateStepper onDateChange={selectDate} selectedDate={selectedDate} />
+            <div className="mt-4 pt-3 border-t border-borderSoft/25 flex items-center justify-between text-xs text-text-muted">
+              <span>Reflections today</span>
+              <span className="font-bold text-text-primary rounded-full bg-panel px-2.5 py-0.5 border border-borderSoft/30">
+                {totalEntriesToday} entries
+              </span>
+            </div>
           </div>
 
-          <div className="space-y-4 rounded-[20px] border border-borderSoft/18 bg-panel2/20 p-4">
+          {/* Right: Mood & Gratitude */}
+          <div className="space-y-4 rounded-2xl border border-borderSoft/35 bg-panel2/35 p-4 sm:p-5">
             <div>
               <div className="mb-2.5 flex items-center justify-between gap-3">
-                <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-text-muted/65">How are you feeling?</p>
-                <div className="flex items-center gap-2.5">
+                <span className="text-[11px] font-bold uppercase tracking-[0.2em] text-text-muted flex items-center gap-1.5">
+                  <Zap className="h-3.5 w-3.5 text-accent" />
+                  How are you feeling?
+                </span>
+                <div className="flex items-center gap-2">
                   <SaveStatus status={dayStatus} />
-                  {todayDay?.mood ? <span className="text-[10px] font-medium text-text-secondary">{getMoodLabel(todayDay.mood)}</span> : null}
+                  {todayDay?.mood ? (
+                    <span className="text-xs font-semibold text-text-secondary">{getMoodLabel(todayDay.mood)}</span>
+                  ) : null}
                 </div>
               </div>
               <MoodSelector mood={todayDay?.mood ?? 0} onChange={(m) => handleSaveDay(m, gratitudeInput)} />
             </div>
 
-            <div className="border-t border-borderSoft/18 pt-4">
-              <p className="mb-2 text-[10px] font-semibold uppercase tracking-[0.2em] text-text-muted/65">One thing I’m grateful for</p>
+            <div className="border-t border-borderSoft/25 pt-3.5">
+              <span className="mb-2 block text-[11px] font-bold uppercase tracking-[0.2em] text-text-muted flex items-center gap-1.5">
+                <Heart className="h-3.5 w-3.5 text-rose-500" />
+                One thing I’m grateful for
+              </span>
               <Input
-                className="h-10 rounded-[13px] border-borderSoft/25 bg-panel/35 text-[13px] placeholder:text-text-muted/45"
+                className="h-10.5 rounded-xl border-borderSoft/40 bg-panel text-sm text-text-primary placeholder:text-text-muted focus:border-accent/50"
                 onChange={(e) => {
                   setGratitudeInput(e.target.value);
                   markDayDirty();
@@ -726,7 +834,8 @@ export function JournalView({ focusedEntryId = null }: { focusedEntryId?: string
         </div>
       </Card>
 
-      <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+      {/* 4 Quadrants Grid */}
+      <div className="grid grid-cols-1 gap-5 md:grid-cols-2">
         {(['best_moment', 'manifestation', 'regret', 'lesson'] as const).map((kind) => (
           <JournalEntrySection
             key={kind}
