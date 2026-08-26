@@ -100,6 +100,18 @@ function ViewLoading() {
 
 type MainView = 'dashboard' | 'focus' | 'missions' | 'projects' | 'roadmap' | 'today' | 'calendar' | 'challenges' | 'tasks' | 'history' | 'insights' | 'review' | 'journal' | 'notes' | 'assistant' | 'settings' | 'apps' | 'crm' | 'problems';
 
+const MAIN_VIEW_PATHS: Record<MainView, string> = {
+  dashboard: '/dashboard', focus: '/focus', missions: '/missions', projects: '/projects', roadmap: '/roadmap',
+  today: '/today', calendar: '/calendar', challenges: '/challenges', tasks: '/tasks', history: '/history',
+  insights: '/insights', review: '/review', journal: '/journal', notes: '/notes', assistant: '/assistant',
+  settings: '/settings', apps: '/apps', crm: '/crm', problems: '/problems',
+};
+
+function viewFromPath(pathname: string): MainView {
+  const normalized = pathname.replace(/^\/team/, '').replace(/\/$/, '') || '/dashboard';
+  return (Object.entries(MAIN_VIEW_PATHS).find(([, path]) => path === normalized)?.[0] as MainView | undefined) ?? 'dashboard';
+}
+
 type CaptureState = {
   kind: SessionCaptureKind;
   value: string;
@@ -2219,7 +2231,7 @@ export function MainApp() {
   const addCapture = useSessionStore((state) => state.addCapture);
   const dismissRecovery = useSessionStore((state) => state.dismissRecovery);
 
-  const [activeView, setActiveView] = useState<MainView>(() => window.location.pathname === '/settings' ? 'settings' : 'dashboard');
+  const [activeView, setActiveViewState] = useState<MainView>(() => viewFromPath(window.location.pathname));
   const [settingsModalOpen, setSettingsModalOpen] = useState(false);
   const [settingsCategory, setSettingsCategory] = useState<SettingsCategory>('account');
   const [minutes, setMinutes] = useState(25);
@@ -2256,9 +2268,13 @@ export function MainApp() {
   const dropHandledRef = useRef(false);
 
   useEffect(() => {
+    if (window.location.pathname.startsWith('/team/')) {
+      useTeamStore.getState().setWorkspaceMode('team');
+    }
     const handlePopState = () => {
       setSettingsModalOpen(false);
-      setActiveView(window.location.pathname === '/settings' ? 'settings' : 'dashboard');
+      useTeamStore.getState().setWorkspaceMode(window.location.pathname.startsWith('/team/') ? 'team' : 'personal');
+      setActiveViewState(viewFromPath(window.location.pathname));
     };
     window.addEventListener('popstate', handlePopState);
     return () => window.removeEventListener('popstate', handlePopState);
@@ -2273,13 +2289,19 @@ export function MainApp() {
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [settingsModalOpen]);
 
+  function setActiveView(view: MainView) {
+    setActiveViewState(view);
+    const teamPrefix = useTeamStore.getState().workspaceMode === 'team' ? '/team' : '';
+    const nextPath = `${teamPrefix}${MAIN_VIEW_PATHS[view]}`;
+    if (window.location.pathname !== nextPath) window.history.pushState(null, '', nextPath);
+  }
+
   function openSettingsModal() {
     setSettingsCategory('account');
     setSettingsModalOpen(true);
   }
 
   function openFullSettings() {
-    window.history.pushState(null, '', '/settings');
     setSettingsModalOpen(false);
     setActiveView('settings');
   }
@@ -2288,9 +2310,6 @@ export function MainApp() {
     if (view === 'settings') {
       openSettingsModal();
       return;
-    }
-    if (window.location.pathname === '/settings') {
-      window.history.pushState(null, '', '/');
     }
     setActiveView(view);
   }

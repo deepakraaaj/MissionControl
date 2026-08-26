@@ -39,16 +39,16 @@ export interface NoteColorStyle {
 }
 
 export const NOTE_COLOR_STYLES: Record<NoteColor, NoteColorStyle> = {
-  slate: { text: 'text-slate-600 dark:text-slate-300', bg: 'bg-slate-500/10', border: 'border-slate-500/25', solid: 'bg-slate-500' },
-  blue: { text: 'text-blue-600 dark:text-blue-300', bg: 'bg-blue-500/10', border: 'border-blue-500/25', solid: 'bg-blue-500' },
-  teal: { text: 'text-teal-600 dark:text-teal-300', bg: 'bg-teal-500/10', border: 'border-teal-500/25', solid: 'bg-teal-500' },
-  green: { text: 'text-emerald-600 dark:text-emerald-300', bg: 'bg-emerald-500/10', border: 'border-emerald-500/25', solid: 'bg-emerald-500' },
-  amber: { text: 'text-amber-600 dark:text-amber-300', bg: 'bg-amber-500/10', border: 'border-amber-500/25', solid: 'bg-amber-500' },
-  orange: { text: 'text-orange-600 dark:text-orange-300', bg: 'bg-orange-500/10', border: 'border-orange-500/25', solid: 'bg-orange-500' },
-  red: { text: 'text-red-600 dark:text-red-300', bg: 'bg-red-500/10', border: 'border-red-500/25', solid: 'bg-red-500' },
-  pink: { text: 'text-pink-600 dark:text-pink-300', bg: 'bg-pink-500/10', border: 'border-pink-500/25', solid: 'bg-pink-500' },
-  purple: { text: 'text-purple-600 dark:text-purple-300', bg: 'bg-purple-500/10', border: 'border-purple-500/25', solid: 'bg-purple-500' },
-  indigo: { text: 'text-indigo-600 dark:text-indigo-300', bg: 'bg-indigo-500/10', border: 'border-indigo-500/25', solid: 'bg-indigo-500' },
+  slate: { text: 'text-slate-700', bg: 'bg-slate-500/14', border: 'border-slate-500/35', solid: 'bg-slate-500' },
+  blue: { text: 'text-blue-700', bg: 'bg-blue-500/14', border: 'border-blue-500/35', solid: 'bg-blue-500' },
+  teal: { text: 'text-teal-700', bg: 'bg-teal-500/14', border: 'border-teal-500/35', solid: 'bg-teal-500' },
+  green: { text: 'text-emerald-700', bg: 'bg-emerald-500/14', border: 'border-emerald-500/35', solid: 'bg-emerald-500' },
+  amber: { text: 'text-amber-700', bg: 'bg-amber-500/14', border: 'border-amber-500/35', solid: 'bg-amber-500' },
+  orange: { text: 'text-orange-700', bg: 'bg-orange-500/14', border: 'border-orange-500/35', solid: 'bg-orange-500' },
+  red: { text: 'text-red-700', bg: 'bg-red-500/14', border: 'border-red-500/35', solid: 'bg-red-500' },
+  pink: { text: 'text-pink-700', bg: 'bg-pink-500/14', border: 'border-pink-500/35', solid: 'bg-pink-500' },
+  purple: { text: 'text-purple-700', bg: 'bg-purple-500/14', border: 'border-purple-500/35', solid: 'bg-purple-500' },
+  indigo: { text: 'text-indigo-700', bg: 'bg-indigo-500/14', border: 'border-indigo-500/35', solid: 'bg-indigo-500' },
 };
 
 export function getNoteColorStyle(color: NoteColor): NoteColorStyle {

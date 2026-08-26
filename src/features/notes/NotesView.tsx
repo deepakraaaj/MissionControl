@@ -104,7 +104,7 @@ export function NoteCard({
         <div className={cn('absolute inset-x-0 top-0 h-1', style.solid)} />
 
         <div className="mb-3 flex items-start justify-between gap-2">
-          <Badge tone="neutral" className={cn('gap-1.5 border text-[10px] font-medium normal-case tracking-normal', style.bg, style.border, style.text)}>
+          <Badge tone="neutral" className={cn('gap-1.5 border px-2.5 py-1 text-[11px] font-semibold normal-case tracking-normal', style.bg, style.border, style.text)}>
             <NoteCategoryIcon icon={category.icon} className="h-3 w-3" />
             {category.label}
           </Badge>
@@ -184,7 +184,7 @@ export function NoteCard({
           )}
           <span
             title={new Date(note.updated_at).toLocaleString(undefined, { dateStyle: 'full', timeStyle: 'short' })}
-            className="ml-auto text-[11px] font-medium text-text-muted/60"
+            className="ml-auto text-[11px] font-medium text-text-muted"
           >
             {formatDayDateWithRelative(note.updated_at)}
           </span>
