@@ -185,8 +185,9 @@ export function RichTextEditor({
               event.preventDefault();
               const reader = new FileReader();
               reader.onload = () => {
-                if (typeof reader.result === 'string') {
-                  editorRef.current?.chain().focus().setImage({ src: reader.result }).run();
+                const target = editorRef.current;
+                if (typeof reader.result === 'string' && target && !target.isDestroyed) {
+                  target.chain().focus().setImage({ src: reader.result }).run();
                 }
               };
               reader.readAsDataURL(file);
@@ -207,9 +208,12 @@ export function RichTextEditor({
   }, [editor]);
 
   // Sync external value changes back into the editor when it isn't being typed
-  // in (e.g. programmatic reset). The guard prevents fighting the caret.
+  // in (e.g. programmatic reset). The guard prevents fighting the caret. Also
+  // skip destroyed editors — the modal can unmount around the same time this
+  // effect's deps change, and Tiptap nulls out the schema on destroy(), so
+  // getHTML()/setContent() on a dead instance throws.
   useEffect(() => {
-    if (!editor || editor.isFocused) return;
+    if (!editor || editor.isDestroyed || editor.isFocused) return;
     if (value !== editor.getHTML()) {
       editor.commands.setContent(toEditableHtml(value), { emitUpdate: false });
     }
