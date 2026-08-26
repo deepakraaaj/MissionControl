@@ -4713,7 +4713,7 @@ export function MainApp() {
 
     return (
       <div className="fixed inset-0 z-[75] flex items-end justify-center bg-black/55 p-0 backdrop-blur-[3px] sm:items-center sm:p-5" onClick={() => setSettingsModalOpen(false)}>
-        <div aria-label="Settings" aria-modal="true" role="dialog" className="flex max-h-[92vh] w-full max-w-5xl flex-col overflow-hidden rounded-t-[28px] border border-borderSoft/45 bg-panel shadow-[0_28px_90px_rgb(var(--shadow-color)/0.35)] sm:rounded-[28px]" onClick={(event) => event.stopPropagation()}>
+        <div aria-label="Settings" aria-modal="true" role="dialog" className="flex h-[92vh] max-h-[760px] w-full max-w-5xl flex-col overflow-hidden rounded-t-[28px] border border-borderSoft/45 bg-panel shadow-[0_28px_90px_rgb(var(--shadow-color)/0.35)] sm:rounded-[28px]" onClick={(event) => event.stopPropagation()}>
           <div className="flex items-center justify-between gap-4 border-b border-borderSoft/25 px-5 py-4 sm:px-6">
             <div>
               <p className="text-[10px] font-semibold uppercase tracking-[0.22em] text-accent">Settings center</p>
@@ -4737,7 +4737,7 @@ export function MainApp() {
                 return (
                 <button
                   className={cn(
-                    'flex min-w-[170px] items-center gap-3 rounded-[14px] border px-3 py-2.5 text-left transition-all sm:min-w-0',
+                    'flex min-w-[170px] items-center gap-3 rounded-[14px] border px-3 py-2.5 text-left transition-colors duration-100 sm:min-w-0',
                     active ? 'border-accent/25 bg-accent/12 text-accent shadow-sm' : 'border-transparent text-text-secondary hover:border-borderSoft/30 hover:bg-panel/65 hover:text-text-primary',
                   )}
                   key={category.id}
@@ -4752,7 +4752,15 @@ export function MainApp() {
             </nav>
 
             <div className="min-h-0 overflow-y-auto bg-panel2/10 p-4 sm:p-6">
-              {renderSettings(settingsCategory)}
+              {categories.map((category) => (
+                <div
+                  aria-hidden={settingsCategory !== category.id}
+                  className={settingsCategory === category.id ? 'block' : 'hidden'}
+                  key={category.id}
+                >
+                  {renderSettings(category.id)}
+                </div>
+              ))}
             </div>
           </div>
         </div>
