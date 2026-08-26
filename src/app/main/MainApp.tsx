@@ -1454,10 +1454,10 @@ function TaskListItem({
   return (
     <div
       className={cn(
-        'group main-list-item rounded-2xl border p-4 transition-[transform,opacity,border-color,background-color,box-shadow] duration-150 ease-out',
+        'group main-list-item rounded-[16px] border p-4 transition-[transform,opacity,border-color,background-color,box-shadow] duration-150 ease-out',
         selected
-          ? 'is-selected border-accent/45 bg-accent/10 shadow-[0_6px_24px_rgba(var(--accent),0.1)]'
-          : 'border-white/[0.08] bg-white/[0.025] hover:border-white/[0.16] hover:bg-white/[0.045]',
+          ? 'is-selected border-accent/55 bg-accent/14 shadow-[inset_0_0_0_1px_rgb(var(--accent)/0.10),0_7px_18px_rgb(var(--accent)/0.10)]'
+          : 'border-borderSoft/40 bg-panel2/55 shadow-[inset_0_1px_0_rgb(var(--text-primary)/0.02)] hover:-translate-y-0.5 hover:border-borderStrong/45 hover:bg-panel2/75 hover:shadow-[0_10px_24px_rgb(var(--shadow-color)/0.10)]',
         draggable ? 'cursor-grab active:cursor-grabbing' : null,
         dragging ? 'scale-[0.985] border-accent/26 bg-accent/8 opacity-45 shadow-none' : null,
         className,
@@ -1520,7 +1520,7 @@ function SubtaskBoardItem({
   return (
     <div
       className={cn(
-        'group main-list-item rounded-[16px] border border-borderSoft/40 bg-panel2/34 p-2.5 transition-[transform,opacity,border-color,background-color,box-shadow] duration-150 ease-out',
+        'group main-list-item rounded-[14px] border border-borderSoft/40 bg-panel2/55 p-3 shadow-[inset_0_1px_0_rgb(var(--text-primary)/0.02)] transition-[transform,opacity,border-color,background-color,box-shadow] duration-150 ease-out hover:-translate-y-0.5 hover:border-borderStrong/45 hover:bg-panel2/75 hover:shadow-[0_8px_20px_rgb(var(--shadow-color)/0.09)]',
         draggable ? 'cursor-grab active:cursor-grabbing' : null,
         dragging ? 'scale-[0.985] border-accent/26 bg-accent/8 opacity-45 shadow-none' : null,
       )}
@@ -1572,7 +1572,7 @@ function CompletedDigestItem({
   return (
     <div
       className={cn(
-        'group flex items-center gap-2 rounded-[16px] border p-2.5 transition-[transform,opacity,border-color,background-color] duration-150',
+        'group flex items-center gap-2 rounded-[14px] border p-3 shadow-[inset_0_1px_0_rgb(var(--text-primary)/0.02)] transition-[transform,opacity,border-color,background-color,box-shadow] duration-150 hover:-translate-y-0.5 hover:shadow-[0_8px_20px_rgb(var(--shadow-color)/0.09)]',
         draggable ? 'cursor-grab active:cursor-grabbing' : null,
         isSubtask
           ? 'border-accent/18 bg-accent/7 hover:border-accent/28 hover:bg-accent/10'
@@ -3253,15 +3253,15 @@ export function MainApp() {
 
       return (
         <Card 
-          className="group relative rounded-[28px] p-5 cursor-pointer hover:border-accent/40 hover:bg-panel/40 transition-all"
+          className="mission-card group relative cursor-pointer rounded-[24px] border-borderSoft/45 bg-panel/80 p-4 shadow-[inset_0_1px_0_rgb(var(--text-primary)/0.025)] transition-[transform,border-color,background-color,box-shadow] duration-200 hover:-translate-y-0.5 hover:border-accent/40 hover:bg-panel sm:p-5"
           onClick={() => setDetailMissionId(mission.id)}
         >
-          <div className="flex items-start gap-4">
+          <div className="flex items-start gap-3">
             <div
-              className="flex h-12 w-12 shrink-0 items-center justify-center rounded-[16px] text-2xl"
+              className="flex h-10 w-10 shrink-0 items-center justify-center rounded-[13px] border border-accent/20 bg-accent/10 text-accent"
               style={{ backgroundColor: `color-mix(in srgb, var(--accent) 10%, transparent)` }}
             >
-              <MissionIcon icon={mission.emoji} className="h-6 w-6" />
+              <MissionIcon icon={mission.emoji} className="h-5 w-5" />
             </div>
             <div className="min-w-0 flex-1">
               <div className="flex items-start justify-between gap-2">
@@ -3291,7 +3291,7 @@ export function MainApp() {
               )}
             </div>
           </div>
-          <div className="mt-4 flex flex-wrap items-center gap-2" onClick={(e) => e.stopPropagation()}>
+          <div className="mt-4 flex flex-wrap items-center gap-1 border-t border-borderSoft/20 pt-3" onClick={(e) => e.stopPropagation()}>
             <Button size="sm" variant="ghost" onClick={(e) => { e.stopPropagation(); setEditingMission(mission); setMissionComposerOpen(true); }} className="h-8 gap-1.5 px-2 text-xs sm:text-sm">
               <Pencil className="h-3.5 w-3.5" /> Edit
             </Button>
@@ -3365,7 +3365,7 @@ export function MainApp() {
         {activeMissions.length > 0 ? (
           <div className="space-y-3">
             <SectionHeading action={<Badge tone="accent">{activeMissions.length}</Badge>} title="Active" />
-            <div className="grid gap-4 lg:grid-cols-2">
+            <div className="mission-card-grid grid gap-4 rounded-[26px] border border-borderSoft/35 bg-panel2/30 p-3 sm:p-4 lg:grid-cols-2">
               {activeMissions.map((m) => <MissionCard key={m.id} mission={m} />)}
             </div>
           </div>
@@ -3374,7 +3374,7 @@ export function MainApp() {
         {otherMissions.length > 0 ? (
           <div className="space-y-3">
             <SectionHeading action={<Badge tone="neutral">{otherMissions.length}</Badge>} title="Other" />
-            <div className="grid gap-4 lg:grid-cols-2">
+            <div className="mission-card-grid grid gap-4 rounded-[26px] border border-borderSoft/35 bg-panel2/30 p-3 sm:p-4 lg:grid-cols-2">
               {otherMissions.map((m) => <MissionCard key={m.id} mission={m} />)}
             </div>
           </div>
@@ -3762,7 +3762,7 @@ export function MainApp() {
           {renderTaskScopeControl()}
         </div>
 
-        <div className="flex gap-5 overflow-x-auto pb-4 2xl:grid 2xl:grid-cols-[repeat(4,minmax(240px,1fr))_minmax(280px,340px)] 2xl:overflow-visible">
+        <div className="task-board-shell flex gap-4 overflow-x-auto rounded-[26px] border border-borderSoft/35 bg-panel2/30 p-3 pb-4 sm:p-4 2xl:grid 2xl:grid-cols-[repeat(4,minmax(240px,1fr))_minmax(280px,340px)] 2xl:overflow-visible">
           {visibleTaskBoard.map((column) => {
             const groupedSubtasks = groupSubtasksByParent(column.subtasks, tasksById);
             const isCompletedColumn = column.lane === 'done';
@@ -3776,7 +3776,7 @@ export function MainApp() {
             return (
               <Card
                 className={cn(
-                  'kanban-column flex min-h-[420px] w-[300px] shrink-0 flex-col rounded-[28px] border-white/[0.075] bg-white/[0.018] p-5 2xl:w-auto',
+                  'task-board-panel kanban-column flex min-h-[420px] w-[300px] shrink-0 flex-col rounded-[24px] border-borderSoft/45 bg-panel/80 p-4 shadow-[inset_0_1px_0_rgb(var(--text-primary)/0.025)] sm:p-5 2xl:w-auto',
                   'sm:w-[340px]',
                   dropLane === column.lane ? 'border-accent/30 bg-accent/8 shadow-[0_18px_44px_rgb(var(--accent)/0.12)]' : null,
                 )}
@@ -4810,6 +4810,7 @@ export function MainApp() {
             <main
               className={cn(
                 'main-scroll-region absolute inset-0 overflow-x-hidden overflow-y-scroll px-3 py-4 pb-32 sm:px-6 sm:py-6 lg:relative lg:inset-auto lg:h-full lg:min-w-0 lg:flex-1 lg:pb-6',
+                workspaceMode !== 'team' && activeView === 'notes' ? 'notes-workspace-background' : null,
                 workspaceMode === 'team' && 'py-0 pb-[var(--mobile-nav-height)] sm:py-0 lg:pb-6',
                 workspaceMode === 'team' && teamUnlocked ? 'team-workspace' : null,
               )}

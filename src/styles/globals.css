@@ -239,6 +239,47 @@ html:not([data-theme]) .calendar-panel,
   box-shadow: inset 0 1px 0 rgb(var(--text-primary) / 0.025);
 }
 
+/* Tasks share Calendar's layered card hierarchy: a quiet outer canvas with
+   solid, readable columns on dark themes. */
+html:not([data-theme]) .task-board-shell,
+[data-theme='dark-focus'] .task-board-shell,
+[data-theme='midnight-purple'] .task-board-shell,
+[data-theme='solar-flare'] .task-board-shell,
+[data-theme='mono-ink'] .task-board-shell {
+  background-color: rgb(var(--surface-1) / 0.38);
+  border-color: rgb(var(--border-strong) / 0.34);
+}
+
+html:not([data-theme]) .task-board-panel,
+[data-theme='dark-focus'] .task-board-panel,
+[data-theme='midnight-purple'] .task-board-panel,
+[data-theme='solar-flare'] .task-board-panel,
+[data-theme='mono-ink'] .task-board-panel {
+  background-color: rgb(var(--surface-1) / 0.9);
+  border-color: rgb(var(--border-strong) / 0.4);
+  box-shadow: inset 0 1px 0 rgb(var(--text-primary) / 0.025);
+}
+
+/* Mission cards use the same surface hierarchy as Calendar cards. */
+html:not([data-theme]) .mission-card-grid,
+[data-theme='dark-focus'] .mission-card-grid,
+[data-theme='midnight-purple'] .mission-card-grid,
+[data-theme='solar-flare'] .mission-card-grid,
+[data-theme='mono-ink'] .mission-card-grid {
+  background-color: rgb(var(--surface-1) / 0.38);
+  border-color: rgb(var(--border-strong) / 0.34);
+}
+
+html:not([data-theme]) .mission-card,
+[data-theme='dark-focus'] .mission-card,
+[data-theme='midnight-purple'] .mission-card,
+[data-theme='solar-flare'] .mission-card,
+[data-theme='mono-ink'] .mission-card {
+  background-color: rgb(var(--surface-1) / 0.9);
+  border-color: rgb(var(--border-strong) / 0.4);
+  box-shadow: inset 0 1px 0 rgb(var(--text-primary) / 0.025);
+}
+
 @layer base {
   * {
     box-sizing: border-box;
@@ -489,12 +530,15 @@ html:not([data-theme]) .calendar-panel,
      height, whatever is inside it (text, list, image). That's what keeps
      cards in the same grid row the same height — no gaps under short ones. */
   .note-card-preview {
-    max-height: 108px;
+    display: -webkit-box;
+    max-height: 104px;
     overflow: hidden;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 5;
   }
 
   .note-card-preview img {
-    height: 108px !important;
+    height: 96px !important;
     width: 100% !important;
     object-fit: cover !important;
     margin: 0 !important;
@@ -962,4 +1006,21 @@ html:not([data-theme]) .calendar-panel,
 .bg-dots-subtle {
   background-image: radial-gradient(rgb(var(--text-muted) / 0.14) 1px, transparent 1px);
   background-size: 20px 20px;
+}
+
+/* Wide dot lattice with a faint accent-tinted glow near the top — used behind
+   long-form writing surfaces (Journal, Notes) where a plain grid felt cold. */
+.bg-dots-glow {
+  background-image: radial-gradient(rgb(var(--text-muted) / 0.5) 1.5px, transparent 1.5px);
+  background-size: 32px 32px;
+}
+
+.notes-workspace-background {
+  background-color: rgb(var(--surface-2));
+  background-image:
+    radial-gradient(circle at 50% -8rem, rgb(var(--accent) / 0.14), transparent 42rem),
+    radial-gradient(rgb(var(--text-muted) / 0.3) 1.25px, transparent 1.25px);
+  background-position: center top, 0 0;
+  background-size: 100% 100%, 28px 28px;
+  background-attachment: local;
 }

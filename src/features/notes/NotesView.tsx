@@ -84,7 +84,6 @@ export function NoteCard({
   onDelete: (id: string) => void;
   onTogglePin: (id: string) => void;
 }) {
-  const [isExpanded, setIsExpanded] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
   const style = getNoteColorStyle(category.color);
   const title = getNoteDisplayTitle(note);
@@ -100,7 +99,7 @@ export function NoteCard({
     >
       <Card
         onClick={() => onView(note)}
-        className={cn('group relative cursor-pointer overflow-hidden rounded-[20px] border bg-panel/40 p-4 backdrop-blur-sm transition-all hover:border-opacity-100 sm:p-5', style.border)}
+        className={cn('group relative flex h-[292px] cursor-pointer flex-col overflow-hidden rounded-[22px] border bg-panel/90 p-4 shadow-[inset_0_1px_0_rgb(var(--text-primary)/0.025)] transition-[transform,border-color,box-shadow] duration-200 hover:-translate-y-0.5 hover:shadow-[0_12px_30px_rgb(var(--shadow-color)/0.11)] sm:p-5', style.border)}
       >
         <div className={cn('absolute inset-x-0 top-0 h-1', style.solid)} />
 
@@ -166,30 +165,18 @@ export function NoteCard({
         )}
 
         {note.content.trim() && (
-          <div>
+          <div className="min-h-0 flex-1 overflow-hidden">
             <RichTextContent
               content={note.content}
-              className={cn(
-                'text-[13px] leading-relaxed text-text-secondary',
-                isExpanded ? '' : 'note-card-preview',
-              )}
+              className="note-card-preview text-[13px] leading-relaxed text-text-secondary"
             />
             {note.content.length > 240 && (
-              <button
-                type="button"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  setIsExpanded((value) => !value);
-                }}
-                className="mt-1 text-[12px] font-medium text-text-secondary/70 transition-colors hover:text-text-secondary"
-              >
-                {isExpanded ? 'Show less' : 'Read more'}
-              </button>
+              <span className="mt-1 block text-[11px] font-medium text-text-muted">Open to read more</span>
             )}
           </div>
         )}
 
-        <div className="mt-3 flex flex-nowrap items-center gap-2">
+        <div className="mt-auto flex flex-nowrap items-center gap-2 border-t border-borderSoft/20 pt-3">
           {missionTitle && (
             <Badge tone="neutral" className="min-w-0 border-slate-500/20 bg-slate-500/12 text-[10px] font-medium normal-case tracking-normal">
               <span className="truncate">{missionTitle}</span>
@@ -918,7 +905,7 @@ export function NotesView({ openNoteId = null }: { openNoteId?: string | null })
   };
 
   return (
-    <div className="space-y-6">
+    <div className="mx-auto max-w-[1480px] space-y-5">
       {(error || operationError) && (
         <motion.div
           initial={{ opacity: 0, y: -10 }}
@@ -944,7 +931,11 @@ export function NotesView({ openNoteId = null }: { openNoteId?: string | null })
         </motion.div>
       )}
 
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-end">
+      <div className="flex flex-col gap-4 rounded-[22px] border border-borderSoft/35 bg-panel/72 p-3 sm:flex-row sm:items-center sm:justify-between sm:p-4">
+        <div className="min-w-0">
+          <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-text-muted">Library</p>
+          <p className="mt-0.5 text-sm font-medium text-text-primary">{filteredNotes.length} {filteredNotes.length === 1 ? 'note' : 'notes'}</p>
+        </div>
         <div className="flex items-center gap-2">
           <div className="relative flex-1 sm:w-64">
             <Search className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-text-muted/50" />
@@ -962,7 +953,7 @@ export function NotesView({ openNoteId = null }: { openNoteId?: string | null })
         </div>
       </div>
 
-      <div className="-mx-1 flex items-center gap-2 overflow-x-auto px-1 pb-1 scrollbar-none">
+      <div className="flex items-center gap-2 overflow-x-auto rounded-[18px] border border-borderSoft/25 bg-panel2/35 p-2 scrollbar-none">
         <CategoryChip active={activeCategoryId === 'all'} label="All" count={notes.length} onClick={() => setActiveCategoryId('all')} />
         <CategoryChip
           active={activeCategoryId === 'pinned'}
@@ -1014,7 +1005,7 @@ export function NotesView({ openNoteId = null }: { openNoteId?: string | null })
             )}
           </div>
         ) : (
-          <div className="grid grid-cols-1 items-start gap-4 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-4">
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3 min-[1500px]:grid-cols-4">
             <AnimatePresence>
               {filteredNotes.map((note) => (
                 <NoteCard
