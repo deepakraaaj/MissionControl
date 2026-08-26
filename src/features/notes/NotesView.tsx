@@ -93,8 +93,7 @@ export function NoteCard({
     <motion.div
       initial={{ opacity: 0, y: 8 }}
       animate={{ opacity: 1, y: 0 }}
-      exit={{ opacity: 0, y: -8 }}
-      transition={{ duration: 0.2 }}
+      transition={{ duration: 0.15 }}
       className="min-w-0"
     >
       <Card
@@ -1005,21 +1004,19 @@ export function NotesView({ openNoteId = null }: { openNoteId?: string | null })
             )}
           </div>
         ) : (
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3 min-[1500px]:grid-cols-4">
-            <AnimatePresence>
-              {filteredNotes.map((note) => (
-                <NoteCard
-                  key={note.id}
-                  note={note}
-                  category={getCategoryById(note.category_id, categories)}
-                  missionTitle={note.mission_id ? missionTitles[note.mission_id] ?? null : null}
-                  onView={(n) => setViewingNoteId(n.id)}
-                  onEdit={setEditingNote}
-                  onDelete={handleDelete}
-                  onTogglePin={handleTogglePin}
-                />
-              ))}
-            </AnimatePresence>
+          <div key={activeCategoryId} className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3 min-[1500px]:grid-cols-4">
+            {filteredNotes.map((note) => (
+              <NoteCard
+                key={note.id}
+                note={note}
+                category={getCategoryById(note.category_id, categories)}
+                missionTitle={note.mission_id ? missionTitles[note.mission_id] ?? null : null}
+                onView={(n) => setViewingNoteId(n.id)}
+                onEdit={setEditingNote}
+                onDelete={handleDelete}
+                onTogglePin={handleTogglePin}
+              />
+            ))}
           </div>
         )}
       </div>
