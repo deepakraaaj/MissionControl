@@ -4787,7 +4787,10 @@ export function MainApp() {
     <div className="h-full">
       {settingsModalOpen ? renderSettingsModal() : null}
       {mobileNavOpen ? (
-        <div className="fixed inset-0 z-50 flex justify-start p-2 lg:hidden">
+        <div
+          className="fixed inset-0 z-50 flex justify-start p-2 lg:hidden"
+          style={{ paddingTop: 'max(0.5rem, env(safe-area-inset-top))' }}
+        >
           <button
             type="button"
             className="absolute inset-0 bg-black/60 backdrop-blur-[3px] transition-opacity"
