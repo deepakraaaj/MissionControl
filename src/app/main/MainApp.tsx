@@ -14,7 +14,7 @@ import {
   useRef,
   useState,
 } from 'react';
-import { Sun, CheckSquare, Target, MoreHorizontal, CheckCircle2, Timer, Flag, Clock, BarChart3, ClipboardList, Settings, Lightbulb, Link2, AlertCircle, Pin, FileText, ArrowLeft, ArrowUpRight, RotateCcw, Cloud, Pencil, Trash2, Play, Pause, CheckCircle, Check, CircleDashed, Menu, X, Plus, CalendarDays, ChevronDown, CornerDownRight, BookHeart, StickyNote, Wifi, WifiOff, MessageCircle, MessageSquare, Trophy, Users, AlertOctagon, PanelLeftClose, PanelLeftOpen, FolderKanban, type LucideIcon } from 'lucide-react';
+import { Sun, CheckSquare, Target, MoreHorizontal, CheckCircle2, Timer, Flag, Clock, BarChart3, ClipboardList, Settings, Lightbulb, Link2, AlertCircle, Pin, FileText, ArrowLeft, ArrowUpRight, RotateCcw, Cloud, Pencil, Trash2, Play, Pause, CheckCircle, Check, CircleDashed, Menu, X, Plus, CalendarDays, ChevronDown, CornerDownRight, BookHeart, StickyNote, Wifi, WifiOff, MessageCircle, MessageSquare, Trophy, Users, UserRound, Bot, Palette, SlidersHorizontal, Download, Eye, Keyboard, Sparkles, AlertOctagon, PanelLeftClose, PanelLeftOpen, FolderKanban, type LucideIcon } from 'lucide-react';
 import { MissionIcon } from '../../components/ui/mission-icon';
 import { DatePicker } from '../../components/ui/date-picker';
 import { Badge } from '../../components/ui/badge';
@@ -114,6 +114,7 @@ type TaskBoardColumn = {
 
 type CompletedFilterMode = 'all' | 'today' | '7d' | 'custom';
 type TaskScopeMode = 'pending' | 'today' | 'all';
+type SettingsCategory = 'account' | 'ai' | 'appearance' | 'workspace' | 'downloads';
 
 const launcherViews: Array<{
   id: SidebarPinnedAppId;
@@ -2218,7 +2219,9 @@ export function MainApp() {
   const addCapture = useSessionStore((state) => state.addCapture);
   const dismissRecovery = useSessionStore((state) => state.dismissRecovery);
 
-  const [activeView, setActiveView] = useState<MainView>('dashboard');
+  const [activeView, setActiveView] = useState<MainView>(() => window.location.pathname === '/settings' ? 'settings' : 'dashboard');
+  const [settingsModalOpen, setSettingsModalOpen] = useState(false);
+  const [settingsCategory, setSettingsCategory] = useState<SettingsCategory>('account');
   const [minutes, setMinutes] = useState(25);
   const [presetId, setPresetId] = useState<SessionPresetId>('focus');
   const [captureState, setCaptureState] = useState<CaptureState>(null);
@@ -2251,6 +2254,46 @@ export function MainApp() {
   const [fabDockOpen, setFabDockOpen] = useState(false);
   const dragImageRef = useRef<HTMLImageElement | null>(null);
   const dropHandledRef = useRef(false);
+
+  useEffect(() => {
+    const handlePopState = () => {
+      setSettingsModalOpen(false);
+      setActiveView(window.location.pathname === '/settings' ? 'settings' : 'dashboard');
+    };
+    window.addEventListener('popstate', handlePopState);
+    return () => window.removeEventListener('popstate', handlePopState);
+  }, []);
+
+  useEffect(() => {
+    if (!settingsModalOpen) return;
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') setSettingsModalOpen(false);
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [settingsModalOpen]);
+
+  function openSettingsModal() {
+    setSettingsCategory('account');
+    setSettingsModalOpen(true);
+  }
+
+  function openFullSettings() {
+    window.history.pushState(null, '', '/settings');
+    setSettingsModalOpen(false);
+    setActiveView('settings');
+  }
+
+  function navigateToView(view: MainView) {
+    if (view === 'settings') {
+      openSettingsModal();
+      return;
+    }
+    if (window.location.pathname === '/settings') {
+      window.history.pushState(null, '', '/');
+    }
+    setActiveView(view);
+  }
   const activeSession = useMemo(
     () => findActiveSession(sessions, activeSessionId),
     [activeSessionId, sessions],
@@ -4346,23 +4389,23 @@ export function MainApp() {
     );
   }
 
-  function renderSettings() {
+  function renderSettings(section: SettingsCategory | 'all' = 'all') {
     return (
       <div className="space-y-6">
-        <ProfileSettingsCard
+        {section === 'all' || section === 'account' ? <ProfileSettingsCard
           completedMissionCount={completedMissionCount}
           completedTaskCount={completedRootTaskCount}
           missionCount={missions.length}
           rootTaskCount={rootTasksForSettings.length}
           sessionCount={sessions.length}
           syncModeLabel={syncMode === 'cloud' ? 'Cloud sync' : 'Local only'}
-        />
+        /> : null}
 
-        <AiProviderCard />
+        {section === 'all' || section === 'ai' ? <AiProviderCard /> : null}
 
-        <DownloadsCard />
+        {section === 'all' || section === 'downloads' ? <DownloadsCard /> : null}
 
-        <Card className="rounded-[34px] p-6">
+        {section === 'all' || section === 'appearance' ? <Card className="rounded-[34px] p-6">
           <SectionHeading action={<Badge tone="accent">Theme</Badge>} title="Appearance" />
 
           <div className="grid gap-3 grid-cols-1 sm:grid-cols-2 xl:grid-cols-3">
@@ -4435,18 +4478,20 @@ export function MainApp() {
               );
             })}
           </div>
-        </Card>
+        </Card> : null}
 
-        <div className="grid grid-cols-1 gap-4 xl:grid-cols-[minmax(0,1.1fr)_minmax(340px,0.9fr)]">
-          <Card className="rounded-[34px] p-6">
-            <SectionHeading action={<Badge tone="neutral">Live</Badge>} title="Behavior" />
+        {section === 'all' || section === 'workspace' ? <div className="grid grid-cols-1 gap-4 xl:grid-cols-[minmax(0,1.1fr)_minmax(340px,0.9fr)]">
+          <Card className="rounded-[24px] p-4 sm:p-5">
+            <SectionHeading action={<Badge tone="neutral">Preferences</Badge>} title="Behavior" />
 
-            <div className="space-y-4">
-              <div className="rounded-[24px] border border-borderSoft/30 bg-panel/32 p-4">
-                <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+            <div className="space-y-2">
+              <div className="rounded-[15px] border border-borderSoft/30 bg-panel/32 p-3">
+                <div className="flex items-center gap-3">
+                  <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-[11px] bg-violet-500/10 text-violet-500"><Sparkles className="h-4 w-4" /></span>
+                  <div className="flex min-w-0 flex-1 flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                   <div>
                     <p className="text-sm font-medium text-text-primary">Reduce motion</p>
-                    <p className="mt-1 text-sm text-text-secondary">Trim extra movement across the app.</p>
+                    <p className="mt-0.5 text-xs text-text-secondary">Use calmer transitions.</p>
                   </div>
 
                   <div className="flex gap-2">
@@ -4457,16 +4502,17 @@ export function MainApp() {
                       On
                     </SettingChoice>
                   </div>
+                  </div>
                 </div>
               </div>
 
-              <div className="rounded-[24px] border border-borderSoft/30 bg-panel/32 p-4">
-                <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+              <div className="rounded-[15px] border border-borderSoft/30 bg-panel/32 p-3">
+                <div className="flex items-center gap-3">
+                  <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-[11px] bg-sky-500/10 text-sky-500"><Eye className="h-4 w-4" /></span>
+                  <div className="flex min-w-0 flex-1 flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                   <div>
                     <p className="text-sm font-medium text-text-primary">Transparent HUD</p>
-                    <p className="mt-1 text-sm text-text-secondary">
-                      Drop the compact HUD background so only the timer and task float on your desktop.
-                    </p>
+                    <p className="mt-0.5 text-xs text-text-secondary">Float only the timer and task.</p>
                   </div>
 
                   <div className="flex gap-2">
@@ -4491,14 +4537,17 @@ export function MainApp() {
                       On
                     </SettingChoice>
                   </div>
+                  </div>
                 </div>
               </div>
 
-              <div className="rounded-[24px] border border-borderSoft/30 bg-panel/32 p-4">
-                <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+              <div className="rounded-[15px] border border-borderSoft/30 bg-panel/32 p-3">
+                <div className="flex items-center gap-3">
+                  <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-[11px] bg-amber-500/10 text-amber-500"><MessageCircle className="h-4 w-4" /></span>
+                  <div className="flex min-w-0 flex-1 flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                   <div>
                     <p className="text-sm font-medium text-text-primary">Focus prompts</p>
-                    <p className="mt-1 text-sm text-text-secondary">Choose how direct recovery prompts should feel.</p>
+                    <p className="mt-0.5 text-xs text-text-secondary">Choose the recovery tone.</p>
                   </div>
 
                   <div className="flex gap-2">
@@ -4515,14 +4564,17 @@ export function MainApp() {
                       Direct
                     </SettingChoice>
                   </div>
+                  </div>
                 </div>
               </div>
 
-              <div className="rounded-[24px] border border-borderSoft/30 bg-panel/32 p-4">
-                <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+              <div className="rounded-[15px] border border-borderSoft/30 bg-panel/32 p-3">
+                <div className="flex items-center gap-3">
+                  <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-[11px] bg-emerald-500/10 text-emerald-500"><Play className="h-4 w-4" /></span>
+                  <div className="flex min-w-0 flex-1 flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                   <div>
                     <p className="text-sm font-medium text-text-primary">Launch at login</p>
-                    <p className="mt-1 text-sm text-text-secondary">Open SynCatch when your desktop starts.</p>
+                    <p className="mt-0.5 text-xs text-text-secondary">Start SynCatch with your desktop.</p>
                   </div>
 
                   <Button
@@ -4534,29 +4586,33 @@ export function MainApp() {
                   >
                     {launchAtLoginPending ? 'Saving' : launchAtLogin ? 'On' : 'Off'}
                   </Button>
+                  </div>
                 </div>
               </div>
             </div>
           </Card>
 
-          <Card className="rounded-[34px] p-6">
+          <Card className="rounded-[24px] p-4 sm:p-5">
             <SectionHeading action={<Badge tone="neutral">System</Badge>} title="Workspace" />
 
-            <div className="space-y-4">
-              <div className="rounded-[24px] border border-borderSoft/30 bg-panel/32 p-4">
-                <p className="text-sm font-medium text-text-primary">Quick Add shortcut</p>
-                <div className="mt-3">
+            <div className="space-y-2">
+              <div className="flex items-center gap-3 rounded-[15px] border border-borderSoft/30 bg-panel/32 p-3">
+                <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-[11px] bg-accent/10 text-accent"><Keyboard className="h-4 w-4" /></span>
+                <div className="min-w-0 flex-1"><p className="text-sm font-medium text-text-primary">Quick Add shortcut</p><p className="mt-0.5 text-xs text-text-secondary">Capture without leaving your work.</p></div>
+                <div className="shrink-0">
                   <Badge className="text-xs" tone="accent">
                     {quickAddShortcut}
                   </Badge>
                 </div>
               </div>
 
-              <div className="rounded-[24px] border border-borderSoft/30 bg-panel/32 p-4">
-                <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+              <div className="rounded-[15px] border border-borderSoft/30 bg-panel/32 p-3">
+                <div className="flex items-center gap-3">
+                  <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-[11px] bg-cyan-500/10 text-cyan-500"><Cloud className="h-4 w-4" /></span>
+                  <div className="flex min-w-0 flex-1 flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                   <div>
                     <p className="text-sm font-medium text-text-primary">Sync mode</p>
-                    <p className="mt-1 text-sm text-text-secondary">Keep this device local or prep for cloud sync.</p>
+                    <p className="mt-0.5 text-xs text-text-secondary">Choose where your data lives.</p>
                   </div>
 
                   <div className="flex gap-2">
@@ -4567,22 +4623,25 @@ export function MainApp() {
                       Cloud
                     </SettingChoice>
                   </div>
+                  </div>
                 </div>
               </div>
             </div>
           </Card>
 
-          <Card className="rounded-[34px] p-6">
+          <Card className="rounded-[24px] p-4 sm:p-5">
             <SectionHeading action={<Badge tone="accent">Identity</Badge>} title="Connection" />
 
-            <div className="space-y-4">
-              <div className="rounded-[24px] border border-borderSoft/30 bg-panel/32 p-4">
-                <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+            <div className="space-y-2">
+              <div className="rounded-[15px] border border-borderSoft/30 bg-panel/32 p-3">
+                <div className="flex items-center gap-3">
+                  <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-[11px] bg-emerald-500/10 text-emerald-500"><Wifi className="h-4 w-4" /></span>
+                  <div className="flex min-w-0 flex-1 flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                   <div>
                     <p className="text-sm font-medium text-text-primary">
                       {useAuthStore.getState().localMode ? 'Local Mode' : 'Cloud Sync'}
                     </p>
-                    <p className="mt-1 text-sm text-text-secondary">
+                    <p className="mt-0.5 text-xs text-text-secondary">
                       {useAuthStore.getState().localMode
                         ? 'Your data is only on this PC. Sign in to sync across devices.'
                         : 'Your data is safely synced to the cloud.'}
@@ -4612,12 +4671,71 @@ export function MainApp() {
                       Sign out
                     </Button>
                   )}
+                  </div>
                 </div>
               </div>
             </div>
           </Card>
 
           <SyncStatusCard />
+        </div> : null}
+      </div>
+    );
+  }
+
+  function renderSettingsModal() {
+    const categories: Array<{ id: SettingsCategory; label: string; detail: string; icon: LucideIcon }> = [
+      { id: 'account', label: 'Account', detail: 'Profile and activity', icon: UserRound },
+      { id: 'ai', label: 'AI assistant', detail: 'Provider and model', icon: Bot },
+      { id: 'appearance', label: 'Appearance', detail: 'Theme and visual style', icon: Palette },
+      { id: 'workspace', label: 'Workspace', detail: 'Behavior, sync and system', icon: SlidersHorizontal },
+      { id: 'downloads', label: 'Downloads', detail: 'Desktop applications', icon: Download },
+    ];
+
+    return (
+      <div className="fixed inset-0 z-[75] flex items-end justify-center bg-black/55 p-0 backdrop-blur-[3px] sm:items-center sm:p-5" onClick={() => setSettingsModalOpen(false)}>
+        <div aria-label="Settings" aria-modal="true" role="dialog" className="flex max-h-[92vh] w-full max-w-5xl flex-col overflow-hidden rounded-t-[28px] border border-borderSoft/45 bg-panel shadow-[0_28px_90px_rgb(var(--shadow-color)/0.35)] sm:rounded-[28px]" onClick={(event) => event.stopPropagation()}>
+          <div className="flex items-center justify-between gap-4 border-b border-borderSoft/25 px-5 py-4 sm:px-6">
+            <div>
+              <p className="text-[10px] font-semibold uppercase tracking-[0.22em] text-accent">Settings center</p>
+              <h2 className="mt-0.5 text-lg font-semibold text-text-primary">Settings</h2>
+            </div>
+            <div className="flex items-center gap-2">
+              <Button onClick={openFullSettings} size="sm" type="button" variant="secondary">
+                <span className="hidden sm:inline">Full settings</span><span className="sm:hidden">Full view</span> <ArrowUpRight className="h-3.5 w-3.5" />
+              </Button>
+              <Button aria-label="Close settings" className="h-9 w-9 rounded-full p-0" onClick={() => setSettingsModalOpen(false)} size="sm" type="button" variant="ghost">
+                <X className="h-4 w-4" />
+              </Button>
+            </div>
+          </div>
+
+          <div className="grid min-h-0 flex-1 sm:grid-cols-[220px_minmax(0,1fr)]">
+            <nav className="flex gap-2 overflow-x-auto border-b border-borderSoft/20 bg-panel2/35 p-3 sm:flex-col sm:overflow-visible sm:border-b-0 sm:border-r sm:p-4">
+              {categories.map((category) => {
+                const Icon = category.icon;
+                const active = settingsCategory === category.id;
+                return (
+                <button
+                  className={cn(
+                    'flex min-w-[170px] items-center gap-3 rounded-[14px] border px-3 py-2.5 text-left transition-all sm:min-w-0',
+                    active ? 'border-accent/25 bg-accent/12 text-accent shadow-sm' : 'border-transparent text-text-secondary hover:border-borderSoft/30 hover:bg-panel/65 hover:text-text-primary',
+                  )}
+                  key={category.id}
+                  onClick={() => setSettingsCategory(category.id)}
+                  type="button"
+                >
+                  <span className={cn('flex h-9 w-9 shrink-0 items-center justify-center rounded-[11px]', active ? 'bg-accent/14' : 'bg-panel/70')}><Icon className="h-4 w-4" /></span>
+                  <span className="min-w-0"><span className="block text-sm font-semibold">{category.label}</span><span className="mt-0.5 block truncate text-[10px] text-current opacity-65">{category.detail}</span></span>
+                </button>
+                );
+              })}
+            </nav>
+
+            <div className="min-h-0 overflow-y-auto bg-panel2/10 p-4 sm:p-6">
+              {renderSettings(settingsCategory)}
+            </div>
+          </div>
         </div>
       </div>
     );
@@ -4631,6 +4749,7 @@ export function MainApp() {
 
   return (
     <div className="h-full">
+      {settingsModalOpen ? renderSettingsModal() : null}
       {mobileNavOpen ? (
         <div className="fixed inset-0 z-50 flex justify-start p-2 lg:hidden">
           <button
@@ -4703,14 +4822,14 @@ export function MainApp() {
                   setMobileChatPickerOpen(true);
                 }}
                 onViewSelect={(view) => {
-                  setActiveView(view);
+                  navigateToView(view);
                   setMobileNavOpen(false);
                 }}
                 pinnedAppIds={sidebarPinnedApps}
               />}
             </div>
 
-            {!mobileChatPickerOpen ? <SidebarProfile onOpen={() => { setMobileNavOpen(false); setActiveView('settings'); }} /> : null}
+            {!mobileChatPickerOpen ? <SidebarProfile onOpen={() => { setMobileNavOpen(false); openSettingsModal(); }} /> : null}
           </aside>
         </div>
       ) : null}
@@ -4734,10 +4853,10 @@ export function MainApp() {
             activeView={activeView}
             collapsed={sidebarCollapsed}
             onOpenApps={openAppsView}
-            onViewSelect={(view) => setActiveView(view)}
+            onViewSelect={navigateToView}
             pinnedAppIds={sidebarPinnedApps}
           />
-          <SidebarProfile collapsed={sidebarCollapsed} onOpen={() => setActiveView('settings')} />
+          <SidebarProfile collapsed={sidebarCollapsed} onOpen={openSettingsModal} />
         </aside>
 
         <div className="relative z-10 flex min-w-0 flex-1 flex-col">

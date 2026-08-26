@@ -1,4 +1,10 @@
 {
+  "rewrites": [
+    {
+      "source": "/settings",
+      "destination": "/index.html"
+    }
+  ],
   "headers": [
     {
       "source": "/",

@@ -781,7 +781,7 @@ export function JournalView({ focusedEntryId = null }: { focusedEntryId?: string
       )}
 
       {/* Top Banner Card: Date + Mood + Gratitude */}
-      <Card className="relative overflow-hidden rounded-[26px] border border-borderSoft/40 bg-panel/90 p-5 sm:p-6 shadow-sm bg-grid-subtle">
+      <Card className="relative overflow-hidden rounded-[26px] border border-borderSoft/40 bg-panel p-5 sm:p-6 shadow-sm bg-dots-glow">
         <div aria-hidden className="pointer-events-none absolute -right-16 -top-20 h-56 w-56 rounded-full bg-accent/10 blur-3xl" />
         
         <div className="relative grid gap-5 lg:grid-cols-[minmax(260px,0.75fr)_minmax(420px,1.25fr)] lg:items-stretch">

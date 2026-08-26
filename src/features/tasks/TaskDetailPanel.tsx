@@ -295,7 +295,7 @@ export function TaskDetailPanel({ task, allTasks, onClose, onOpenTask }: TaskDet
   const progress = subtasks.length ? Math.round((doneSubtasks / subtasks.length) * 100) : 0;
 
   return (
-    <div className="relative flex h-full min-h-0 flex-col overflow-hidden bg-panel bg-grid-subtle">
+    <div className="relative flex h-full min-h-0 flex-col overflow-hidden bg-panel bg-dots-subtle">
       {/* Header */}
       <div className="border-b border-borderSoft/30 px-6 sm:px-7 pb-5 pt-6">
         <div className="mb-3 flex items-start justify-between gap-3">

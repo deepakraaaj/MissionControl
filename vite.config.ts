@@ -1,11 +1,24 @@
-import { defineConfig } from 'vite';
+import { defineConfig, loadEnv } from 'vite';
 import react from '@vitejs/plugin-react';
 import { fileURLToPath } from 'node:url';
 
 const host = process.env.TAURI_DEV_HOST;
 
-export default defineConfig({
+export default defineConfig(({ mode }) => {
+  const env = loadEnv(mode, process.cwd(), '');
+
+  return {
   plugins: [react()],
+  // The existing .env.local uses server-style names. Expose only the selected
+  // Mistral credentials to the current client-side assistant integration.
+  define: {
+    'import.meta.env.VITE_MISTRAL_API_KEY': JSON.stringify(env.MISTRAL_API_KEY ?? ''),
+    'import.meta.env.VITE_MISTRAL_MODEL': JSON.stringify(env.MISTRAL_MODEL ?? 'mistral-small-latest'),
+    'import.meta.env.VITE_GROQ_API_KEY': JSON.stringify(env.GROQ_API_KEY ?? ''),
+    'import.meta.env.VITE_GROQ_MODEL': JSON.stringify(env.GROQ_MODEL ?? 'openai/gpt-oss-120b'),
+    'import.meta.env.VITE_GEMINI_API_KEY': JSON.stringify(env.GEMINI_API_KEY ?? ''),
+    'import.meta.env.VITE_GEMINI_MODEL': JSON.stringify(env.GEMINI_MODEL ?? 'gemini-3.5-flash-lite'),
+  },
   clearScreen: false,
   server: {
     host: host || '0.0.0.0',
@@ -56,4 +69,5 @@ export default defineConfig({
       },
     },
   },
+  };
 });

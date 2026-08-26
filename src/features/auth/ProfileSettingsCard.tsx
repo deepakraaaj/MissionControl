@@ -203,10 +203,10 @@ function InfoCell({
   return (
     <div className="rounded-[20px] border border-borderSoft/24 bg-panel/20 px-4 py-3">
       <div className="flex items-center justify-between gap-3">
-        <p className="text-[10px] uppercase tracking-[0.24em] text-text-muted">{label}</p>
+        <p className="shrink-0 whitespace-nowrap text-[10px] uppercase tracking-[0.24em] text-text-muted">{label}</p>
         {actionLabel && onAction ? (
           <button
-            className="text-xs font-medium text-accent transition-colors hover:text-text-primary"
+            className="shrink-0 text-xs font-medium text-accent transition-colors hover:text-text-primary"
             onClick={onAction}
             type="button"
           >
@@ -214,7 +214,7 @@ function InfoCell({
           </button>
         ) : null}
       </div>
-      <p className="mt-2 text-sm font-medium text-text-primary">{value}</p>
+      <p className="mt-2 truncate text-sm font-medium text-text-primary" title={value}>{value}</p>
     </div>
   );
 }

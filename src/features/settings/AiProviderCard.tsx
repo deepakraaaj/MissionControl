@@ -29,8 +29,7 @@ function SectionHeading({ title, detail, action }: { title: string; detail?: str
   );
 }
 
-// One "LLM provider" for the assistant — swaps the backend without touching
-// any of the chat / tool-calling logic (see src/lib/ai/*).
+// The assistant can use any configured provider in the registry.
 export function AiProviderCard() {
   const aiProvider = useSettingsStore((s) => s.aiProvider);
   const aiModel = useSettingsStore((s) => s.aiModel);
@@ -81,8 +80,8 @@ export function AiProviderCard() {
     <Card className="rounded-[34px] p-6">
       <SectionHeading
         action={<Badge tone="accent">{configuredCount} configured</Badge>}
-        title="AI assistant provider"
-        detail="Pick which LLM powers the in-app assistant. API keys stay in .env.local; prompts are sent only to the provider you select."
+        title="AI assistant"
+        detail="Choose between Mistral, Groq, and Gemini using the credentials in .env.local."
       />
 
       <div className="grid gap-3 sm:grid-cols-2">
@@ -134,7 +133,7 @@ export function AiProviderCard() {
                     <p className="mt-1 flex items-center gap-1 text-[11px] text-warning">
                       <CircleAlert className="h-3 w-3 shrink-0" />
                       {provider.requiresApiKey
-                        ? `Set VITE_${provider.id.toUpperCase()}_API_KEY in .env.local`
+                        ? `Set ${provider.id.toUpperCase()}_API_KEY in .env.local`
                         : 'Not reachable — start it locally first'}
                     </p>
                   )}

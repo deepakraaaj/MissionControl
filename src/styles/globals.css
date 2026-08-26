@@ -300,7 +300,12 @@ html:not([data-theme]) .mission-card,
   body {
     margin: 0;
     overflow: hidden;
-    background: linear-gradient(180deg, rgb(var(--bg-base)) 0%, rgb(var(--bg-soft)) 100%);
+    background-image:
+      linear-gradient(180deg, rgb(var(--bg-base)) 0%, rgb(var(--bg-soft)) 100%),
+      linear-gradient(to right, rgb(var(--border-subtle) / 0.5) 1px, transparent 1px),
+      linear-gradient(to bottom, rgb(var(--border-subtle) / 0.5) 1px, transparent 1px);
+    background-size: 100% 100%, 24px 24px, 24px 24px;
+    background-attachment: fixed, fixed, fixed;
     color: rgb(var(--text-primary));
     font-family: 'Space Grotesk', 'Segoe UI Variable', 'Aptos', sans-serif;
     text-rendering: optimizeLegibility;
@@ -559,7 +564,11 @@ html:not([data-theme]) .mission-card,
   }
 
   .app-frame {
-    background: linear-gradient(180deg, rgb(var(--surface-1)), rgb(var(--surface-2)));
+    background-image:
+      linear-gradient(180deg, rgb(var(--surface-1)), rgb(var(--surface-2))),
+      linear-gradient(to right, rgb(var(--border-subtle) / 0.5) 1px, transparent 1px),
+      linear-gradient(to bottom, rgb(var(--border-subtle) / 0.5) 1px, transparent 1px);
+    background-size: 100% 100%, 24px 24px, 24px 24px;
     box-shadow: 0 24px 72px rgb(var(--shadow-color) / 0.2);
     contain: paint;
   }
@@ -719,7 +728,11 @@ html:not([data-theme]) .mission-card,
   }
 
   body[data-surface='main'] .app-frame {
-    background: rgb(var(--surface-1));
+    background-color: rgb(var(--surface-1));
+    background-image:
+      linear-gradient(to right, rgb(var(--border-subtle) / 0.5) 1px, transparent 1px),
+      linear-gradient(to bottom, rgb(var(--border-subtle) / 0.5) 1px, transparent 1px);
+    background-size: 24px 24px;
     box-shadow: none;
     contain: none;
   }
@@ -998,13 +1011,13 @@ html:not([data-theme]) .mission-card,
 
 .bg-grid-dense {
   background-image:
-    linear-gradient(to right, rgb(var(--border-subtle) / 0.22) 1px, transparent 1px),
-    linear-gradient(to bottom, rgb(var(--border-subtle) / 0.22) 1px, transparent 1px);
+    linear-gradient(to right, rgb(var(--border-strong) / 0.55) 1px, transparent 1px),
+    linear-gradient(to bottom, rgb(var(--border-strong) / 0.55) 1px, transparent 1px);
   background-size: 16px 16px;
 }
 
 .bg-dots-subtle {
-  background-image: radial-gradient(rgb(var(--text-muted) / 0.14) 1px, transparent 1px);
+  background-image: radial-gradient(rgb(var(--text-muted) / 0.5) 1.5px, transparent 1.5px);
   background-size: 20px 20px;
 }
 

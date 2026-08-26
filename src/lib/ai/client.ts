@@ -36,7 +36,7 @@ export async function chatWithProvider(
   if (!isProviderConfigured(providerId)) {
     throw new Error(
       def.requiresApiKey
-        ? `${def.label} is not configured. Set VITE_${providerId.toUpperCase()}_API_KEY in .env.local and restart.`
+        ? `${def.label} is not configured. Set ${providerId.toUpperCase()}_API_KEY in .env.local and restart.`
         : `${def.label} is not reachable. Is it running?`,
     );
   }

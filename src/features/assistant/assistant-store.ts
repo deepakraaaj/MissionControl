@@ -63,7 +63,7 @@ function describeAction(name: string, result: unknown): string {
 let idCounter = 0;
 const nextId = () => `msg-${Date.now()}-${idCounter++}`;
 
-// Read-only helper for UI chrome (e.g. "Powered by Groq · llama-3.3-70b")
+// Read-only helper for UI chrome (e.g. "Powered by Mistral · mistral-small-latest")
 // that wants the resolved provider without subscribing to the whole store.
 export function getActiveProviderLabel(): { providerLabel: string; model: string } | null {
   if (getConfiguredProviders().length === 0) return null;
@@ -92,7 +92,7 @@ export const useAssistantStore = create<AssistantStore>((set, get) => ({
     if (getConfiguredProviders().length === 0) {
       set({
         error:
-          'No AI provider is configured. Add an API key (e.g. VITE_CEREBRAS_API_KEY) to .env.local and restart, or pick a running local provider in Settings.',
+          'No AI provider is configured. Add a Mistral, Groq, or Gemini API key to .env.local and restart the application.',
       });
       return;
     }

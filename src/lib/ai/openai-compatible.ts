@@ -1,5 +1,5 @@
 // Adapter for any provider that speaks the OpenAI chat-completions wire
-// format (Cerebras, Groq, Ollama, LM Studio, Hugging Face's router). One
+// format (currently Mistral and Groq). One
 // implementation, parameterized by base URL / key / model — this is the
 // bulk of what "LiteLLM-style" buys us: the app's tool-calling loop never
 // has to change per provider.

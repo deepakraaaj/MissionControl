@@ -153,7 +153,7 @@ export function TeamNotesView({ filterMissionId }: TeamNotesViewProps) {
   };
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-4 bg-panel bg-dots-glow">
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-end">
         <div className="flex items-center gap-2">
           <div className="relative flex-1 sm:w-64">
