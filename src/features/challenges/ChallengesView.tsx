@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Check, Flame, Plus, Target, Trash2, Trophy, X } from 'lucide-react';
 import { Button } from '../../components/ui/button';
 import { Card } from '../../components/ui/card';
@@ -26,6 +26,8 @@ export function ChallengesView() {
   const createChallenge = useChallengeStore((state) => state.createChallenge);
   const toggleToday = useChallengeStore((state) => state.toggleToday);
   const deleteChallenge = useChallengeStore((state) => state.deleteChallenge);
+  const hydrateChallenges = useChallengeStore((state) => state.hydrate);
+  useEffect(() => { void hydrateChallenges(); }, [hydrateChallenges]);
   const missions = useMissionStore((state) => state.missions);
   const tasks = useTaskStore((state) => state.tasks);
   const [creating, setCreating] = useState(false);

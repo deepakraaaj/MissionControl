@@ -14,7 +14,7 @@ import {
   useRef,
   useState,
 } from 'react';
-import { Sun, CheckSquare, Target, MoreHorizontal, CheckCircle2, Timer, Flag, Clock, BarChart3, ClipboardList, Settings, Lightbulb, Link2, AlertCircle, Pin, FileText, ArrowLeft, ArrowUpRight, RotateCcw, Cloud, Pencil, Trash2, Play, Pause, CheckCircle, Check, CircleDashed, Menu, X, Plus, CalendarDays, ChevronDown, CornerDownRight, BookHeart, StickyNote, Wifi, WifiOff, MessageCircle, MessageSquare, Trophy, Users, UserRound, Bot, Palette, SlidersHorizontal, Download, Eye, Keyboard, Sparkles, AlertOctagon, PanelLeftClose, PanelLeftOpen, FolderKanban, type LucideIcon } from 'lucide-react';
+import { Sun, CheckSquare, Target, MoreHorizontal, CheckCircle2, Timer, Flag, Clock, BarChart3, ClipboardList, Settings, Lightbulb, Link2, AlertCircle, Pin, FileText, ArrowLeft, ArrowUpRight, RotateCcw, Cloud, Pencil, Trash2, Play, Pause, CheckCircle, Check, CircleDashed, Menu, X, Plus, CalendarDays, ChevronDown, CornerDownRight, BookHeart, Heart, StickyNote, Wifi, WifiOff, MessageCircle, MessageSquare, Trophy, Users, UserRound, Bot, Palette, SlidersHorizontal, Download, Eye, Keyboard, Sparkles, AlertOctagon, PanelLeftClose, PanelLeftOpen, FolderKanban, type LucideIcon } from 'lucide-react';
 import { MissionIcon } from '../../components/ui/mission-icon';
 import { DatePicker } from '../../components/ui/date-picker';
 import { Badge } from '../../components/ui/badge';
@@ -85,6 +85,7 @@ const TeamNotesView = lazyWithReload('team-notes', () => import('../../features/
 const RoadmapView = lazyWithReload('roadmap', () => import('../../features/roadmap/RoadmapView').then((m) => ({ default: m.RoadmapView })));
 const JournalView = lazyWithReload('journal', () => import('../../features/journal/JournalView').then((m) => ({ default: m.JournalView })));
 const NotesView = lazyWithReload('notes', () => import('../../features/notes/NotesView').then((m) => ({ default: m.NotesView })));
+const LovedOnesView = lazyWithReload('loved-ones', () => import('../../features/loved-ones/LovedOnesView').then((m) => ({ default: m.LovedOnesView })));
 const AssistantView = lazyWithReload('assistant', () => import('../../features/assistant/AssistantView').then((m) => ({ default: m.AssistantView })));
 const CalendarView = lazyWithReload('calendar', () => import('../../features/calendar/CalendarView').then((m) => ({ default: m.CalendarView })));
 const ChallengesView = lazyWithReload('challenges', () => import('../../features/challenges/ChallengesView').then((m) => ({ default: m.ChallengesView })));
@@ -98,12 +99,12 @@ function ViewLoading() {
   );
 }
 
-type MainView = 'dashboard' | 'focus' | 'missions' | 'projects' | 'roadmap' | 'today' | 'calendar' | 'challenges' | 'tasks' | 'history' | 'insights' | 'review' | 'journal' | 'notes' | 'assistant' | 'settings' | 'apps' | 'crm' | 'problems';
+type MainView = 'dashboard' | 'focus' | 'missions' | 'projects' | 'roadmap' | 'today' | 'calendar' | 'challenges' | 'tasks' | 'history' | 'insights' | 'review' | 'journal' | 'notes' | 'loved-ones' | 'assistant' | 'settings' | 'apps' | 'crm' | 'problems';
 
 const MAIN_VIEW_PATHS: Record<MainView, string> = {
   dashboard: '/dashboard', focus: '/focus', missions: '/missions', projects: '/projects', roadmap: '/roadmap',
   today: '/today', calendar: '/calendar', challenges: '/challenges', tasks: '/tasks', history: '/history',
-  insights: '/insights', review: '/review', journal: '/journal', notes: '/notes', assistant: '/assistant',
+  insights: '/insights', review: '/review', journal: '/journal', notes: '/notes', 'loved-ones': '/loved-ones', assistant: '/assistant',
   settings: '/settings', apps: '/apps', crm: '/crm', problems: '/problems',
 };
 
@@ -233,6 +234,13 @@ const launcherViews: Array<{
     icon: StickyNote,
     description: 'Store quick snippets',
     gradient: 'from-orange-500 via-amber-500 to-yellow-500',
+  },
+  {
+    id: 'loved-ones',
+    label: 'Loved Ones',
+    icon: Heart,
+    description: 'Remember what matters to them',
+    gradient: 'from-rose-500 via-pink-500 to-fuchsia-500',
   },
   {
     id: 'assistant',
@@ -699,6 +707,7 @@ function getViewCopy(view: MainView) {
     review: 'Review',
     journal: 'Journal',
     notes: 'Notes',
+    'loved-ones': 'Loved Ones',
     assistant: 'Assistant',
     settings: 'Settings',
     apps: 'Apps',
@@ -5023,6 +5032,7 @@ export function MainApp() {
                   {activeView === 'review' ? renderReview() : null}
                   {activeView === 'journal' ? <JournalView focusedEntryId={calendarJournalTargetId} /> : null}
                   {activeView === 'notes' ? <NotesView openNoteId={calendarNoteTargetId} /> : null}
+                  {activeView === 'loved-ones' ? <LovedOnesView /> : null}
                   {activeView === 'assistant' ? <AssistantView /> : null}
                   {activeView === 'settings' ? renderSettings() : null}
                 </>

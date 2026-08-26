@@ -1,7 +1,7 @@
 {
   "rewrites": [
     {
-      "source": "/:view(dashboard|focus|missions|projects|roadmap|today|calendar|challenges|tasks|history|insights|review|journal|notes|assistant|settings|apps|crm|problems)",
+      "source": "/:view(dashboard|focus|missions|projects|roadmap|today|calendar|challenges|tasks|history|insights|review|journal|notes|loved-ones|assistant|settings|apps|crm|problems)",
       "destination": "/index.html"
     },
     {

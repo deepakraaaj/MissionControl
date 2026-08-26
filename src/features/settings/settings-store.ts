@@ -11,6 +11,7 @@ import {
 import { showErrorToast, showSuccessToast } from '../toasts/toast-store';
 
 const CALENDAR_DEFAULT_PIN_MIGRATION_KEY = 'missioncontrol-calendar-default-pin-v1';
+const LOVED_ONES_DEFAULT_PIN_MIGRATION_KEY = 'missioncontrol-loved-ones-default-pin-v1';
 const AI_PROVIDER_STORAGE_KEY = 'missioncontrol-ai-provider';
 
 interface SettingsState extends SettingsSnapshot {
@@ -107,6 +108,18 @@ export const useSettingsStore = create<SettingsState>((set, get) => {
               : [...nextSnapshot.sidebarPinnedApps, 'calendar'],
           };
           localStorage.setItem(CALENDAR_DEFAULT_PIN_MIGRATION_KEY, '1');
+          void persistSettings(nextSnapshot);
+          void emitAppEvent(SETTINGS_CHANGED_EVENT, nextSnapshot);
+        }
+
+        if (!localStorage.getItem(LOVED_ONES_DEFAULT_PIN_MIGRATION_KEY)) {
+          nextSnapshot = {
+            ...nextSnapshot,
+            sidebarPinnedApps: nextSnapshot.sidebarPinnedApps.includes('loved-ones')
+              ? nextSnapshot.sidebarPinnedApps
+              : [...nextSnapshot.sidebarPinnedApps, 'loved-ones'],
+          };
+          localStorage.setItem(LOVED_ONES_DEFAULT_PIN_MIGRATION_KEY, '1');
           void persistSettings(nextSnapshot);
           void emitAppEvent(SETTINGS_CHANGED_EVENT, nextSnapshot);
         }

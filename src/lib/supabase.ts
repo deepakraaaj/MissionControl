@@ -853,3 +853,130 @@ export async function upsertNote(note: any): Promise<void> {
 
   if (error) throw error;
 }
+
+// Loved ones queries
+export async function selectLovedOnesByUser(): Promise<any[]> {
+  const userId = await getUserId();
+  const client = getSupabaseClient();
+
+  const { data, error } = await (client
+    .from('loved_ones')
+    .select('*')
+    .eq('user_id', userId)
+    .order('name', { ascending: true }) as any);
+
+  if (error) throw error;
+
+  return (data ?? []).map((row: any) => ({
+    id: row.id,
+    name: row.name,
+    relationship: row.relationship,
+    birthday: row.birthday,
+    loves: row.loves ?? [],
+    giftIdeas: row.gift_ideas ?? [],
+    observations: row.observations ?? [],
+  }));
+}
+
+export async function upsertLovedOne(person: any): Promise<void> {
+  const userId = await getUserId();
+  const client = getSupabaseClient();
+
+  const { error } = await (client.from('loved_ones').upsert({
+    id: person.id,
+    user_id: userId,
+    name: person.name,
+    relationship: person.relationship,
+    birthday: person.birthday,
+    loves: person.loves,
+    gift_ideas: person.giftIdeas,
+    observations: person.observations,
+  }, { onConflict: 'id' }) as any);
+
+  if (error) throw error;
+}
+
+export async function deleteLovedOneRow(personId: string): Promise<void> {
+  const userId = await getUserId();
+  const client = getSupabaseClient();
+
+  const { error } = await (client
+    .from('loved_ones')
+    .delete()
+    .eq('id', personId)
+    .eq('user_id', userId) as any);
+
+  if (error) throw error;
+}
+
+// Challenges queries
+export async function selectChallengesByUser(): Promise<any[]> {
+  const userId = await getUserId();
+  const client = getSupabaseClient();
+
+  const { data, error } = await (client
+    .from('challenges')
+    .select('*')
+    .eq('user_id', userId)
+    .order('created_at', { ascending: false }) as any);
+
+  if (error) throw error;
+
+  return (data ?? []).map((row: any) => ({
+    id: row.id,
+    title: row.title,
+    emoji: row.emoji,
+    targetDays: row.target_days,
+    missionId: row.mission_id,
+    sourceTaskId: row.source_task_id,
+    cadence: row.cadence,
+    createdAt: row.created_at,
+    checkIns: row.check_ins ?? [],
+  }));
+}
+
+export async function insertChallenge(challenge: any): Promise<void> {
+  const userId = await getUserId();
+  const client = getSupabaseClient();
+
+  const { error } = await (client.from('challenges').insert({
+    id: challenge.id,
+    user_id: userId,
+    title: challenge.title,
+    emoji: challenge.emoji,
+    target_days: challenge.targetDays,
+    mission_id: challenge.missionId,
+    source_task_id: challenge.sourceTaskId,
+    cadence: challenge.cadence,
+    check_ins: challenge.checkIns,
+    created_at: challenge.createdAt,
+  }) as any);
+
+  if (error) throw error;
+}
+
+export async function updateChallengeCheckIns(challengeId: string, checkIns: string[]): Promise<void> {
+  const userId = await getUserId();
+  const client = getSupabaseClient();
+
+  const { error } = await (client
+    .from('challenges')
+    .update({ check_ins: checkIns })
+    .eq('id', challengeId)
+    .eq('user_id', userId) as any);
+
+  if (error) throw error;
+}
+
+export async function deleteChallengeRow(challengeId: string): Promise<void> {
+  const userId = await getUserId();
+  const client = getSupabaseClient();
+
+  const { error } = await (client
+    .from('challenges')
+    .delete()
+    .eq('id', challengeId)
+    .eq('user_id', userId) as any);
+
+  if (error) throw error;
+}

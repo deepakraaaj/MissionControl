@@ -134,12 +134,17 @@ export function MissionDetailPanel({
   const missions = useMissionStore((s) => s.missions);
   const challenges = useChallengeStore((s) => s.challenges);
   const toggleChallengeToday = useChallengeStore((s) => s.toggleToday);
+  const hydrateChallenges = useChallengeStore((s) => s.hydrate);
 
   const [noteEditorState, setNoteEditorState] = useState<{ mode: 'create' | 'edit'; note?: Note } | null>(null);
 
   useEffect(() => {
     void hydrateNotes();
   }, [hydrateNotes]);
+
+  useEffect(() => {
+    void hydrateChallenges();
+  }, [hydrateChallenges]);
 
   const missionNotes = useMemo(() => {
     return notes.filter((n: Note) => n.mission_id === mission.id);
