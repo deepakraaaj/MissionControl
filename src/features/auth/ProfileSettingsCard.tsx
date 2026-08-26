@@ -1,4 +1,6 @@
 import { useEffect, useState } from 'react';
+import type { ReactNode } from 'react';
+import { CalendarDays, CheckCircle2, Clock3, Cloud, Copy, Globe2, ListTodo, LogOut, Mail, Target, Timer, UserRound } from 'lucide-react';
 import { Badge } from '../../components/ui/badge';
 import { Button } from '../../components/ui/button';
 import { Card } from '../../components/ui/card';
@@ -85,108 +87,51 @@ export function ProfileSettingsCard({
   }
 
   return (
-    <Card className="rounded-[34px] p-6">
-      <div className="flex flex-col gap-6 xl:flex-row xl:items-start xl:justify-between">
-        <div>
-          <div className="flex items-center gap-3">
-            <Badge tone="accent">Account</Badge>
-            {user.email_confirmed_at ? <Badge tone="success">Verified</Badge> : <Badge tone="warning">Verify email</Badge>}
-          </div>
-          <h2 className="mt-4 text-xl font-semibold text-text-primary">Profile</h2>
-          <p className="mt-2 max-w-2xl text-sm leading-6 text-text-secondary">
-            Keep your identity details clear, verify your account status, and check the shape of
-            your workspace from one place.
-          </p>
+    <Card className="rounded-[24px] p-4 sm:p-5">
+      <div className="flex items-center gap-3 border-b border-borderSoft/20 pb-4">
+        <div className="accent-avatar flex h-12 w-12 shrink-0 items-center justify-center rounded-[15px] text-base font-semibold uppercase">{initials}</div>
+        <div className="min-w-0 flex-1">
+          <div className="flex flex-wrap items-center gap-2"><h2 className="truncate text-base font-semibold text-text-primary">{currentDisplayName}</h2>{user.email_confirmed_at ? <Badge tone="success">Verified</Badge> : <Badge tone="warning">Verify email</Badge>}</div>
+          <p className="mt-0.5 truncate text-xs text-text-secondary">{user.email ?? 'No email'}</p>
         </div>
-
-        <Button onClick={() => void signOut()} size="sm" type="button" variant="secondary">
-          Sign out
-        </Button>
+        <Button aria-label="Sign out" onClick={() => void signOut()} size="sm" type="button" variant="ghost"><LogOut className="h-4 w-4" /><span className="hidden sm:inline">Sign out</span></Button>
       </div>
 
-      <div className="mt-6 grid gap-4 xl:grid-cols-[minmax(0,1.1fr)_minmax(340px,0.9fr)]">
-        <div className="space-y-4">
-          <div className="rounded-[28px] border border-borderSoft/30 bg-panel/30 p-5">
-            <div className="flex flex-col gap-5 sm:flex-row sm:items-start">
-              <div className="accent-avatar flex h-20 w-20 shrink-0 items-center justify-center rounded-[24px] text-2xl font-semibold uppercase">
-                {initials}
-              </div>
+      <div className="mt-4 flex flex-col gap-2 sm:flex-row">
+        <div className="relative min-w-0 flex-1"><UserRound className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-text-muted" /><Input className="pl-10" onChange={(event) => setDisplayNameDraft(event.target.value)} placeholder="Display name" value={displayNameDraft} /></div>
+        <Button disabled={!canSave || profileSaving} onClick={() => void handleSaveProfile()} type="button">{profileSaving ? 'Saving…' : 'Save name'}</Button>
+      </div>
 
-              <div className="min-w-0 flex-1">
-                <p className="text-[10px] uppercase tracking-[0.28em] text-text-muted">Display name</p>
-                <div className="mt-3 flex flex-col gap-3 sm:flex-row">
-                  <Input
-                    onChange={(event) => setDisplayNameDraft(event.target.value)}
-                    placeholder="How your profile should appear"
-                    value={displayNameDraft}
-                  />
-                  <Button
-                    disabled={!canSave || profileSaving}
-                    onClick={() => void handleSaveProfile()}
-                    type="button"
-                    variant="primary"
-                  >
-                    {profileSaving ? 'Saving…' : 'Save'}
-                  </Button>
-                </div>
+      <div className="mt-4 grid gap-2 sm:grid-cols-2">
+        <ProfileRow icon={Mail} label="Email" value={user.email ?? 'No email'} action={<button aria-label="Copy email" className="text-accent" onClick={() => void handleCopy(user.email ?? '', 'Email')} type="button"><Copy className="h-3.5 w-3.5" /></button>} />
+        <ProfileRow icon={UserRound} label="User ID" value={userIdShort} action={<button aria-label="Copy user ID" className="text-accent" onClick={() => void handleCopy(user.id, 'User ID')} type="button"><Copy className="h-3.5 w-3.5" /></button>} />
+        <ProfileRow icon={CalendarDays} label="Member since" value={memberSince} />
+        <ProfileRow icon={Clock3} label="Last sign in" value={lastSignIn} />
+        <ProfileRow icon={Cloud} label="Sync" value={syncModeLabel} />
+        <ProfileRow icon={Globe2} label="Time zone" value={timezone} />
+      </div>
 
-                <div className="mt-4 grid gap-3 sm:grid-cols-2">
-                  <InfoCell
-                    actionLabel="Copy"
-                    label="Email"
-                    onAction={() => void handleCopy(user.email ?? '', 'Email')}
-                    value={user.email ?? 'No email'}
-                  />
-                  <InfoCell
-                    actionLabel="Copy"
-                    label="User ID"
-                    onAction={() => void handleCopy(user.id, 'User ID')}
-                    value={userIdShort}
-                  />
-                </div>
-              </div>
-            </div>
-          </div>
+      <div className="mt-4 grid grid-cols-2 gap-2 sm:grid-cols-4">
+        <CompactStat icon={ListTodo} label="Tasks" value={String(rootTaskCount)} />
+        <CompactStat icon={CheckCircle2} label="Done" value={`${completionRate}%`} />
+        <CompactStat icon={Target} label="Missions" value={String(missionCount)} />
+        <CompactStat icon={Timer} label="Sessions" value={String(sessionCount)} />
+      </div>
 
-          <div className="grid gap-3 sm:grid-cols-2">
-            <InfoCell label="Member since" value={memberSince} />
-            <InfoCell label="Last sign in" value={lastSignIn} />
-            <InfoCell label="Sync mode" value={syncModeLabel} />
-            <InfoCell label="Time zone" value={timezone} />
-          </div>
-        </div>
-
-        <div className="rounded-[28px] border border-borderSoft/30 bg-panel/30 p-5">
-          <p className="text-[10px] uppercase tracking-[0.28em] text-text-muted">Workspace snapshot</p>
-
-          <div className="mt-4 grid gap-3 sm:grid-cols-2">
-            <WorkspaceStat label="Root tasks" tone="accent" value={String(rootTaskCount)} />
-            <WorkspaceStat label="Done rate" tone="success" value={`${completionRate}%`} />
-            <WorkspaceStat label="Missions" tone="warning" value={String(missionCount)} />
-            <WorkspaceStat label="Sessions" tone="neutral" value={String(sessionCount)} />
-          </div>
-
-          <div className="mt-4 rounded-[22px] border border-borderSoft/24 bg-panel2/34 p-4">
-            <div className="flex items-center justify-between gap-3">
-              <p className="text-sm font-medium text-text-primary">Completion overview</p>
-              <span className="text-sm text-text-secondary">
-                {completedTaskCount}/{rootTaskCount || 0} tasks
-              </span>
-            </div>
-            <div className="mt-3 h-2 overflow-hidden rounded-full bg-panel/70">
-              <div
-                className="h-full rounded-full bg-gradient-to-r from-accent/75 to-success/80 transition-all"
-                style={{ width: `${Math.min(100, Math.max(0, completionRate))}%` }}
-              />
-            </div>
-            <p className="mt-3 text-sm text-text-secondary">
-              {completedMissionCount} mission{completedMissionCount === 1 ? '' : 's'} completed so far.
-            </p>
-          </div>
-        </div>
+      <div className="mt-4 flex items-center gap-3 rounded-[14px] border border-borderSoft/25 bg-panel2/35 p-3">
+        <div className="min-w-0 flex-1"><div className="flex justify-between gap-3 text-xs"><span className="font-medium text-text-primary">Overall completion</span><span className="text-text-secondary">{completedTaskCount}/{rootTaskCount || 0}</span></div><div className="mt-2 h-1.5 overflow-hidden rounded-full bg-panel/70"><div className="h-full rounded-full bg-gradient-to-r from-accent/75 to-success/80" style={{ width: `${Math.min(100, Math.max(0, completionRate))}%` }} /></div></div>
+        <span className="shrink-0 text-[10px] text-text-muted">{completedMissionCount} missions done</span>
       </div>
     </Card>
   );
+}
+
+function ProfileRow({ icon: Icon, label, value, action }: { icon: typeof UserRound; label: string; value: string; action?: ReactNode }) {
+  return <div className="flex min-w-0 items-center gap-3 rounded-[14px] border border-borderSoft/24 bg-panel/25 p-3"><span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-[10px] bg-accent/8 text-accent"><Icon className="h-3.5 w-3.5" /></span><div className="min-w-0 flex-1"><p className="text-[9px] uppercase tracking-[0.16em] text-text-muted">{label}</p><p className="mt-0.5 truncate text-xs font-medium text-text-primary">{value}</p></div>{action}</div>;
+}
+
+function CompactStat({ icon: Icon, label, value }: { icon: typeof UserRound; label: string; value: string }) {
+  return <div className="rounded-[14px] border border-borderSoft/24 bg-panel2/30 p-3"><Icon className="h-3.5 w-3.5 text-accent" /><p className="mt-2 text-lg font-semibold leading-none text-text-primary">{value}</p><p className="mt-1 text-[9px] uppercase tracking-[0.14em] text-text-muted">{label}</p></div>;
 }
 
 function InfoCell({

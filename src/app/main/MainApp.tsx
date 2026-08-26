@@ -4929,7 +4929,6 @@ export function MainApp() {
             <main
               className={cn(
                 'main-scroll-region absolute inset-0 overflow-x-hidden overflow-y-scroll px-3 py-4 pb-32 sm:px-6 sm:py-6 lg:relative lg:inset-auto lg:h-full lg:min-w-0 lg:flex-1 lg:pb-6',
-                workspaceMode !== 'team' && activeView === 'notes' ? 'notes-workspace-background' : null,
                 workspaceMode === 'team' && 'py-0 pb-[var(--mobile-nav-height)] sm:py-0 lg:pb-6',
                 workspaceMode === 'team' && teamUnlocked ? 'team-workspace' : null,
               )}
