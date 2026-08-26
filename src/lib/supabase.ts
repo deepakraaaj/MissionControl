@@ -20,6 +20,25 @@ export async function getUserId(): Promise<string> {
   return user.id;
 }
 
+/**
+ * Turns a caught Supabase/PostgREST error into an accurate, user-facing
+ * message instead of guessing. Only PostgREST's `42P01` ("relation does not
+ * exist") actually means the migration is missing — every other failure
+ * (expired session, RLS denial, network) was previously mislabeled as a
+ * migration problem, which sent people chasing the wrong fix.
+ */
+export function describeSupabaseTableError(error: unknown, tableLabel: string): string {
+  const code = (error as { code?: string } | undefined)?.code;
+  if (code === '42P01') {
+    return `${tableLabel} tables not found in Supabase. Please run migrations.`;
+  }
+  if (error instanceof Error && error.message === 'User not authenticated') {
+    return 'You need to be signed in to load your data. Try signing in again.';
+  }
+  const detail = error instanceof Error ? error.message : String(error);
+  return `Failed to load ${tableLabel.toLowerCase()}: ${detail}`;
+}
+
 // Tasks queries
 export async function selectTasksByUser(): Promise<Task[]> {
   const userId = await getUserId();

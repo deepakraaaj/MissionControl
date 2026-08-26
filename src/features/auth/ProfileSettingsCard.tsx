@@ -1,12 +1,13 @@
 import { useEffect, useState } from 'react';
 import type { ReactNode } from 'react';
-import { CalendarDays, CheckCircle2, Clock3, Cloud, Copy, Globe2, ListTodo, LogOut, Mail, Target, Timer, UserRound } from 'lucide-react';
+import { CalendarDays, CheckCircle2, Clock3, Cloud, CloudOff, Copy, Globe2, ListTodo, LogOut, Mail, Target, Timer, UserRound } from 'lucide-react';
 import { Badge } from '../../components/ui/badge';
 import { Button } from '../../components/ui/button';
 import { Card } from '../../components/ui/card';
 import { Input } from '../../components/ui/input';
 import { useAuthStore } from './auth-store';
 import { showErrorToast, showInfoToast, showSuccessToast } from '../toasts/toast-store';
+import { confirmDialog } from '../../components/ui/native-dialog';
 
 const shortDateFormatter = new Intl.DateTimeFormat(undefined, {
   month: 'short',
@@ -40,6 +41,7 @@ export function ProfileSettingsCard({
   syncModeLabel,
 }: ProfileSettingsCardProps) {
   const session = useAuthStore((state) => state.session);
+  const localMode = useAuthStore((state) => state.localMode);
   const profileSaving = useAuthStore((state) => state.profileSaving);
   const signOut = useAuthStore((state) => state.signOut);
   const updateProfile = useAuthStore((state) => state.updateProfile);
@@ -53,7 +55,56 @@ export function ProfileSettingsCard({
   }, [currentDisplayName]);
 
   if (!user) {
-    return null;
+    if (!localMode) {
+      return null;
+    }
+
+    const completionRate = rootTaskCount ? Math.round((completedTaskCount / rootTaskCount) * 100) : 0;
+
+    return (
+      <Card className="rounded-[24px] p-4 sm:p-5">
+        <div className="flex items-center gap-3 border-b border-borderSoft/20 pb-4">
+          <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-[15px] bg-panel2/60 text-text-muted"><CloudOff className="h-5 w-5" /></div>
+          <div className="min-w-0 flex-1">
+            <div className="flex flex-wrap items-center gap-2"><h2 className="truncate text-base font-semibold text-text-primary">Local device</h2><Badge tone="warning">Local only</Badge></div>
+            <p className="mt-0.5 truncate text-xs text-text-secondary">No account signed in — everything here stays on this device.</p>
+          </div>
+        </div>
+
+        <p className="mt-4 rounded-[14px] border border-borderSoft/25 bg-panel2/35 p-3 text-xs leading-relaxed text-text-secondary">
+          You're in Instant Local Mode. Missions, tasks, and sessions are saved on this device only — nothing syncs or backs up until you switch to Cloud sync.
+        </p>
+
+        <div className="mt-4 grid grid-cols-2 gap-2 sm:grid-cols-4">
+          <CompactStat icon={ListTodo} label="Tasks" value={String(rootTaskCount)} />
+          <CompactStat icon={CheckCircle2} label="Done" value={`${completionRate}%`} />
+          <CompactStat icon={Target} label="Missions" value={String(missionCount)} />
+          <CompactStat icon={Timer} label="Sessions" value={String(sessionCount)} />
+        </div>
+
+        <div className="mt-4 flex items-center gap-3 rounded-[14px] border border-borderSoft/25 bg-panel2/35 p-3">
+          <div className="min-w-0 flex-1"><div className="flex justify-between gap-3 text-xs"><span className="font-medium text-text-primary">Overall completion</span><span className="text-text-secondary">{completedTaskCount}/{rootTaskCount || 0}</span></div><div className="mt-2 h-1.5 overflow-hidden rounded-full bg-panel/70"><div className="h-full rounded-full bg-gradient-to-r from-accent/75 to-success/80" style={{ width: `${Math.min(100, Math.max(0, completionRate))}%` }} /></div></div>
+          <span className="shrink-0 text-[10px] text-text-muted">{completedMissionCount} missions done</span>
+        </div>
+
+        <div className="mt-4 flex justify-end border-t border-borderSoft/20 pt-4">
+          <Button
+            onClick={() => {
+              void confirmDialog('You will be taken to the login screen. Local data stays on this device.', { title: 'Switch to Cloud sync?', confirmLabel: 'Continue' }).then((ok) => {
+                if (ok) {
+                  useAuthStore.getState().setLocalMode(false);
+                  window.location.reload();
+                }
+              });
+            }}
+            size="sm"
+            type="button"
+          >
+            <Cloud className="mr-2 h-4 w-4" /> Switch to Cloud
+          </Button>
+        </div>
+      </Card>
+    );
   }
 
   const trimmedDraft = displayNameDraft.trim();

@@ -136,64 +136,64 @@ class SqlJournalRepository implements JournalRepository {
 
 class SupabaseJournalRepository implements JournalRepository {
   async listEntries(entryDate?: string) {
-    const { selectJournalEntries } = await import('../../lib/supabase');
+    const { selectJournalEntries, describeSupabaseTableError } = await import('../../lib/supabase');
     try {
       return await selectJournalEntries(entryDate);
     } catch (error) {
       console.error('Supabase journal_entries query failed:', error);
-      throw new Error('Journal tables not found in Supabase. Please run migrations.');
+      throw new Error(describeSupabaseTableError(error, 'Journal'));
     }
   }
 
   async createEntry(draft: JournalEntryDraft) {
-    const { insertJournalEntry } = await import('../../lib/supabase');
+    const { insertJournalEntry, describeSupabaseTableError } = await import('../../lib/supabase');
     const entry = normalizeJournalEntryDraft(draft);
     try {
       await insertJournalEntry(entry);
     } catch (error) {
       console.error('Supabase journal_entries insert failed:', error);
-      throw new Error('Failed to save journal entry. Journal tables may not exist in Supabase.');
+      throw new Error(describeSupabaseTableError(error, 'Journal'));
     }
     return entry;
   }
 
   async updateEntry(entry: JournalEntry) {
-    const { updateJournalEntry } = await import('../../lib/supabase');
+    const { updateJournalEntry, describeSupabaseTableError } = await import('../../lib/supabase');
     try {
       await updateJournalEntry(entry);
     } catch (error) {
       console.error('Supabase journal_entries update failed:', error);
-      throw new Error('Failed to update journal entry.');
+      throw new Error(describeSupabaseTableError(error, 'Journal'));
     }
   }
 
   async deleteEntry(entryId: string) {
-    const { deleteJournalEntry } = await import('../../lib/supabase');
+    const { deleteJournalEntry, describeSupabaseTableError } = await import('../../lib/supabase');
     try {
       await deleteJournalEntry(entryId);
     } catch (error) {
       console.error('Supabase journal_entries delete failed:', error);
-      throw new Error('Failed to delete journal entry.');
+      throw new Error(describeSupabaseTableError(error, 'Journal'));
     }
   }
 
   async listDays() {
-    const { selectJournalDays } = await import('../../lib/supabase');
+    const { selectJournalDays, describeSupabaseTableError } = await import('../../lib/supabase');
     try {
       return await selectJournalDays();
     } catch (error) {
       console.error('Supabase journal_days query failed:', error);
-      throw new Error('Journal tables not found in Supabase.');
+      throw new Error(describeSupabaseTableError(error, 'Journal'));
     }
   }
 
   async saveDay(day: JournalDay) {
-    const { upsertJournalDay } = await import('../../lib/supabase');
+    const { upsertJournalDay, describeSupabaseTableError } = await import('../../lib/supabase');
     try {
       await upsertJournalDay(day);
     } catch (error) {
       console.error('Supabase journal_days upsert failed:', error);
-      throw new Error('Failed to save journal day.');
+      throw new Error(describeSupabaseTableError(error, 'Journal'));
     }
   }
 }

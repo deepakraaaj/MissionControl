@@ -163,86 +163,86 @@ class SqlNotesRepository implements NotesRepository {
 
 class SupabaseNotesRepository implements NotesRepository {
   async listNotes() {
-    const { selectNotesByUser } = await import('../../lib/supabase');
+    const { selectNotesByUser, describeSupabaseTableError } = await import('../../lib/supabase');
     try {
       return await selectNotesByUser();
     } catch (error) {
       console.error('Supabase notes query failed:', error);
-      throw new Error('Notes tables not found in Supabase. Please run migrations.');
+      throw new Error(describeSupabaseTableError(error, 'Notes'));
     }
   }
 
   async createNote(draft: NoteDraft) {
-    const { insertNote } = await import('../../lib/supabase');
+    const { insertNote, describeSupabaseTableError } = await import('../../lib/supabase');
     const note = normalizeNoteDraft(draft);
     try {
       await insertNote(note);
     } catch (error) {
       console.error('Supabase notes insert failed:', error);
-      throw new Error('Failed to save note. Notes tables may not exist in Supabase.');
+      throw new Error(describeSupabaseTableError(error, 'Notes'));
     }
     return note;
   }
 
   async updateNote(note: Note) {
-    const { updateNoteRow } = await import('../../lib/supabase');
+    const { updateNoteRow, describeSupabaseTableError } = await import('../../lib/supabase');
     try {
       await updateNoteRow(note);
     } catch (error) {
       console.error('Supabase notes update failed:', error);
-      throw new Error('Failed to update note.');
+      throw new Error(describeSupabaseTableError(error, 'Notes'));
     }
   }
 
   async deleteNote(noteId: string) {
-    const { deleteNoteRow } = await import('../../lib/supabase');
+    const { deleteNoteRow, describeSupabaseTableError } = await import('../../lib/supabase');
     try {
       await deleteNoteRow(noteId);
     } catch (error) {
       console.error('Supabase notes delete failed:', error);
-      throw new Error('Failed to delete note.');
+      throw new Error(describeSupabaseTableError(error, 'Notes'));
     }
   }
 
   async listCategories() {
-    const { selectNoteCategoriesByUser } = await import('../../lib/supabase');
+    const { selectNoteCategoriesByUser, describeSupabaseTableError } = await import('../../lib/supabase');
     try {
       return await selectNoteCategoriesByUser();
     } catch (error) {
       console.error('Supabase note_categories query failed:', error);
-      throw new Error('Note category tables not found in Supabase. Please run migrations.');
+      throw new Error(describeSupabaseTableError(error, 'Note category'));
     }
   }
 
   async createCategory(draft: NoteCategoryDraft) {
-    const { insertNoteCategory } = await import('../../lib/supabase');
+    const { insertNoteCategory, describeSupabaseTableError } = await import('../../lib/supabase');
     const category = normalizeNoteCategoryDraft(draft);
     try {
       await insertNoteCategory(category);
     } catch (error) {
       console.error('Supabase note_categories insert failed:', error);
-      throw new Error('Failed to save category.');
+      throw new Error(describeSupabaseTableError(error, 'Note category'));
     }
     return category;
   }
 
   async updateCategory(category: NoteCategory) {
-    const { updateNoteCategory } = await import('../../lib/supabase');
+    const { updateNoteCategory, describeSupabaseTableError } = await import('../../lib/supabase');
     try {
       await updateNoteCategory(category);
     } catch (error) {
       console.error('Supabase note_categories update failed:', error);
-      throw new Error('Failed to update category.');
+      throw new Error(describeSupabaseTableError(error, 'Note category'));
     }
   }
 
   async deleteCategory(categoryId: string) {
-    const { deleteNoteCategory } = await import('../../lib/supabase');
+    const { deleteNoteCategory, describeSupabaseTableError } = await import('../../lib/supabase');
     try {
       await deleteNoteCategory(categoryId);
     } catch (error) {
       console.error('Supabase note_categories delete failed:', error);
-      throw new Error('Failed to delete category.');
+      throw new Error(describeSupabaseTableError(error, 'Note category'));
     }
   }
 }

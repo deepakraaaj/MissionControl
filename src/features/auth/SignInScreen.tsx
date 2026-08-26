@@ -3,12 +3,9 @@ import { useAuthStore } from './auth-store';
 import { Button } from '../../components/ui/button';
 import { Input } from '../../components/ui/input';
 import { ToastViewport } from '../../components/ui/toast-viewport';
-import { SynCatchLogo } from '../../components/SynCatchLogo';
-import { Users, User, KeyRound, ArrowRight } from 'lucide-react';
+import { SynCatchLogoAnimated } from '../../components/SynCatchLogoAnimated';
 
 export function SignInScreen() {
-  const [activeTab, setActiveTab] = useState<'personal' | 'team'>('team');
-
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [displayName, setDisplayName] = useState('');
@@ -16,24 +13,7 @@ export function SignInScreen() {
   const [isForgotPassword, setIsForgotPassword] = useState(false);
   const { loading, error, signIn, signUp, requestPasswordReset, clearError, setLocalMode } = useAuthStore();
 
-  const handleTeamSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    clearError();
-
-    if (!email || !password) return;
-
-    try {
-      if (isSignUp) {
-        await signUp(email, password, displayName);
-      } else {
-        await signIn(email, password);
-      }
-    } catch {
-      // Error is already exposed by the auth store.
-    }
-  };
-
-  const handlePersonalSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     clearError();
 
@@ -62,148 +42,120 @@ export function SignInScreen() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 p-4 sm:p-6 text-slate-100">
-      <div className="w-full max-w-md">
-        {/* Logo & Brand */}
-        <div className="text-center mb-8">
-          <h1 className="text-3xl sm:text-4xl font-bold text-white mb-2 flex items-center justify-center gap-3">
-            <SynCatchLogo className="h-10 w-10" />
-            <span>
-              Syn<span style={{ color: '#3E8BFF' }}>Catch</span>
-            </span>
-          </h1>
-          <p className="text-slate-400 text-sm">
-            Focus Operating System & Venture Command Center
-          </p>
-        </div>
+    <div className="relative min-h-screen overflow-hidden bg-bg text-text-primary">
+      {/* Line-grid field across the whole page, matching the module-icon grid language used elsewhere in the app. */}
+      <div
+        className="pointer-events-none absolute inset-0"
+        style={{
+          backgroundImage:
+            'linear-gradient(rgb(var(--border-strong) / 0.55) 1px, transparent 1px), linear-gradient(90deg, rgb(var(--border-strong) / 0.55) 1px, transparent 1px)',
+          backgroundSize: '36px 36px',
+          maskImage: 'radial-gradient(ellipse 85% 70% at 50% 38%, black 0%, transparent 82%)',
+          WebkitMaskImage: 'radial-gradient(ellipse 85% 70% at 50% 38%, black 0%, transparent 82%)',
+        }}
+      />
+      {/* Glow blooms — one broad wash behind the card, two tighter accents at opposite corners. */}
+      <div
+        className="pointer-events-none absolute left-1/2 top-0 h-[560px] w-[900px] -translate-x-1/2 rounded-full opacity-50 blur-[120px]"
+        style={{ background: 'radial-gradient(closest-side, rgb(var(--accent) / 0.32), transparent)' }}
+      />
+      <div
+        className="pointer-events-none absolute -bottom-32 -left-20 h-72 w-72 rounded-full opacity-40 blur-[100px]"
+        style={{ background: 'radial-gradient(closest-side, rgb(var(--accent) / 0.3), transparent)' }}
+      />
+      <div
+        className="pointer-events-none absolute -bottom-24 -right-16 h-64 w-64 rounded-full opacity-30 blur-[90px]"
+        style={{ background: 'radial-gradient(closest-side, rgb(var(--accent-soft) / 0.35), transparent)' }}
+      />
 
-        {/* 2-Mode Primary Selector Card */}
-        <div className="grid grid-cols-2 p-1.5 mb-6 bg-slate-900/90 rounded-2xl border border-slate-800 shadow-xl">
-          <button
-            type="button"
-            onClick={() => setActiveTab('team')}
-            className={`py-3 px-3 text-xs font-bold rounded-xl transition-all flex items-center justify-center gap-2 ${
-              activeTab === 'team'
-                ? 'bg-gradient-to-r from-amber-500/20 to-amber-600/20 text-amber-300 border border-amber-500/40 shadow-lg shadow-amber-500/10'
-                : 'text-slate-400 hover:text-slate-200'
-            }`}
-          >
-            <Users className="w-4 h-4 text-amber-400" />
-            <span>Team Mode</span>
-          </button>
-          <button
-            type="button"
-            onClick={() => setActiveTab('personal')}
-            className={`py-3 px-3 text-xs font-bold rounded-xl transition-all flex items-center justify-center gap-2 ${
-              activeTab === 'personal'
-                ? 'bg-slate-800 text-white border border-slate-700 shadow-sm'
-                : 'text-slate-400 hover:text-slate-200'
-            }`}
-          >
-            <User className="w-4 h-4 text-blue-400" />
-            <span>Personal Focus</span>
-          </button>
-        </div>
+      <div className="relative flex min-h-screen items-center justify-center p-4 sm:p-6">
+        <div className="w-full max-w-[920px]">
+          <div className="grid overflow-hidden rounded-[28px] border border-borderSoft/35 bg-panel/70 shadow-panel backdrop-blur-xl lg:grid-cols-2">
+            {/* Brand panel */}
+            <div className="relative hidden flex-col justify-between overflow-hidden border-borderSoft/35 bg-panel2/60 p-10 lg:flex lg:border-r">
+              <div
+                className="pointer-events-none absolute inset-0 opacity-60"
+                style={{
+                  backgroundImage:
+                    'linear-gradient(rgb(var(--border-strong) / 0.6) 1px, transparent 1px), linear-gradient(90deg, rgb(var(--border-strong) / 0.6) 1px, transparent 1px)',
+                  backgroundSize: '24px 24px',
+                  maskImage: 'linear-gradient(to bottom, black, transparent)',
+                  WebkitMaskImage: 'linear-gradient(to bottom, black, transparent)',
+                }}
+              />
+              <div
+                className="pointer-events-none absolute -left-24 -top-24 h-72 w-72 rounded-full opacity-60 blur-[90px]"
+                style={{ background: 'radial-gradient(closest-side, rgb(var(--accent) / 0.4), transparent)' }}
+              />
 
-        {/* Card Content based on Tab */}
-        <div className="p-6 bg-slate-900/90 border border-slate-800 rounded-3xl shadow-2xl space-y-5 backdrop-blur-md">
-          {activeTab === 'team' ? (
-            /* TEAM MODE GATEWAY */
-            <div className="space-y-4">
-              <div className="text-center space-y-1">
-                <div className="w-11 h-11 mx-auto rounded-2xl bg-amber-500/20 text-amber-400 border border-amber-500/30 flex items-center justify-center">
-                  <KeyRound className="w-5 h-5" />
+              <div className="relative flex items-center gap-3">
+                <div className="relative flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-panel/85 shadow-glow">
+                  <SynCatchLogoAnimated className="h-8 w-8" themed autoPlay />
                 </div>
-                <h3 className="text-base font-bold text-white pt-1">
-                  Sign in for Team Hub
-                </h3>
-                <p className="text-xs text-slate-400">
-                  Use your own account. After sign-in, create a room or request admin approval with an invite code.
+                <span className="text-xl font-bold tracking-tight">
+                  <span className="text-text-primary">Syn</span>
+                  <span className="text-accent">Catch</span>
+                </span>
+              </div>
+
+              <div className="relative space-y-4">
+                <p className="text-sm font-semibold uppercase tracking-[0.16em] text-accent">Sync aachaa?</p>
+                <h2 className="max-w-xs text-2xl font-bold leading-snug text-text-primary">
+                  Every mission, every task, always caught &amp; synced.
+                </h2>
+                <p className="max-w-xs text-sm leading-relaxed text-text-secondary">
+                  <span className="font-semibold text-accent">Aachu.</span> Solo focus, team execution, one loop that never drops a beat.
                 </p>
               </div>
 
-              <form onSubmit={handleTeamSubmit} className="space-y-4 pt-2">
-                {isSignUp && (
-                  <div>
-                    <label className="block text-xs font-medium text-slate-300 mb-1">Name</label>
-                    <Input
-                      type="text"
-                      value={displayName}
-                      onChange={(e) => setDisplayName(e.target.value)}
-                      placeholder="Your name"
-                      disabled={loading}
-                      className="w-full"
-                    />
-                  </div>
-                )}
-
-                <div>
-                  <label className="block text-xs font-medium text-slate-300 mb-1">Work email</label>
-                  <Input
-                    type="email"
-                    required
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    placeholder="you@company.com"
-                    disabled={loading}
-                    className="w-full"
-                  />
+              <div className="relative grid grid-cols-3 gap-3 text-xs text-text-muted">
+                <div className="rounded-2xl border border-borderSoft/30 bg-panel/50 p-3">
+                  <div className="text-sm font-bold text-text-primary">Missions</div>
+                  <div className="mt-0.5">Projects &amp; goals</div>
                 </div>
-
-                <div>
-                  <label className="block text-xs font-medium text-slate-300 mb-1">Password</label>
-                  <Input
-                    type="password"
-                    required
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    placeholder="••••••••"
-                    disabled={loading}
-                    className="w-full"
-                  />
+                <div className="rounded-2xl border border-borderSoft/30 bg-panel/50 p-3">
+                  <div className="text-sm font-bold text-text-primary">Focus</div>
+                  <div className="mt-0.5">Timers &amp; tasks</div>
                 </div>
-
-                <Button
-                  type="submit"
-                  disabled={loading || !email || !password}
-                  variant="primary"
-                  className="w-full py-3 bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-slate-950 font-bold text-xs rounded-xl shadow-xl shadow-amber-500/20"
-                >
-                  <span>{loading ? 'Loading...' : isSignUp ? 'Create Account & Join Team' : 'Sign In to Team Hub'}</span>
-                  <ArrowRight className="w-4 h-4 ml-1" />
-                </Button>
-              </form>
-
-              {error && (
-                <div className="bg-red-500/10 border border-red-500/30 text-red-400 px-3 py-2 rounded-xl text-xs">
-                  {error}
+                <div className="rounded-2xl border border-borderSoft/30 bg-panel/50 p-3">
+                  <div className="text-sm font-bold text-text-primary">Team Hub</div>
+                  <div className="mt-0.5">Shared rooms</div>
                 </div>
-              )}
-
-              <div className="pt-3 border-t border-slate-800 text-center space-y-2">
-                <button
-                  type="button"
-                  onClick={() => {
-                    setIsSignUp((value) => !value);
-                    clearError();
-                  }}
-                  disabled={loading}
-                  className="text-xs text-blue-400 hover:text-blue-300 transition-colors"
-                >
-                  {isSignUp ? 'Already have an account? Sign in' : 'New teammate? Create an account'}
-                </button>
-                <p className="text-[11px] text-slate-500">
-                  Room codes request access; only an admin approval unlocks the room.
-                </p>
               </div>
             </div>
-          ) : (
-            /* PERSONAL MODE SIGN IN */
-            <div className="space-y-4">
-              <form onSubmit={handlePersonalSubmit} className="space-y-4">
+
+            {/* Form panel */}
+            <div className="p-6 sm:p-10">
+              <div className="mb-8 lg:hidden">
+                <div className="flex items-center gap-3">
+                  <div className="relative flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-panel2/70 shadow-glow">
+                    <SynCatchLogoAnimated className="h-7 w-7" themed autoPlay />
+                  </div>
+                  <span className="text-lg font-bold tracking-tight">
+                    <span className="text-text-primary">Syn</span>
+                    <span className="text-accent">Catch</span>
+                  </span>
+                </div>
+                <p className="mt-2 text-xs text-text-muted">Focus Operating System &amp; Venture Command Center</p>
+              </div>
+
+              <div className="mb-6">
+                <h1 className="text-xl font-bold text-text-primary">
+                  {isForgotPassword ? 'Reset your password' : isSignUp ? 'Create your account' : 'Welcome back'}
+                </h1>
+                <p className="mt-1 text-sm text-text-secondary">
+                  {isForgotPassword
+                    ? "We'll email you a link to get back in."
+                    : isSignUp
+                      ? 'Set up your account to start syncing.'
+                      : 'Sign in to continue to your workspace.'}
+                </p>
+              </div>
+
+              <form onSubmit={handleSubmit} className="space-y-4">
                 {isSignUp && !isForgotPassword && (
                   <div>
-                    <label className="block text-xs font-medium text-slate-300 mb-1">Name</label>
+                    <label className="mb-1.5 block text-xs font-semibold text-text-secondary">Name</label>
                     <Input
                       type="text"
                       value={displayName}
@@ -216,7 +168,7 @@ export function SignInScreen() {
                 )}
 
                 <div>
-                  <label className="block text-xs font-medium text-slate-300 mb-1">Email</label>
+                  <label className="mb-1.5 block text-xs font-semibold text-text-secondary">Email</label>
                   <Input
                     type="email"
                     value={email}
@@ -229,8 +181,8 @@ export function SignInScreen() {
 
                 {!isForgotPassword && (
                   <div>
-                    <div className="mb-1 flex items-center justify-between">
-                      <label className="block text-xs font-medium text-slate-300">Password</label>
+                    <div className="mb-1.5 flex items-center justify-between">
+                      <label className="block text-xs font-semibold text-text-secondary">Password</label>
                       {!isSignUp && (
                         <button
                           type="button"
@@ -239,7 +191,7 @@ export function SignInScreen() {
                             clearError();
                           }}
                           disabled={loading}
-                          className="text-[11px] text-slate-400 hover:text-slate-300 transition-colors"
+                          className="text-[11px] font-medium text-accent hover:text-accentSoft transition-colors"
                         >
                           Forgot password?
                         </button>
@@ -257,7 +209,7 @@ export function SignInScreen() {
                 )}
 
                 {error && (
-                  <div className="bg-red-500/10 border border-red-500/30 text-red-400 px-3 py-2 rounded-xl text-xs">
+                  <div className="rounded-2xl border border-danger/30 bg-danger/10 px-3 py-2 text-xs text-danger">
                     {error}
                   </div>
                 )}
@@ -266,19 +218,20 @@ export function SignInScreen() {
                   type="submit"
                   disabled={loading || !email || (!isForgotPassword && !password)}
                   variant="primary"
-                  className="w-full text-xs font-bold py-2.5"
+                  size="lg"
+                  className="w-full"
                 >
                   {loading
-                    ? 'Loading...'
+                    ? 'Loading…'
                     : isForgotPassword
-                      ? 'Send Reset Link'
+                      ? 'Send reset link'
                       : isSignUp
-                        ? 'Create Account'
-                        : 'Sign In'}
+                        ? 'Create account'
+                        : 'Sign in'}
                 </Button>
               </form>
 
-              <div className="text-center">
+              <div className="mt-4 text-center">
                 {isForgotPassword ? (
                   <button
                     type="button"
@@ -287,7 +240,7 @@ export function SignInScreen() {
                       clearError();
                     }}
                     disabled={loading}
-                    className="text-slate-400 hover:text-slate-300 transition-colors text-xs"
+                    className="text-xs text-text-muted transition-colors hover:text-text-secondary"
                   >
                     Back to sign in
                   </button>
@@ -299,7 +252,7 @@ export function SignInScreen() {
                       clearError();
                     }}
                     disabled={loading}
-                    className="text-slate-400 hover:text-slate-300 transition-colors text-xs"
+                    className="text-xs text-text-muted transition-colors hover:text-text-secondary"
                   >
                     {isSignUp
                       ? 'Already have an account? Sign in'
@@ -308,18 +261,17 @@ export function SignInScreen() {
                 )}
               </div>
 
-              <div className="pt-3 border-t border-slate-800">
-                <Button
-                  type="button"
-                  onClick={() => setLocalMode(true)}
-                  variant="secondary"
-                  className="w-full border-slate-700 hover:bg-slate-800 text-slate-300 text-xs py-2"
-                >
+              <p className="mt-5 rounded-2xl border border-borderSoft/30 bg-panel2/40 px-3 py-2.5 text-center text-[11px] leading-relaxed text-text-muted">
+                Team workspaces are joined after sign-in — create a room or request approval with an invite code.
+              </p>
+
+              <div className="mt-4 border-t border-borderSoft/25 pt-4">
+                <Button type="button" onClick={() => setLocalMode(true)} variant="secondary" size="sm" className="w-full">
                   Instant Local Mode (No Account Required)
                 </Button>
               </div>
             </div>
-          )}
+          </div>
         </div>
       </div>
 
