@@ -9,6 +9,7 @@ interface NoteStore {
   categories: NoteCategory[];
   searchQuery: string;
   activeCategoryId: string;
+  activeMissionId: string;
   hydrated: boolean;
   loading: boolean;
   error: string | null;
@@ -24,6 +25,7 @@ interface NoteStore {
   deleteCategory: (categoryId: string) => Promise<void>;
   setSearchQuery: (query: string) => void;
   setActiveCategoryId: (categoryId: string) => void;
+  setActiveMissionId: (missionId: string) => void;
 }
 
 export const useNoteStore = create<NoteStore>((set, get) => ({
@@ -31,6 +33,7 @@ export const useNoteStore = create<NoteStore>((set, get) => ({
   categories: [],
   searchQuery: '',
   activeCategoryId: 'all',
+  activeMissionId: 'all',
   hydrated: false,
   loading: false,
   error: null,
@@ -154,4 +157,5 @@ export const useNoteStore = create<NoteStore>((set, get) => ({
 
   setSearchQuery: (query) => set({ searchQuery: query }),
   setActiveCategoryId: (categoryId) => set({ activeCategoryId: categoryId }),
+  setActiveMissionId: (missionId) => set({ activeMissionId: missionId }),
 }));

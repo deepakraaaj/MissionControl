@@ -1,11 +1,12 @@
 import { useEffect, useMemo, useState, useRef, useCallback } from 'react';
 import { createPortal } from 'react-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Search, Plus, Pin, Edit2, Trash2, X, Settings, ChevronDown, Check } from 'lucide-react';
+import { Search, Plus, Pin, Edit2, Trash2, X, Settings, ChevronDown, Check, Target, CircleDashed } from 'lucide-react';
 import { Badge } from '../../components/ui/badge';
 import { Button } from '../../components/ui/button';
 import { Card } from '../../components/ui/card';
 import { Input } from '../../components/ui/input';
+import { MissionIcon } from '../../components/ui/mission-icon';
 import { RichTextEditor } from '../../components/ui/rich-text-editor';
 import { RichTextContent, isHtmlContent } from '../../components/ui/rich-text-content';
 import { SaveStatus } from '../../components/ui/save-status';
@@ -75,6 +76,7 @@ export function NoteCard({
   onEdit,
   onDelete,
   onTogglePin,
+  onFilterMission,
 }: {
   note: Note;
   category: NoteCategory;
@@ -83,6 +85,7 @@ export function NoteCard({
   onEdit: (note: Note) => void;
   onDelete: (id: string) => void;
   onTogglePin: (id: string) => void;
+  onFilterMission?: (missionId: string) => void;
 }) {
   const [isDeleting, setIsDeleting] = useState(false);
   const style = getNoteColorStyle(category.color);
@@ -177,9 +180,22 @@ export function NoteCard({
 
         <div className="mt-auto flex flex-nowrap items-center gap-2 border-t border-borderSoft/20 pt-3">
           {missionTitle && (
-            <Badge tone="neutral" className="min-w-0 border-slate-500/20 bg-slate-500/12 text-[10px] font-medium normal-case tracking-normal">
+            <button
+              type="button"
+              onClick={(e) => {
+                if (note.mission_id && onFilterMission) {
+                  e.stopPropagation();
+                  onFilterMission(note.mission_id);
+                }
+              }}
+              className={cn(
+                'inline-flex min-w-0 items-center rounded-full border border-slate-500/20 bg-slate-500/12 px-2.5 py-0.5 text-[10px] font-medium tracking-normal text-text-secondary transition-colors',
+                onFilterMission ? 'hover:border-accent/40 hover:bg-accent/15 hover:text-accent cursor-pointer' : '',
+              )}
+              title={onFilterMission ? 'Filter by this mission' : undefined}
+            >
               <span className="truncate">{missionTitle}</span>
-            </Badge>
+            </button>
           )}
           <span
             title={new Date(note.updated_at).toLocaleString(undefined, { dateStyle: 'full', timeStyle: 'short' })}
@@ -193,12 +209,201 @@ export function NoteCard({
   );
 }
 
+export function NoteMissionFilterControl({
+  missions,
+  activeMissionId,
+  onChange,
+  missionNoteCounts,
+  totalNotes,
+}: {
+  missions: { id: string; title: string; emoji?: string }[];
+  activeMissionId: string;
+  onChange: (id: string) => void;
+  missionNoteCounts: Record<string, number>;
+  totalNotes: number;
+}) {
+  const [open, setOpen] = useState(false);
+  const containerRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!open) return;
+    const handlePointerDown = (event: MouseEvent) => {
+      if (containerRef.current && !containerRef.current.contains(event.target as Node)) {
+        setOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handlePointerDown);
+    return () => document.removeEventListener('mousedown', handlePointerDown);
+  }, [open]);
+
+  const selectedMission = missions.find((m) => m.id === activeMissionId);
+  const activeLabel =
+    activeMissionId === 'all'
+      ? 'All missions'
+      : activeMissionId === 'none'
+        ? 'No mission'
+        : selectedMission?.title ?? 'Mission';
+
+  const activeCount =
+    activeMissionId === 'all'
+      ? totalNotes
+      : activeMissionId === 'none'
+        ? (missionNoteCounts['none'] ?? 0)
+        : (missionNoteCounts[activeMissionId] ?? 0);
+
+  const isFiltered = activeMissionId !== 'all';
+
+  return (
+    <div ref={containerRef} className="relative shrink-0">
+      <Button
+        type="button"
+        onClick={() => setOpen((v) => !v)}
+        size="md"
+        variant="secondary"
+        className={cn(
+          'h-10 rounded-full px-3.5 text-[13px] font-medium transition-all gap-2',
+          isFiltered
+            ? 'border-accent/40 bg-accent/12 text-accent hover:bg-accent/20 hover:border-accent/60'
+            : 'border-borderSoft/40 hover:bg-panel2/60',
+        )}
+        title={`Filter by mission: ${activeLabel}`}
+      >
+        {activeMissionId === 'all' ? (
+          <Target className="h-4 w-4 shrink-0 text-text-secondary" />
+        ) : activeMissionId === 'none' ? (
+          <CircleDashed className="h-4 w-4 shrink-0 text-text-muted" />
+        ) : selectedMission ? (
+          <MissionIcon icon={selectedMission.emoji ?? 'Target'} className="h-4 w-4 shrink-0" />
+        ) : (
+          <Target className="h-4 w-4 shrink-0" />
+        )}
+        <span className="hidden max-w-[130px] truncate sm:inline">{activeLabel}</span>
+        <span
+          className={cn(
+            'inline-flex items-center rounded-full border px-1.5 py-0.5 text-[10px] font-semibold tabular-nums leading-none',
+            isFiltered
+              ? 'border-accent/30 bg-accent/20 text-accent'
+              : 'border-borderSoft/40 bg-panel/60 text-text-secondary',
+          )}
+        >
+          {activeCount}
+        </span>
+        <ChevronDown
+          className={cn('h-3.5 w-3.5 transition-transform duration-150', open ? 'rotate-180' : null)}
+        />
+      </Button>
+
+      <AnimatePresence>
+        {open && (
+          <motion.div
+            initial={{ opacity: 0, y: 4, scale: 0.98 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: 4, scale: 0.98 }}
+            transition={{ duration: 0.15 }}
+            className="absolute right-0 top-full z-40 mt-2 w-72 max-h-[460px] overflow-y-auto rounded-[22px] border border-borderSoft/35 bg-panel/96 p-2 shadow-[0_18px_50px_rgb(var(--shadow-color)/0.25)] backdrop-blur-md scrollbar-thin"
+          >
+            <div className="px-2.5 py-2">
+              <p className="text-[10px] font-bold uppercase tracking-[0.24em] text-text-muted">Filter by Mission</p>
+            </div>
+
+            <div className="space-y-1">
+              <button
+                type="button"
+                onClick={() => {
+                  onChange('all');
+                  setOpen(false);
+                }}
+                className={cn(
+                  'flex w-full items-center justify-between gap-2.5 rounded-xl px-2.5 py-2 text-left text-xs font-medium transition-colors',
+                  activeMissionId === 'all'
+                    ? 'bg-accent/12 text-accent font-semibold'
+                    : 'text-text-secondary hover:bg-panel2/60 hover:text-text-primary',
+                )}
+              >
+                <div className="flex min-w-0 items-center gap-2">
+                  <Target className="h-3.5 w-3.5 shrink-0" />
+                  <span className="truncate">All missions</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <span className="rounded-full bg-panel px-1.5 py-0.5 text-[9px] tabular-nums text-text-muted">
+                    {totalNotes}
+                  </span>
+                  {activeMissionId === 'all' && <Check className="h-3.5 w-3.5 shrink-0 text-accent" />}
+                </div>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => {
+                  onChange('none');
+                  setOpen(false);
+                }}
+                className={cn(
+                  'flex w-full items-center justify-between gap-2.5 rounded-xl px-2.5 py-2 text-left text-xs font-medium transition-colors',
+                  activeMissionId === 'none'
+                    ? 'bg-accent/12 text-accent font-semibold'
+                    : 'text-text-secondary hover:bg-panel2/60 hover:text-text-primary',
+                )}
+              >
+                <div className="flex min-w-0 items-center gap-2">
+                  <CircleDashed className="h-3.5 w-3.5 shrink-0" />
+                  <span className="truncate">No mission</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <span className="rounded-full bg-panel px-1.5 py-0.5 text-[9px] tabular-nums text-text-muted">
+                    {missionNoteCounts['none'] ?? 0}
+                  </span>
+                  {activeMissionId === 'none' && <Check className="h-3.5 w-3.5 shrink-0 text-accent" />}
+                </div>
+              </button>
+
+              {missions.length > 0 && <div className="my-1.5 h-px bg-borderSoft/20" />}
+
+              {missions.map((mission) => {
+                const count = missionNoteCounts[mission.id] ?? 0;
+                const isSelected = activeMissionId === mission.id;
+                return (
+                  <button
+                    key={mission.id}
+                    type="button"
+                    onClick={() => {
+                      onChange(mission.id);
+                      setOpen(false);
+                    }}
+                    className={cn(
+                      'flex w-full items-center justify-between gap-2.5 rounded-xl px-2.5 py-2 text-left text-xs font-medium transition-colors',
+                      isSelected
+                        ? 'bg-accent/12 text-accent font-semibold'
+                        : 'text-text-secondary hover:bg-panel2/60 hover:text-text-primary',
+                    )}
+                  >
+                    <div className="flex min-w-0 items-center gap-2">
+                      <MissionIcon icon={mission.emoji ?? 'Target'} className="h-3.5 w-3.5 shrink-0" />
+                      <span className="truncate">{mission.title}</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <span className="rounded-full bg-panel px-1.5 py-0.5 text-[9px] tabular-nums text-text-muted">
+                        {count}
+                      </span>
+                      {isSelected && <Check className="h-3.5 w-3.5 shrink-0 text-accent" />}
+                    </div>
+                  </button>
+                );
+              })}
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </div>
+  );
+}
+
 function MissionPicker({
   missions,
   value,
   onChange,
 }: {
-  missions: { id: string; title: string }[];
+  missions: { id: string; title: string; emoji?: string }[];
   value: string | null;
   onChange: (id: string | null) => void;
 }) {
@@ -230,7 +435,16 @@ function MissionPicker({
           selected ? 'text-text-primary' : 'text-text-muted',
         )}
       >
-        <span className="truncate">{selected ? selected.title : 'No mission'}</span>
+        <div className="flex min-w-0 items-center gap-2">
+          {selected?.emoji ? (
+            <MissionIcon icon={selected.emoji} className="h-4 w-4 shrink-0" />
+          ) : selected ? (
+            <Target className="h-4 w-4 shrink-0" />
+          ) : (
+            <CircleDashed className="h-4 w-4 shrink-0 text-text-muted/60" />
+          )}
+          <span className="truncate">{selected ? selected.title : 'No mission'}</span>
+        </div>
         <ChevronDown className={cn('h-4 w-4 shrink-0 text-text-muted/60 transition-transform', open && 'rotate-180')} />
       </button>
       <AnimatePresence>
@@ -253,7 +467,10 @@ function MissionPicker({
                 !value ? 'text-accent' : 'text-text-secondary',
               )}
             >
-              No mission
+              <div className="flex min-w-0 items-center gap-2">
+                <CircleDashed className="h-3.5 w-3.5 shrink-0" />
+                <span>No mission</span>
+              </div>
               {!value && <Check className="h-3.5 w-3.5" />}
             </button>
             {missions.map((mission) => (
@@ -269,7 +486,14 @@ function MissionPicker({
                   value === mission.id ? 'text-accent' : 'text-text-secondary',
                 )}
               >
-                <span className="truncate">{mission.title}</span>
+                <div className="flex min-w-0 items-center gap-2">
+                  {mission.emoji ? (
+                    <MissionIcon icon={mission.emoji} className="h-3.5 w-3.5 shrink-0" />
+                  ) : (
+                    <Target className="h-3.5 w-3.5 shrink-0" />
+                  )}
+                  <span className="truncate">{mission.title}</span>
+                </div>
                 {value === mission.id && <Check className="h-3.5 w-3.5 shrink-0" />}
               </button>
             ))}
@@ -287,6 +511,7 @@ export function NoteViewerModal({
   onClose,
   onEdit,
   onTogglePin,
+  onFilterMission,
 }: {
   note: Note;
   category: NoteCategory;
@@ -294,6 +519,7 @@ export function NoteViewerModal({
   onClose: () => void;
   onEdit: (note: Note) => void;
   onTogglePin: (id: string) => void;
+  onFilterMission?: (missionId: string) => void;
 }) {
   const style = getNoteColorStyle(category.color);
   const title = getNoteDisplayTitle(note);
@@ -367,9 +593,22 @@ export function NoteViewerModal({
 
         <div className="flex shrink-0 flex-wrap items-center gap-2 border-t border-borderSoft/25 px-6 py-4">
           {missionTitle && (
-            <Badge tone="neutral" className="border-slate-500/20 bg-slate-500/12 text-[10px] font-medium normal-case tracking-normal">
+            <button
+              type="button"
+              onClick={() => {
+                if (note.mission_id && onFilterMission) {
+                  onFilterMission(note.mission_id);
+                  onClose();
+                }
+              }}
+              className={cn(
+                'inline-flex items-center rounded-full border border-slate-500/20 bg-slate-500/12 px-3 py-1 text-[10px] font-medium tracking-normal text-text-secondary transition-colors',
+                onFilterMission ? 'cursor-pointer hover:border-accent/40 hover:bg-accent/15 hover:text-accent' : '',
+              )}
+              title={onFilterMission ? 'Filter by this mission' : undefined}
+            >
               {missionTitle}
-            </Badge>
+            </button>
           )}
           <span
             title={new Date(note.updated_at).toLocaleString(undefined, { dateStyle: 'full', timeStyle: 'short' })}
@@ -398,21 +637,23 @@ export function NoteEditorModal({
   categories,
   missions,
   defaultCategoryId,
+  defaultMissionId,
   onClose,
   onSubmit,
 }: {
   mode: 'create' | 'edit';
   note?: Note;
   categories: NoteCategory[];
-  missions: { id: string; title: string }[];
+  missions: { id: string; title: string; emoji?: string }[];
   defaultCategoryId?: string;
+  defaultMissionId?: string | null;
   onClose: () => void;
   onSubmit: (draft: NoteEditorSubmit) => Promise<void>;
 }) {
   const [title, setTitle] = useState(note?.title ?? '');
   const [content, setContent] = useState(note?.content ?? '');
   const [categoryId, setCategoryId] = useState(note?.category_id ?? defaultCategoryId ?? GENERAL_CATEGORY_ID);
-  const [missionId, setMissionId] = useState<string | null>(note?.mission_id ?? null);
+  const [missionId, setMissionId] = useState<string | null>(note?.mission_id ?? defaultMissionId ?? null);
   const [pinned, setPinned] = useState(note?.pinned ?? false);
   const [saving, setSaving] = useState(false);
 
@@ -764,10 +1005,12 @@ export function NotesView({ openNoteId = null }: { openNoteId?: string | null })
   const categories = useNoteStore((state) => state.categories);
   const searchQuery = useNoteStore((state) => state.searchQuery);
   const activeCategoryId = useNoteStore((state) => state.activeCategoryId);
+  const activeMissionId = useNoteStore((state) => state.activeMissionId);
   const loading = useNoteStore((state) => state.loading);
   const error = useNoteStore((state) => state.error);
   const setSearchQuery = useNoteStore((state) => state.setSearchQuery);
   const setActiveCategoryId = useNoteStore((state) => state.setActiveCategoryId);
+  const setActiveMissionId = useNoteStore((state) => state.setActiveMissionId);
   const createNote = useNoteStore((state) => state.createNote);
   const updateNote = useNoteStore((state) => state.updateNote);
   const deleteNote = useNoteStore((state) => state.deleteNote);
@@ -814,15 +1057,28 @@ export function NotesView({ openNoteId = null }: { openNoteId?: string | null })
 
   const allCategories = useMemo(() => getAllCategories(categories), [categories]);
 
+  const missionNoteCounts = useMemo(() => {
+    const counts: Record<string, number> = { none: 0 };
+    notes.forEach((note) => {
+      if (note.mission_id) {
+        counts[note.mission_id] = (counts[note.mission_id] ?? 0) + 1;
+      } else {
+        counts['none'] = (counts['none'] ?? 0) + 1;
+      }
+    });
+    return counts;
+  }, [notes]);
+
   const filteredNotes = useMemo(
     () =>
       filterNotes(notes, {
         query: searchQuery,
         categoryId: activeCategoryId,
+        missionId: activeMissionId,
         customCategories: categories,
         missionTitles,
       }),
-    [notes, searchQuery, activeCategoryId, categories, missionTitles],
+    [notes, searchQuery, activeCategoryId, activeMissionId, categories, missionTitles],
   );
 
   const pinnedCount = useMemo(() => notes.filter((note) => note.pinned).length, [notes]);
@@ -903,6 +1159,8 @@ export function NotesView({ openNoteId = null }: { openNoteId?: string | null })
     }
   };
 
+  const isFiltered = searchQuery.trim().length > 0 || activeCategoryId !== 'all' || activeMissionId !== 'all';
+
   return (
     <div className="mx-auto max-w-[1480px] space-y-5">
       {(error || operationError) && (
@@ -933,10 +1191,27 @@ export function NotesView({ openNoteId = null }: { openNoteId?: string | null })
       <div className="flex flex-col gap-4 rounded-[22px] border border-borderSoft/35 bg-panel/72 p-3 sm:flex-row sm:items-center sm:justify-between sm:p-4">
         <div className="min-w-0">
           <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-text-muted">Library</p>
-          <p className="mt-0.5 text-sm font-medium text-text-primary">{filteredNotes.length} {filteredNotes.length === 1 ? 'note' : 'notes'}</p>
+          <div className="mt-0.5 flex flex-wrap items-center gap-2">
+            <p className="text-sm font-medium text-text-primary">{filteredNotes.length} {filteredNotes.length === 1 ? 'note' : 'notes'}</p>
+            {activeMissionId !== 'all' && (
+              <Badge tone="neutral" className="border-accent/30 bg-accent/10 text-accent text-[11px] gap-1 py-0.5">
+                <span className="truncate max-w-[140px]">
+                  {activeMissionId === 'none' ? 'No mission' : missionTitles[activeMissionId] ?? 'Mission'}
+                </span>
+                <button
+                  type="button"
+                  onClick={() => setActiveMissionId('all')}
+                  className="hover:opacity-100 opacity-60 ml-0.5"
+                  title="Clear mission filter"
+                >
+                  <X className="h-3 w-3" />
+                </button>
+              </Badge>
+            )}
+          </div>
         </div>
-        <div className="flex items-center gap-2">
-          <div className="relative flex-1 sm:w-64">
+        <div className="flex flex-wrap items-center gap-2">
+          <div className="relative flex-1 min-w-[180px] sm:w-64">
             <Search className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-text-muted/50" />
             <Input
               value={searchQuery}
@@ -945,6 +1220,13 @@ export function NotesView({ openNoteId = null }: { openNoteId?: string | null })
               className="h-10 rounded-full pl-10 text-[13px]"
             />
           </div>
+          <NoteMissionFilterControl
+            missions={missions}
+            activeMissionId={activeMissionId}
+            onChange={setActiveMissionId}
+            missionNoteCounts={missionNoteCounts}
+            totalNotes={notes.length}
+          />
           <Button onClick={() => setIsCreating(true)} size="md" type="button" className="shrink-0 text-[13px] font-medium">
             <Plus className="h-4 w-4" />
             New note
@@ -994,17 +1276,39 @@ export function NotesView({ openNoteId = null }: { openNoteId?: string | null })
           <div className="rounded-[24px] border border-dashed border-borderSoft/30 bg-panel/15 px-6 py-16 text-center">
             <p className="mb-1.5 text-[13px] font-medium uppercase tracking-[0.4px] text-text-muted/50">{notes.length === 0 ? 'No notes yet' : 'No matches'}</p>
             <p className="mx-auto max-w-sm text-sm text-text-secondary/60">
-              {notes.length === 0 ? 'Capture ideas, references, snippets, and more — all in one searchable place.' : 'Try a different search or category.'}
+              {notes.length === 0
+                ? 'Capture ideas, references, snippets, and more — all in one searchable place.'
+                : 'Try a different search, category, or mission filter.'}
             </p>
-            {notes.length === 0 && (
+            {notes.length === 0 ? (
               <Button onClick={() => setIsCreating(true)} size="sm" type="button" className="mt-4 text-[13px] font-medium">
                 <Plus className="h-4 w-4" />
                 New note
               </Button>
-            )}
+            ) : isFiltered ? (
+              <div className="mt-4 flex items-center justify-center gap-2">
+                <Button
+                  onClick={() => {
+                    setSearchQuery('');
+                    setActiveCategoryId('all');
+                    setActiveMissionId('all');
+                  }}
+                  size="sm"
+                  variant="secondary"
+                  type="button"
+                  className="text-[13px] font-medium"
+                >
+                  Reset filters
+                </Button>
+                <Button onClick={() => setIsCreating(true)} size="sm" type="button" className="text-[13px] font-medium">
+                  <Plus className="h-4 w-4" />
+                  New note
+                </Button>
+              </div>
+            ) : null}
           </div>
         ) : (
-          <div key={activeCategoryId} className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3 min-[1500px]:grid-cols-4">
+          <div key={`${activeCategoryId}-${activeMissionId}`} className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3 min-[1500px]:grid-cols-4">
             {filteredNotes.map((note) => (
               <NoteCard
                 key={note.id}
@@ -1015,6 +1319,7 @@ export function NotesView({ openNoteId = null }: { openNoteId?: string | null })
                 onEdit={setEditingNote}
                 onDelete={handleDelete}
                 onTogglePin={handleTogglePin}
+                onFilterMission={setActiveMissionId}
               />
             ))}
           </div>
@@ -1030,6 +1335,7 @@ export function NotesView({ openNoteId = null }: { openNoteId?: string | null })
             onClose={() => setViewingNoteId(null)}
             onEdit={setEditingNote}
             onTogglePin={handleTogglePin}
+            onFilterMission={setActiveMissionId}
           />
         )}
         {isCreating && (
@@ -1038,6 +1344,7 @@ export function NotesView({ openNoteId = null }: { openNoteId?: string | null })
             categories={allCategories}
             missions={missions}
             defaultCategoryId={activeCategoryId !== 'all' && activeCategoryId !== 'pinned' ? activeCategoryId : undefined}
+            defaultMissionId={activeMissionId !== 'all' && activeMissionId !== 'none' ? activeMissionId : undefined}
             onClose={() => setIsCreating(false)}
             onSubmit={handleCreate}
           />

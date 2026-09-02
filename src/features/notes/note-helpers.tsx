@@ -228,17 +228,26 @@ export type NoteCategoryFilter = 'all' | 'pinned' | string;
 export interface FilterNotesOptions {
   query?: string;
   categoryId?: NoteCategoryFilter;
+  missionId?: string;
   customCategories: NoteCategory[];
   missionTitles?: Record<string, string>;
 }
 
 export function filterNotes(notes: Note[], options: FilterNotesOptions): Note[] {
-  const { query, categoryId, customCategories, missionTitles = {} } = options;
+  const { query, categoryId, missionId = 'all', customCategories, missionTitles = {} } = options;
   const trimmedQuery = query?.trim().toLowerCase() ?? '';
 
   return notes.filter((note) => {
     if (categoryId === 'pinned' && !note.pinned) return false;
     if (categoryId && categoryId !== 'all' && categoryId !== 'pinned' && note.category_id !== categoryId) return false;
+
+    if (missionId && missionId !== 'all') {
+      if (missionId === 'none' || missionId === 'unassigned') {
+        if (note.mission_id) return false;
+      } else {
+        if (note.mission_id !== missionId) return false;
+      }
+    }
 
     if (!trimmedQuery) return true;
 
@@ -252,3 +261,4 @@ export function filterNotes(notes: Note[], options: FilterNotesOptions): Note[] 
     return haystack.includes(trimmedQuery);
   });
 }
+

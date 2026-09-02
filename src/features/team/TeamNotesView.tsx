@@ -1,10 +1,11 @@
 import { useMemo, useState } from 'react';
 import { AnimatePresence } from 'framer-motion';
-import { FileText, Pin, Plus, Search } from 'lucide-react';
+import { FileText, Pin, Plus, Search, X } from 'lucide-react';
+import { Badge } from '../../components/ui/badge';
 import { Button } from '../../components/ui/button';
 import { Input } from '../../components/ui/input';
 import { NoteCategoryIcon } from '../notes/note-helpers';
-import { CategoryChip, NoteCard, NoteEditorModal, NoteViewerModal } from '../notes/NotesView';
+import { CategoryChip, NoteCard, NoteEditorModal, NoteViewerModal, NoteMissionFilterControl } from '../notes/NotesView';
 import type { Note, NoteCategory } from '../notes/note-types';
 import { useTeamStore } from './team-store';
 import type { TeamNote } from './team-types';
@@ -65,14 +66,19 @@ export function TeamNotesView({ filterMissionId }: TeamNotesViewProps) {
 
   const [searchQuery, setSearchQuery] = useState('');
   const [activeCategoryId, setActiveCategoryId] = useState<string>('all');
+  const [activeMissionId, setActiveMissionId] = useState<string>(filterMissionId || 'all');
   const [viewingId, setViewingId] = useState<string | null>(null);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [isCreating, setIsCreating] = useState(false);
 
-  const scoped = useMemo(
-    () => (filterMissionId ? teamNotes.filter((n) => n.missionId === filterMissionId) : teamNotes),
-    [teamNotes, filterMissionId],
-  );
+  const scoped = useMemo(() => {
+    if (filterMissionId) return teamNotes.filter((n) => n.missionId === filterMissionId);
+    if (activeMissionId !== 'all') {
+      if (activeMissionId === 'none') return teamNotes.filter((n) => !n.missionId);
+      return teamNotes.filter((n) => n.missionId === activeMissionId);
+    }
+    return teamNotes;
+  }, [teamNotes, filterMissionId, activeMissionId]);
 
   const notes = useMemo(() => scoped.map(toNote), [scoped]);
 
@@ -80,6 +86,18 @@ export function TeamNotesView({ filterMissionId }: TeamNotesViewProps) {
     () => Object.fromEntries(teamMissions.map((mission) => [mission.id, mission.title])),
     [teamMissions],
   );
+
+  const missionNoteCounts = useMemo(() => {
+    const counts: Record<string, number> = { none: 0 };
+    teamNotes.forEach((note) => {
+      if (note.missionId) {
+        counts[note.missionId] = (counts[note.missionId] ?? 0) + 1;
+      } else {
+        counts['none'] = (counts['none'] ?? 0) + 1;
+      }
+    });
+    return counts;
+  }, [teamNotes]);
 
   const pinnedCount = notes.filter((note) => note.pinned).length;
   const categoryCounts = useMemo(() => {
@@ -126,7 +144,7 @@ export function TeamNotesView({ filterMissionId }: TeamNotesViewProps) {
     pinned: boolean;
   }) => {
     const category = isTeamCategory(draft.category_id) ? draft.category_id : 'General';
-    const missionId = draft.mission_id ?? filterMissionId ?? teamMissions[0]?.id;
+    const missionId = draft.mission_id ?? filterMissionId ?? (activeMissionId !== 'all' && activeMissionId !== 'none' ? activeMissionId : teamMissions[0]?.id);
     if (!missionId) return;
 
     if (editing) {
@@ -152,11 +170,33 @@ export function TeamNotesView({ filterMissionId }: TeamNotesViewProps) {
     setIsCreating(false);
   };
 
+  const isFiltered = searchQuery.trim().length > 0 || activeCategoryId !== 'all' || activeMissionId !== 'all';
+
   return (
     <div className="space-y-4 bg-panel bg-dots-glow">
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-end">
-        <div className="flex items-center gap-2">
-          <div className="relative flex-1 sm:w-64">
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+        <div className="min-w-0">
+          <div className="flex flex-wrap items-center gap-2">
+            <p className="text-sm font-medium text-text-primary">{filteredNotes.length} {filteredNotes.length === 1 ? 'note' : 'notes'}</p>
+            {!filterMissionId && activeMissionId !== 'all' && (
+              <Badge tone="neutral" className="border-accent/30 bg-accent/10 text-accent text-[11px] gap-1 py-0.5">
+                <span className="truncate max-w-[140px]">
+                  {activeMissionId === 'none' ? 'No mission' : missionTitles[activeMissionId] ?? 'Mission'}
+                </span>
+                <button
+                  type="button"
+                  onClick={() => setActiveMissionId('all')}
+                  className="hover:opacity-100 opacity-60 ml-0.5"
+                  title="Clear mission filter"
+                >
+                  <X className="h-3 w-3" />
+                </button>
+              </Badge>
+            )}
+          </div>
+        </div>
+        <div className="flex flex-wrap items-center gap-2">
+          <div className="relative flex-1 min-w-[180px] sm:w-64">
             <Search className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-text-muted/50" />
             <Input
               value={searchQuery}
@@ -165,6 +205,15 @@ export function TeamNotesView({ filterMissionId }: TeamNotesViewProps) {
               className="h-10 rounded-full pl-10 text-[13px]"
             />
           </div>
+          {!filterMissionId && (
+            <NoteMissionFilterControl
+              missions={teamMissions}
+              activeMissionId={activeMissionId}
+              onChange={setActiveMissionId}
+              missionNoteCounts={missionNoteCounts}
+              totalNotes={teamNotes.length}
+            />
+          )}
           <Button onClick={() => setIsCreating(true)} size="md" type="button" className="shrink-0 text-[13px] font-medium">
             <Plus className="h-4 w-4" />
             New note
@@ -197,18 +246,38 @@ export function TeamNotesView({ filterMissionId }: TeamNotesViewProps) {
       {filteredNotes.length === 0 ? (
         <div className="flex flex-col items-center justify-center rounded-[24px] border border-dashed border-borderSoft/30 bg-panel/15 px-6 py-16 text-center">
           <FileText className="h-10 w-10 text-text-muted/50" />
-          <p className="mt-3 text-sm font-medium text-text-primary">No notes yet</p>
+          <p className="mt-3 text-sm font-medium text-text-primary">{notes.length === 0 ? 'No notes yet' : 'No matches'}</p>
           <p className="mt-1 max-w-xs text-[13px] text-text-secondary">
             {notes.length === 0
               ? 'Capture playbooks, meeting notes, and field intel where the whole team can find them.'
-              : 'Try a different search or category.'}
+              : 'Try a different search, category, or mission filter.'}
           </p>
-          {notes.length === 0 && (
+          {notes.length === 0 ? (
             <Button onClick={() => setIsCreating(true)} size="sm" type="button" className="mt-4 text-[13px] font-medium">
               <Plus className="h-4 w-4" />
               New note
             </Button>
-          )}
+          ) : isFiltered ? (
+            <div className="mt-4 flex items-center justify-center gap-2">
+              <Button
+                onClick={() => {
+                  setSearchQuery('');
+                  setActiveCategoryId('all');
+                  setActiveMissionId('all');
+                }}
+                size="sm"
+                variant="secondary"
+                type="button"
+                className="text-[13px] font-medium"
+              >
+                Reset filters
+              </Button>
+              <Button onClick={() => setIsCreating(true)} size="sm" type="button" className="text-[13px] font-medium">
+                <Plus className="h-4 w-4" />
+                New note
+              </Button>
+            </div>
+          ) : null}
         </div>
       ) : (
         <div className="grid grid-cols-1 items-start gap-4 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-4">
@@ -226,6 +295,7 @@ export function TeamNotesView({ filterMissionId }: TeamNotesViewProps) {
                 }}
                 onDelete={(id) => { const note = notes.find((item) => item.id === id); void confirmDialog(`Delete note “${note?.title || 'Untitled'}”?`, { title: 'Delete note', confirmLabel: 'Delete', danger: true }).then((ok) => { if (ok) deleteTeamNote(id); }); }}
                 onTogglePin={togglePin}
+                onFilterMission={!filterMissionId ? setActiveMissionId : undefined}
               />
             ))}
           </AnimatePresence>
@@ -244,6 +314,7 @@ export function TeamNotesView({ filterMissionId }: TeamNotesViewProps) {
               setEditingId(target.id);
             }}
             onTogglePin={togglePin}
+            onFilterMission={!filterMissionId ? setActiveMissionId : undefined}
           />
         )}
       </AnimatePresence>
@@ -255,6 +326,7 @@ export function TeamNotesView({ filterMissionId }: TeamNotesViewProps) {
           categories={TEAM_CATEGORIES}
           missions={filterMissionId ? [] : teamMissions.map((m) => ({ id: m.id, title: m.title }))}
           defaultCategoryId="General"
+          defaultMissionId={activeMissionId !== 'all' && activeMissionId !== 'none' ? activeMissionId : undefined}
           onClose={() => {
             setIsCreating(false);
             setEditingId(null);
@@ -265,3 +337,4 @@ export function TeamNotesView({ filterMissionId }: TeamNotesViewProps) {
     </div>
   );
 }
+
